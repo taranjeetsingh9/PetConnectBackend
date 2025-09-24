@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Auth Test</title>
+</head>
+<body>
+  <h2>Signup</h2>
+  <form id="signupForm">
+    <label>Email:</label>
+    <input type="email" id="signupEmail" required /><br /><br />
+    <label>Password:</label>
+    <input type="password" id="signupPassword" required /><br /><br />
+    <button type="submit">Sign Up</button>
+  </form>
+
+  <h2>Login</h2>
+  <form id="loginForm">
+    <label>Email:</label>
+    <input type="email" id="loginEmail" required /><br /><br />
+    <label>Password:</label>
+    <input type="password" id="loginPassword" required /><br /><br />
+    <button type="submit">Login</button>
+  </form>
+
+  <div id="profileSetup" style="display:none;">
+    <h2>Profile Setup</h2>
+    <form id="profileForm">
+      <label>Name:</label>
+      <input type="text" id="profileName" required /><br /><br />
+      <label>Location:</label>
+      <input type="text" id="profileLocation" required /><br /><br />
+      <label>Role:</label>
+      <select id="profileRole">
+        <option value="adopter">Adopter</option>
+        <option value="vet">Vet</option>
+        <option value="staff">Staff</option>
+        <option value="trainer">Trainer</option>
+      </select><br /><br />
+      <button type="submit">Save Profile</button>
+    </form>
+  </div>
+
+  <h2>Sign Out</h2>
+  <button id="logoutBtn">Sign Out</button>
+
+  <p id="result"></p>
+  <p id="tokenDisplay"></p>
+
+  <script>
+    let token = null;
+
+    const showProfileForm = () => {
+      document.getElementById('profileSetup').style.display = 'block';
+    };
+
+    const hideProfileForm = () => {
+      document.getElementById('profileSetup').style.display = 'none';
+    };
+
+    // Signup
+    document.getElementById('signupForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('signupEmail').value;
+      const password = document.getElementById('signupPassword').value;
+
+      try {
+        const res = await fetch('http://localhost:5001/api/auth/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (data.token) {
+          token = data.token;
+          document.getElementById('result').innerText = "Signup successful!";
+          document.getElementById('tokenDisplay').innerText = "Token: " + token;
+          if (data.firstTime) showProfileForm();
+        } else {
+          document.getElementById('result').innerText = JSON.stringify(data);
+        }
+      } catch (err) {
+        document.getElementById('result').innerText = 'Error: ' + err.message;
+      }
+    });
+
+    // Login
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('loginEmail').value;
+      const password = document.getElementById('loginPassword').value;
+
+      try {
+        const res = await fetch('http://localhost:5001/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (data.token) {
+          token = data.token;
+          document.getElementById('result').innerText = "Login successful!";
+          document.getElementById('tokenDisplay').innerText = "Token: " + token;
+          if (data.firstTime) showProfileForm();
+        } else {
+          document.getElementById('result').innerText = JSON.stringify(data);
+        }
+      } catch (err) {
+        document.getElementById('result').innerText = 'Error: ' + err.message;
+      }
+    });
+
+    // Profile Setup
+    document.getElementById('profileForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('profileName').value;
+      const location = document.getElementById('profileLocation').value;
+      const role = document.getElementById('profileRole').value;
+
+      try {
+        const res = await fetch('http://localhost:5001/api/auth/users/profile', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-auth-token': token
+          },
+          body: JSON.stringify({ name, location, role })
+        });
+        const data = await res.json();
+        document.getElementById('result').innerText = "Profile setup complete!";
+        hideProfileForm();
+      } catch (err) {
+        document.getElementById('result').innerText = 'Error: ' + err.message;
+      }
+    });
+
+    // Sign Out
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      token = null;
+      document.getElementById('result').innerText = "Signed out successfully!";
+      document.getElementById('tokenDisplay').innerText = "";
+      hideProfileForm();
+    });
+  </script>
+</body>
+</html>
