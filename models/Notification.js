@@ -3,14 +3,12 @@ const mongoose = require('mongoose');
 
 const NotificationSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  title: { type: String, required: true },
+  type: { type: String, required: true },
   message: { type: String, required: true },
+  meta: { type: Object },
   read: { type: Boolean, default: false },
-  type: { type: String, enum: ['appointment', 'contract', 'general'], default: 'general' },
-
-  // Optional: link to appointment or contract
-  appointment: { type: mongoose.Schema.Types.ObjectId, ref: 'Appointment' },
-  contract: { type: mongoose.Schema.Types.ObjectId, ref: 'Contract' }
-}, { timestamps: true });
+  createdAt: { type: Date, default: Date.now }
+});
 
 module.exports = mongoose.model('Notification', NotificationSchema);
+

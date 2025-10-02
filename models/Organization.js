@@ -13,4 +13,5 @@ const OrganizationSchema = new mongoose.Schema({
   pets: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Pet' }]
 }, { timestamps: true });
 
-module.exports = mongoose.model('Organization', OrganizationSchema);
+
+module.exports = mongoose.models.Organization || mongoose.model('Organization', OrganizationSchema);

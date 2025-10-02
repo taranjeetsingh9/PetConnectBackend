@@ -27,6 +27,18 @@ router.post('/signup', async (req, res) => {
   }
 });
 
+// GET /api/auth/me
+router.get("/me", auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select("-password");
+    if (!user) return res.status(404).json({ msg: "User not found" });
+    res.json(user);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Server error");
+  }
+});
+
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -36,7 +48,7 @@ router.post('/login', async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ msg: 'Invalid credentials' });
 
-    const payload = { user: { id: user.id } };
+    const payload = { user: { id: user.id,  role: user.role } };
     jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' }, (err, token) => {
       if (err) throw err;
       const firstTime = !user.name || !user.location; // check if profile setup needed
@@ -67,5 +79,7 @@ router.patch('/users/profile', auth, async (req, res) => {
     res.status(500).send('Server Error');
   }
 });
+
+
 
 module.exports = router;

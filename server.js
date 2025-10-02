@@ -17,6 +17,15 @@ app.use(express.static(__dirname));
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 
+app.use('/api/pets', require('./routes/pets'));
+
+app.use("/api/users", require("./routes/userroutes"));
+
+app.use('/api/organizations', require('./routes/organizations'));
+
+const adoptionRoutes = 
+app.use('/api/adoptions',require('./routes/adoptions'));
+
 // Serve frontend for testing
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'auth.html'));
