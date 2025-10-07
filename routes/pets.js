@@ -4,9 +4,10 @@ const Pet = require('../models/Pet');
 const User = require('../models/User'); // Required to check user role
 const auth = require('../middleware/auth'); // Existing JWT verification middleware
 const isVet = require('../middleware/isVet'); // custom middleware to allow only vets
+const logActivity = require('../utils/logActivity');
 
-// --- RBAC Middleware ---
-// Checks if the authenticated user has one of the required roles.
+// --- RBAC Middleware --- implemented for security and flow of the application
+// Checks if the authenticated user has one of the required roles. -- don't forget to move to separate middleware will do before final check.
 const roleAuth = (allowedRoles) => async (req, res, next) => {
     // This middleware runs after 'auth', so req.user.id is always available.
     try {
@@ -27,11 +28,7 @@ const roleAuth = (allowedRoles) => async (req, res, next) => {
 };
 
 
-// @route   GET /api/pets
-// @desc    Get all available pets, applying matching logic if user is an Adopter.
-// @access  Private (Requires authentication)
 
-// test
 // GET /api/pets
 router.get("/", auth, async (req, res) => {
   try {
@@ -74,7 +71,7 @@ router.get("/", auth, async (req, res) => {
     return res.status(500).send("Server Error");
   }
 });
-// test done
+
 // @route   POST /api/pets
 // @desc    Create a new pet record. Restricted to Staff/Admin.
 // @access  Private (Requires 'staff' or 'admin' role)
@@ -94,8 +91,22 @@ router.post('/', auth, roleAuth(['staff', 'admin']), async (req, res) => {
       status: 'Available'
     });
 
+
     const pet = await newPet.save();
+
+    // Log the activity BEFORE sending response
+    await logActivity({
+      userId: req.user.id,
+      role: req.user.role,
+      action: 'Added Pet',
+      target: pet._id,
+      targetModel: 'Pet',
+      details: `Pet "${pet.name}" added by ${req.user.name}`
+    });
+
     res.json(pet);
+
+   
 
   } catch (err) {
     console.error(err.message);
@@ -103,31 +114,64 @@ router.post('/', auth, roleAuth(['staff', 'admin']), async (req, res) => {
   }
 });
 
-// @route   PATCH /api/pets/:id/status
-// @desc    Update a pet's status (e.g., to Adopted). Restricted to Staff/Admin.
-// @access  Private (Requires 'staff' or 'admin' role)
-router.patch('/:id/status', auth, roleAuth(['staff', 'admin']), async (req, res) => {
+// PATCH /api/pets/:id/status — update pet status by staff/admin
+router.patch('/:id/status', auth, async (req, res) => {
+  try {
     const { status } = req.body;
 
-    // Check if status is valid
-    if (!['Available', 'Fostered', 'Adopted'].includes(status)) {
-        return res.status(400).json({ msg: 'Invalid status provided.' });
+    // allowed status list
+    const allowedStatuses = [
+      'Available',
+      'Fostered',
+      'Adopted',
+      'Ready for Treatment',
+      'In Treatment',
+      'Ready for Adoption',
+      'Unavailable'
+    ];
+
+    if (!status || !allowedStatuses.includes(status)) {
+      return res.status(400).json({ msg: 'Invalid or missing status value.' });
     }
 
-    try {
-        const pet = await Pet.findByIdAndUpdate(
-            req.params.id, 
-            { $set: { status } },
-            { new: true, runValidators: true }
-        );
-
-        if (!pet) return res.status(404).json({ msg: 'Pet not found' });
-        res.json(pet);
-    } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server Error');
+    // find pet
+    const pet = await Pet.findById(req.params.id);
+    if (!pet) {
+      return res.status(404).json({ msg: 'Pet not found.' });
     }
+
+    // optional: verify user is staff/admin before allowing update
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(401).json({ msg: 'Unauthorized user.' });
+    }
+    if (!['staff', 'admin'].includes(user.role)) {
+      return res.status(403).json({ msg: 'Access denied. Only staff or admin can update status.' });
+    }
+
+    // update status
+    pet.status = status;
+    await pet.save();
+
+    await logActivity({
+      userId: req.user.id,
+      role: user.role,
+      action: 'Updated Pet Status',
+      target: pet._id,
+      targetModel: 'Pet',
+      details: `Pet "${pet.name}" status changed to "${status}" by ${user.name}`
+    });
+
+    res.json({
+      msg: `Pet status updated successfully to "${status}"`,
+      pet
+    });
+  } catch (err) {
+    console.error('Error updating pet status:', err);
+    res.status(500).json({ msg: 'Server error', error: err.message });
+  }
 });
+
 
 // @route   PATCH /api/pets/:id/details
 // @desc    Update a pet's health/behavior details. Restricted to Vet/Trainer/Admin.
@@ -154,6 +198,14 @@ router.patch('/:id/details', auth, roleAuth(['vet', 'trainer', 'admin']), async 
         );
 
         if (!pet) return res.status(404).json({ msg: 'Pet not found' });
+        await logActivity({
+          userId: req.user.id,
+          role: req.userRole,
+          action: 'Updated Pet Details',
+          target: pet._id,
+          targetModel: 'Pet',
+          details: `Updated fields: ${Object.keys(updateFields).join(', ')}`
+        });
         res.json(pet);
     } catch (err) {
         console.error(err.message);
@@ -191,6 +243,15 @@ router.delete('/:id', auth, roleAuth(['staff', 'admin']), async (req, res) => {
       }
 
       await pet.deleteOne(); // removes from DB
+      await logActivity({
+        userId: req.user.id,
+        role: req.user.role,
+        action: 'Deleted Pet',
+        target: pet._id,
+        targetModel: 'Pet',
+        details: `Pet "${pet.name}" deleted by ${req.user.name}`
+      });
+      
       res.json({ msg: 'Pet removed successfully' });
 
   } catch (err) {
@@ -228,7 +289,14 @@ router.post('/:id/adopt', auth, roleAuth(['adopter']), async (req, res) => {
     pet.status = "Pending Adoption";
     pet.adopter = req.user.id; // store adopter reference
     await pet.save();
-
+    await logActivity({
+      userId: req.user.id,
+      role: req.user.role,
+      action: 'Requested Adoption',
+      target: pet._id,
+      targetModel: 'Pet',
+      details: `User requested adoption for pet "${pet.name}"`
+    });
     res.json({ msg: "Adoption request submitted", pet });
   } catch (err) {
     console.error(err.message);
@@ -251,7 +319,15 @@ router.post('/:id/foster', auth, roleAuth(['adopter']), async (req, res) => {
     pet.status = "Pending Foster";
     pet.fosterer = req.user.id; // store fosterer reference
     await pet.save();
-
+    await logActivity({
+      userId: req.user.id,
+      role: req.user.role,
+      action: 'Requested Foster',
+      target: pet._id,
+      targetModel: 'Pet',
+      details: `User requested foster for pet "${pet.name}"`
+    });
+    
     res.json({ msg: "Foster request submitted", pet });
   } catch (err) {
     console.error(err.message);
@@ -279,6 +355,15 @@ router.patch("/:id/health", auth, async (req, res) => {
     }
 
     res.json({ msg: "Health notes updated", pet });
+    await logActivity({
+      userId: req.user.id,
+      role: req.user.role,
+      action: 'Added Health Note',
+      target: pet._id,
+      targetModel: 'Pet',
+      details: `Health note added: "${healthNotes}"`
+    });
+    
   } catch (err) {
     console.error(err);
     res.status(500).json({ msg: "Server error" });
@@ -307,6 +392,15 @@ router.patch("/:id/training", auth, async (req, res) => {
     }
 
     res.json({ msg: "Training notes updated", pet });
+    await logActivity({
+      userId: req.user.id,
+      role: req.user.role,
+      action: 'Updated Training Note',
+      target: pet._id,
+      targetModel: 'Pet',
+      details: `Training note updated: "${trainingNotes}"`
+    });
+    
   } catch (err) {
     console.error(err);
     res.status(500).json({ msg: "Server error" });
@@ -340,22 +434,6 @@ router.patch('/:id/health', auth, isVet, async (req, res) => {
     res.status(500).json({ msg: "Server error" });
   }
 });
-
-// PATCH /api/pets/:id/mark-good
-// router.patch('/:id/mark-good', auth, isVet, async (req, res) => {
-//   try {
-//     const pet = await Pet.findById(req.params.id);
-//     if (!pet) return res.status(404).json({ msg: "Pet not found" });
-
-//     pet.healthNotes = "Good condition";
-//     await pet.save();
-
-//     res.json({ msg: "Pet marked as good condition", pet });
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ msg: "Server error" });
-//   }
-// });
 
 router.patch('/:id/health-status', auth, isVet, async (req, res) => {
   try {
@@ -398,7 +476,16 @@ router.patch('/:id/assign-vet', auth, roleAuth(['staff', 'admin']), async (req, 
 
     if (!pet) return res.status(404).json({ msg: 'Pet not found' });
 
-    res.json({ msg: `Vet ${vetUser.name} assigned to pet`, pet });
+    res.json({ msg: `Vet ${vetUser.name} assigned to pet`, pet }); // vet assigned
+    await logActivity({
+      userId: req.user.id,
+      role: req.user.role,
+      action: 'Assigned Vet',
+      target: pet._id,
+      targetModel: 'Pet',
+      details: `Vet "${vetUser.name}" assigned to pet "${pet.name}"`
+    });
+    
   } catch (err) {
     console.error(err);
     res.status(500).json({ msg: 'Server error' });

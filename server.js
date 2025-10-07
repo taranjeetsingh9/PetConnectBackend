@@ -26,6 +26,12 @@ app.use('/api/organizations', require('./routes/organizations'));
 const adoptionRoutes = 
 app.use('/api/adoptions',require('./routes/adoptions'));
 
+// // acitvity log routes
+// app.use('/api/activity', require('./routes/activityLog'));
+
+const activityLogRoutes = require('./routes/activityLog');
+app.use('/api/activitylogs', activityLogRoutes);
+
 // Serve frontend for testing
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'auth.html'));

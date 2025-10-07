@@ -10,7 +10,7 @@ const AppointmentSchema = new mongoose.Schema({
   date: { type: Date, required: true },
   status: { type: String, enum: ['pending', 'confirmed', 'completed', 'cancelled'], default: 'pending' },
 
-  // Optional: Blockchain reference for appointment verification (future)
+  // Optional: Blockchain reference  -- right now just make but implemented in future.
   blockchainId: { type: String }
 }, { timestamps: true });
 

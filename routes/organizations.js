@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Organization = require('../models/Organization');
 const auth = require('../middleware/auth');
+const logActivity = require('../utils/logActivity');
 
 
 
@@ -103,5 +104,36 @@ router.delete('/:id', auth, roleAuth(['staff']), async (req, res) => {
     res.status(500).send('Server Error');
   }
 });
+
+// activity loggin version
+// ------------------------
+// POST new organization (Admin only)
+// ------------------------
+router.post('/', auth, roleAuth(['admin']), async (req, res) => {
+  try {
+    const { name, type, contact } = req.body;
+    if (!name || !type) return res.status(400).json({ msg: 'Name and type are required' });
+
+    const newOrg = new Organization({ name, type, contact });
+    const org = await newOrg.save();
+
+    // ✅ Log activity
+    await logActivity({
+      userId: req.user.id,
+      role: 'admin',
+      action: 'Created Organization',
+      target: org._id,
+      targetModel: 'Organization',
+      details: { name, type, contact },
+      ipAddress: req.ip
+    });
+
+    res.json(org);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+});
+
 
 module.exports = router;

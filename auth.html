@@ -49,6 +49,7 @@
             <option value="staff">Staff</option>
             <option value="vet">Vet</option>
             <option value="trainer">Trainer</option>
+            <option value="admin">Admin</option>
           </select>
           <select id="activityLevel" class="w-full p-3 border rounded-lg bg-white">
             <option value="">Activity Level (Optional)</option>
@@ -207,6 +208,10 @@
     return; // stop further rendering here
   } 
         // ---------------- Vet / Trainer ----------------
+        else if(user.role==="admin") {
+          window.location.href = "admin.html";
+  return;
+        }
         else if(user.role==="vet"||user.role==="trainer"){
           dash.innerHTML = `
             <h2 class="text-2xl font-bold mb-4">Vet/Trainer Dashboard</h2>

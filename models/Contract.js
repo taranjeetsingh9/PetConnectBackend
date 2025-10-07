@@ -11,8 +11,8 @@ const ContractSchema = new mongoose.Schema({
   adoptionFee: Number,
 
   // Blockchain
-  blockchainId: { type: String },       // Smart contract ID
-  transactionHash: { type: String },    // Optional for blockchain verification
+  blockchainId: { type: String },       
+  transactionHash: { type: String },    
   status: { type: String, enum: ['pending', 'active', 'completed'], default: 'pending' }
 }, { timestamps: true });
 

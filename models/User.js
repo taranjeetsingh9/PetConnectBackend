@@ -19,9 +19,9 @@ const UserSchema = new mongoose.Schema({
   role: { type: String, enum: ['adopter', 'vet', 'staff', 'trainer', 'admin'], default: 'adopter' },
 
   lifestyle: {
-    activityLevel: String,           // low, medium, high
-    homeType: String,                // apartment, house, farm
-    personalityTraits: [String],     // e.g., patient, active
+    activityLevel: String,        
+    homeType: String,                
+    personalityTraits: [String],     
     allergies: [String]
   },
 

@@ -4,8 +4,21 @@ const PetSchema = new mongoose.Schema({
   name: { type: String, required: true },
   breed: String,
   age: Number,
-  gender: { type: String, enum: ['Male', 'Female'] },
-  status: { type: String, enum: ['Available', 'Fostered', 'Adopted'], default: 'Available' },
+  gender: { type: String, enum: ['Male', 'Female'] , required: false},
+  status: {
+    type: String,
+    enum: [
+      'Available',
+      'Fostered',
+      'Adopted',
+      'Ready for Treatment',
+      'In Treatment',
+      'Ready for Adoption',
+      'Unavailable'
+    ],
+    default: 'Available'
+  },
+  
 
   // Behavior and care
   energyLevel: String,

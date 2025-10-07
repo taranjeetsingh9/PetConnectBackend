@@ -2,7 +2,7 @@
 const mongoose = require('mongoose');
 
 const AnalyticsSchema = new mongoose.Schema({
-  metric: { type: String, required: true },   // e.g., "adoptionRate"
+  metric: { type: String, required: true },   
   value: { type: Number, required: true },
   timestamp: { type: Date, default: Date.now }
 }, { timestamps: true });

@@ -4,7 +4,7 @@ const auth = require("../middleware/auth");
 const User = require("../models/User");
 
 
-
+// don't forget to move role auth to middleware in future.
 const roleAuth = (allowedRoles) => async (req, res, next) => {
   // This middleware runs after 'auth', so req.user.id is always available.
   try {
