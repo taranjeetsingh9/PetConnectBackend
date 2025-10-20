@@ -49,6 +49,10 @@ router.post('/login', async (req, res) => {
     if (!isMatch) return res.status(400).json({ msg: 'Invalid credentials' });
 
     const payload = { user: { id: user.id,  role: user.role } };
+    // Only include organization if it exists (for staff/admin)
+if (user.organization) {
+  payload.user.organization = user.organization;
+}
     jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' }, (err, token) => {
       if (err) throw err;
       const firstTime = !user.name || !user.location; // check if profile setup needed

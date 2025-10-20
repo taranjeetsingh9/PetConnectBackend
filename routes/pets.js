@@ -5,6 +5,8 @@ const User = require('../models/User'); // Required to check user role
 const auth = require('../middleware/auth'); // Existing JWT verification middleware
 const isVet = require('../middleware/isVet'); // custom middleware to allow only vets
 const logActivity = require('../utils/logActivity');
+const { petImagesUpload } = require('../middleware/upload');
+
 
 // --- RBAC Middleware --- implemented for security and flow of the application
 // Checks if the authenticated user has one of the required roles. -- don't forget to move to separate middleware will do before final check.
@@ -75,10 +77,63 @@ router.get("/", auth, async (req, res) => {
 // @route   POST /api/pets
 // @desc    Create a new pet record. Restricted to Staff/Admin.
 // @access  Private (Requires 'staff' or 'admin' role)
-router.post('/', auth, roleAuth(['staff', 'admin']), async (req, res) => {
+// router.post('/', auth, roleAuth(['staff', 'admin']), async (req, res) => {
+//   const { name, breed, age, gender, energyLevel, temperament, organization } = req.body;
+  
+//   try {
+//     const newPet = new Pet({
+//       name,
+//       breed,
+//       age,
+//       gender,
+//       energyLevel,
+//       temperament,
+//       organization: organization, 
+//       owner: req.user.id,
+//       status: 'Available'
+//     });
+
+
+//     const pet = await newPet.save();
+
+//     // Log the activity BEFORE sending response
+//     await logActivity({
+//       userId: req.user.id,
+//       role: req.user.role,
+//       action: 'Added Pet',
+//       target: pet._id,
+//       targetModel: 'Pet',
+//       details: `Pet "${pet.name}" added by ${req.user.name}`
+//     });
+
+//     res.json(pet);
+
+   
+
+//   } catch (err) {
+//     console.error(err.message);
+//     res.status(500).send('Server Error');
+//   }
+// });
+
+// test image upload
+
+// @route   POST /api/pets
+// @desc    Create a new pet record with images. Restricted to Staff/Admin.
+// @access  Private (Requires 'staff' or 'admin' role)
+router.post('/', auth, roleAuth(['staff', 'admin']), petImagesUpload.array('images', 5), async (req, res) => {
   const { name, breed, age, gender, energyLevel, temperament, organization } = req.body;
   
   try {
+    // Create images array from uploaded files
+    const images = req.files ? req.files.map((file, index) => ({
+      url: file.path,
+      public_id: file.filename,
+      caption: `Photo of ${name}`,
+      isPrimary: index === 0,
+      uploadedBy: req.user.id
+    })) : [];
+
     const newPet = new Pet({
       name,
       breed,
@@ -88,31 +143,44 @@ router.post('/', auth, roleAuth(['staff', 'admin']), async (req, res) => {
       temperament,
       organization: organization, 
       owner: req.user.id,
-      status: 'Available'
+      status: 'Available',
+      images: images // Add images to pet
     });
-
 
     const pet = await newPet.save();
 
-    // Log the activity BEFORE sending response
+    // Log the activity
     await logActivity({
       userId: req.user.id,
       role: req.user.role,
       action: 'Added Pet',
       target: pet._id,
       targetModel: 'Pet',
-      details: `Pet "${pet.name}" added by ${req.user.name}`
+      details: `Pet "${pet.name}" added by ${req.user.name} with ${images.length} images`
     });
 
     res.json(pet);
 
-   
-
   } catch (err) {
     console.error(err.message);
+    
+    // Clean up uploaded files if error occurs
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        try {
+          await cloudinary.uploader.destroy(file.filename);
+        } catch (cleanupError) {
+          console.error('Cleanup error:', cleanupError);
+        }
+      }
+    }
+    
     res.status(500).send('Server Error');
   }
 });
+
+// test end
+
 
 // PATCH /api/pets/:id/status — update pet status by staff/admin
 router.patch('/:id/status', auth, async (req, res) => {
@@ -307,28 +375,121 @@ router.post('/:id/adopt', auth, roleAuth(['adopter']), async (req, res) => {
 // @route   POST /api/pets/:id/foster
 // @desc    Request foster for a pet
 // @access  Private (Adopter role only)
+// @route   POST /api/pets/:id/foster
+// @desc    Request foster for a pet (both shelter pets and personal listings)
+// @access  Private (Adopter role only)
+// router.post('/:id/foster', auth, roleAuth(['adopter']), async (req, res) => {
+//   try {
+//     const pet = await Pet.findById(req.params.id)
+//       .populate('owner', 'name email');
+    
+//     if (!pet) return res.status(404).json({ msg: "Pet not found" });
+
+//     // Check if pet is available for fostering based on type
+//     let isAvailable = false;
+//     let errorMsg = '';
+
+//     if (pet.listingType === 'shelter') {
+//       isAvailable = pet.status === 'Available';
+//       errorMsg = 'This shelter pet is not available for foster';
+//     } else if (pet.listingType === 'personal') {
+//       isAvailable = pet.status === 'available_fostering';
+//       errorMsg = 'This personal listing is not available for foster';
+//     }
+
+//     if (!isAvailable) {
+//       return res.status(400).json({ msg: errorMsg });
+//     }
+
+//     // Update status based on listing type
+//     if (pet.listingType === 'shelter') {
+//       pet.status = 'Pending Foster';
+//     } else {
+//       pet.status = 'pending_foster';
+//     }
+    
+//     pet.fosterer = req.user.id;
+//     await pet.save();
+
+//     await logActivity({
+//       userId: req.user.id,
+//       role: req.user.role,
+//       action: 'Requested Foster',
+//       target: pet._id,
+//       targetModel: 'Pet',
+//       details: `User requested to foster ${pet.name} (${pet.listingType} listing)`
+//     });
+
+//     res.json({ 
+//       msg: "Foster request submitted", 
+//       pet,
+//       listingType: pet.listingType 
+//     });
+
+//   } catch (err) {
+//     console.error(err.message);
+//     res.status(500).send("Server Error");
+//   }
+// });
+// @route   POST /api/pets/:id/foster
+// @desc    Submit foster request for a pet (both shelter and personal)
+// @access  Private (Adopter role only)
 router.post('/:id/foster', auth, roleAuth(['adopter']), async (req, res) => {
   try {
+    const { message } = req.body;
     const pet = await Pet.findById(req.params.id);
+    
     if (!pet) return res.status(404).json({ msg: "Pet not found" });
 
-    if (pet.status !== "Available") {
-      return res.status(400).json({ msg: "Pet is not available for foster" });
+    // Prevent users from fostering their own pets
+    if (pet.owner && pet.owner.toString() === req.user.id) {
+      return res.status(400).json({ msg: "You cannot foster your own pet" });
     }
 
-    pet.status = "Pending Foster";
-    pet.fosterer = req.user.id; // store fosterer reference
+    // Check if pet is available for fostering
+    let isAvailable = false;
+    if (pet.listingType === 'shelter') {
+      isAvailable = pet.status === 'Available';
+    } else if (pet.listingType === 'personal') {
+      isAvailable = pet.status === 'available_fostering';
+    }
+
+    if (!isAvailable) {
+      return res.status(400).json({ msg: "This pet is not available for fostering" });
+    }
+
+    // Check if user already has a pending request
+    const existingRequest = pet.fosterRequests.find(
+      req => req.user.toString() === req.user.id && req.status === 'pending'
+    );
+
+    if (existingRequest) {
+      return res.status(400).json({ msg: "You already have a pending foster request for this pet" });
+    }
+
+    // Add foster request
+    pet.fosterRequests.push({
+      user: req.user.id,
+      message: message || `I would like to foster ${pet.name}`
+    });
+
     await pet.save();
+
     await logActivity({
       userId: req.user.id,
       role: req.user.role,
-      action: 'Requested Foster',
+      action: 'Submitted Foster Request',
       target: pet._id,
       targetModel: 'Pet',
-      details: `User requested foster for pet "${pet.name}"`
+      details: `Submitted foster request for ${pet.name}`
     });
-    
-    res.json({ msg: "Foster request submitted", pet });
+
+    res.json({ 
+      success: true,
+      msg: "Foster request submitted successfully! The owner will review your request.",
+      requestId: pet.fosterRequests[pet.fosterRequests.length - 1]._id
+    });
+
   } catch (err) {
     console.error(err.message);
     res.status(500).send("Server Error");
@@ -519,6 +680,177 @@ router.patch('/:id', auth, roleAuth(['staff', 'admin']), async (req, res) => {
   }
 });
 
+// @route   GET /api/pets/browse/all
+// @desc    Get ALL pets (shelter + personal) for browsing with filters
+// @access  Private (all authenticated users)
+router.get('/browse/all', auth, async (req, res) => {
+  try {
+    const { type, status, location, search } = req.query;
+    
+    // Build query
+    let query = {};
+    
+    // Filter by type: 'adoption' or 'fostering'
+    if (type === 'adoption') {
+      // Show shelter pets available for adoption
+      query.listingType = 'shelter';
+      query.status = 'Available';
+    } else if (type === 'fostering') {
+      // Show both shelter pets AND personal listings available for fostering
+      query.$or = [
+        { listingType: 'shelter', status: 'Available' }, // Shelter pets
+        { listingType: 'personal', status: 'available_fostering' } // Personal listings
+      ];
+    } else {
+      // Show all available pets (both types)
+      query.$or = [
+        { listingType: 'shelter', status: 'Available' },
+        { listingType: 'personal', status: 'available_fostering' }
+      ];
+    }
+
+    // Additional filters
+    if (location) {
+      query.$or = query.$or ? [
+        ...query.$or,
+        { location: new RegExp(location, 'i') }
+      ] : { location: new RegExp(location, 'i') };
+    }
+    
+    if (search) {
+      const searchQuery = {
+        $or: [
+          { name: new RegExp(search, 'i') },
+          { breed: new RegExp(search, 'i') },
+          { description: new RegExp(search, 'i') }
+        ]
+      };
+      
+      query = query.$or ? { $and: [query, searchQuery] } : { ...query, ...searchQuery };
+    }
+
+    const pets = await Pet.find(query)
+      .populate('owner', 'name email avatar location')
+      .populate('organization', 'name type')
+      .select('name breed age gender description location images status listingType owner createdAt')
+      .sort({ createdAt: -1 })
+      .limit(50);
+
+    res.json({
+      success: true,
+      pets,
+      total: pets.length,
+      filters: { type, status, location, search }
+    });
+
+  } catch (err) {
+    console.error('Browse pets error:', err);
+    res.status(500).json({ 
+      success: false,
+      msg: 'Server error fetching pets' 
+    });
+  }
+});
+
+// @route   GET /api/pets/:id/foster-requests
+// @desc    Get foster requests for a pet (owner only)
+// @access  Private
+router.get('/:id/foster-requests', auth, async (req, res) => {
+  try {
+    const pet = await Pet.findById(req.params.id)
+      .populate('fosterRequests.user', 'name email avatar location');
+    
+    if (!pet) return res.status(404).json({ msg: "Pet not found" });
+
+    // Check if user owns the pet or is staff
+    const isOwner = pet.owner && pet.owner.toString() === req.user.id;
+    const isStaff = ['staff', 'admin'].includes(req.user.role);
+
+    if (!isOwner && !isStaff) {
+      return res.status(403).json({ msg: "Access denied" });
+    }
+
+    res.json({
+      success: true,
+      fosterRequests: pet.fosterRequests,
+      petName: pet.name
+    });
+
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Server Error");
+  }
+});
+
+// @route   PATCH /api/pets/:id/foster-requests/:requestId
+// @desc    Approve or reject a foster request
+// @access  Private (Owner or staff only)
+router.patch('/:id/foster-requests/:requestId', auth, async (req, res) => {
+  try {
+    const { action } = req.body; // 'approve' or 'reject'
+    const pet = await Pet.findById(req.params.id);
+    
+    if (!pet) return res.status(404).json({ msg: "Pet not found" });
+
+    // Check if user owns the pet or is staff
+    const isOwner = pet.owner && pet.owner.toString() === req.user.id;
+    const isStaff = ['staff', 'admin'].includes(req.user.role);
+
+    if (!isOwner && !isStaff) {
+      return res.status(403).json({ msg: "Access denied" });
+    }
+
+    const fosterRequest = pet.fosterRequests.id(req.params.requestId);
+    if (!fosterRequest) {
+      return res.status(404).json({ msg: "Foster request not found" });
+    }
+
+    if (action === 'approve') {
+      // Approve this request and reject others
+      pet.fosterRequests.forEach(request => {
+        if (request._id.toString() === req.params.requestId) {
+          request.status = 'approved';
+        } else if (request.status === 'pending') {
+          request.status = 'rejected';
+        }
+      });
+
+      // Update pet status
+      if (pet.listingType === 'shelter') {
+        pet.status = 'Fostered';
+      } else {
+        pet.status = 'fostered';
+      }
+      pet.currentFoster = fosterRequest.user;
+
+    } else if (action === 'reject') {
+      fosterRequest.status = 'rejected';
+    } else {
+      return res.status(400).json({ msg: "Invalid action" });
+    }
+
+    await pet.save();
+
+    await logActivity({
+      userId: req.user.id,
+      role: req.user.role,
+      action: action === 'approve' ? 'Approved Foster Request' : 'Rejected Foster Request',
+      target: pet._id,
+      targetModel: 'Pet',
+      details: `${action === 'approve' ? 'Approved' : 'Rejected'} foster request for ${pet.name}`
+    });
+
+    res.json({
+      success: true,
+      msg: `Foster request ${action === 'approve' ? 'approved' : 'rejected'} successfully`,
+      pet
+    });
+
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Server Error");
+  }
+});
 
 
 module.exports = router;

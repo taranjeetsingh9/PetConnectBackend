@@ -18,11 +18,15 @@
       <div class="flex justify-between items-center bg-white p-6 rounded-xl shadow-lg">
         <p id="userStatus" class="text-lg font-medium text-gray-700"></p>
         <button id="logoutBtn" class="bg-red-500 text-white p-3 rounded-lg hover:bg-red-600">Sign Out</button>
+        <button onclick="window.location.href='user-profile.html'" 
+        class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
+    👤 My Profile
+</button>
       </div>
 
       <div class="bg-white p-6 rounded-xl shadow-lg mb-6">
         <h2 class="text-2xl font-bold mb-4">Add New Pet</h2>
-        <form id="addPetForm" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <form id="addPetForm" class="grid grid-cols-1 sm:grid-cols-2 gap-4" enctype="multipart/form-data">
           <input type="text" id="petName" placeholder="Name" class="border rounded p-2 w-full" required>
           <input type="text" id="petBreed" placeholder="Breed" class="border rounded p-2 w-full">
           <input type="number" id="petAge" placeholder="Age" class="border rounded p-2 w-full">
@@ -41,8 +45,16 @@
         <select id="petOrg" class="border rounded p-2 w-full" required>
           <option value="">Select Organization</option>
         </select>
-          <button type="submit" class="col-span-1 sm:col-span-2 bg-green-600 text-white p-3 rounded-lg hover:bg-green-700">Add Pet</button>
 
+        <!-- Image Upload Field -->
+        <div class="col-span-1 sm:col-span-2">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Pet Images (Multiple)</label>
+          <input type="file" id="petImages" multiple accept="image/*" class="border rounded p-2 w-full">
+          <p class="text-xs text-gray-500 mt-1">Select multiple images for the pet</p>
+          <div id="imagePreview" class="mt-2 flex flex-wrap gap-2"></div>
+        </div>
+
+          <button type="submit" class="col-span-1 sm:col-span-2 bg-green-600 text-white p-3 rounded-lg hover:bg-green-700">Add Pet with Images</button>
         </form>
       </div>
 
@@ -57,9 +69,7 @@
     const API_BASE_URL = "http://localhost:5001/api/auth";
     const PETS_API_URL = "http://localhost:5001/api/pets";
     const STAFF_API_URL = "http://localhost:5001/api/users";
-    // NEW: Adoption API base URL
     const ADOPTIONS_API_URL = "http://localhost:5001/api/adoptions";
-    // For updateRequestStatus:
     const ADOPTION_API_BASE_URL = "http://localhost:5001/api/adoptions"; 
 
     let token = localStorage.getItem("token");
@@ -84,7 +94,7 @@
       } else {
         localStorage.removeItem("token");
         token=null;
-        window.location.href = "index.html"; // redirect to login
+        window.location.href = "index.html";
       }
     };
 
@@ -103,6 +113,25 @@
         setViewState(false);
       }
     };
+
+    // Image Preview Function
+    document.getElementById('petImages').addEventListener('change', function(e) {
+      const preview = document.getElementById('imagePreview');
+      preview.innerHTML = '';
+      
+      Array.from(e.target.files).forEach(file => {
+        if (file.type.startsWith('image/')) {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            img.className = 'w-20 h-20 object-cover rounded border';
+            preview.appendChild(img);
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+    });
 
     // ------------------------
     // Dashboard rendering for Staff
@@ -126,14 +155,26 @@
         if(pets.length > 0){
           petsList.innerHTML = pets.map(pet => `
             <div class="bg-white border rounded-xl shadow-md overflow-hidden p-4">
-              ${pet.images && pet.images[0]? `<img src="${pet.images[0]}" class="w-full h-48 object-cover mb-2">`
-              : `<div class="w-full h-48 flex items-center justify-center bg-gray-200 text-gray-500 mb-2">No Image</div>`}
+              ${pet.images && pet.images.length > 0 ? 
+                `<img src="${pet.images.find(img => img.isPrimary)?.url || pet.images[0].url}" 
+                      class="w-full h-48 object-cover mb-2 rounded">` :
+                `<div class="w-full h-48 flex items-center justify-center bg-gray-200 text-gray-500 mb-2 rounded">
+                   No Image
+                 </div>`
+              }
               <h3 class="text-lg font-semibold text-indigo-700">${pet.name}</h3>
               <p class="text-sm text-gray-600">Breed: ${pet.breed || "Unknown"}</p>
               <p class="text-sm text-gray-600">Energy: ${pet.energyLevel || "N/A"}</p>
               <p class="text-sm text-gray-600">Status: ${pet.status}</p>
+              <p class="text-sm text-gray-600">Images: ${pet.images ? pet.images.length : 0}</p>
               <p class="text-sm text-gray-600">Adopter: ${pet.adopter ? pet.adopter.name : "None"}</p>
               <p class="text-sm text-gray-600">Vet: ${pet.vet ? pet.vet.name : "None"}</p>
+
+              <!-- Add More Images Button -->
+              <button onclick="addMoreImages('${pet._id}')" 
+                      class="mt-2 px-3 py-1 bg-blue-600 text-white text-sm rounded w-full">
+                Add More Images
+              </button>
 
               <div class="mt-2">
                 <select id="vetSelect-${pet._id}" class="border rounded p-1 text-sm w-full mb-1">
@@ -156,7 +197,6 @@
             </div>
           `).join("");
           
-          // Load vets for assignment
           await loadVetsForAssignment(pets);
 
         } else { 
@@ -210,7 +250,7 @@
       } catch(err){displayMessage("Server error",true);}
     };
 
-    // delete pet logic
+    // Delete pet logic
     const deletePet = async (petId) => {
       if(!confirm("Are you sure you want to delete this pet?")) return;
 
@@ -226,11 +266,49 @@
         displayMessage("Server error", true);
       }
     };
+
+    // Add more images to existing pet
+    async function addMoreImages(petId) {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.multiple = true;
+      input.accept = 'image/*';
+      
+      input.onchange = async (e) => {
+        const files = e.target.files;
+        if (files.length === 0) return;
+
+        const formData = new FormData();
+        for (let i = 0; i < files.length; i++) {
+          formData.append('images', files[i]);
+        }
+
+        try {
+          const res = await fetch(`http://localhost:5001/api/pet-images/${petId}/upload-images`, {
+            method: 'POST',
+            headers: {
+              'x-auth-token': token
+            },
+            body: formData
+          });
+
+          const data = await res.json();
+          if (res.ok) {
+            displayMessage(`${files.length} images added successfully!`);
+            await loadUserAndDashboard();
+          } else {
+            displayMessage(data.msg || 'Failed to add images', true);
+          }
+        } catch (err) {
+          console.error(err);
+          displayMessage('Server error', true);
+        }
+      };
+
+      input.click();
+    }
        
-    // organization fetching
-    // ------------------------
-    // Load Organizations for Add-Pet Form
-    // ------------------------
+    // Organization fetching
     const loadOrganizations = async () => {
       try {
         const res = await fetchWithAuth("http://localhost:5001/api/organizations");
@@ -249,7 +327,6 @@
       }
     };
 
-
     // Open Edit form and prefill
     const openEditPetForm = (pet) => {
       document.getElementById('petName').value = pet.name;
@@ -260,7 +337,6 @@
       document.getElementById('petTemperament').value = pet.temperament || '';
       document.getElementById('petOrg').value = pet.organization?._id || '';
       
-      // Add hidden input for pet ID to distinguish Add vs Edit
       document.getElementById('addPetForm').dataset.editing = pet._id;
     };
 
@@ -269,45 +345,67 @@
     addPetForm.addEventListener('submit', async (e) => {
       e.preventDefault();
 
-      const petData = {
-        name: document.getElementById('petName').value,
-        breed: document.getElementById('petBreed').value,
-        age: document.getElementById('petAge').value,
-        gender: document.getElementById('petGender').value,
-        energyLevel: document.getElementById('petEnergy').value,
-        temperament: document.getElementById('petTemperament').value,
-        organization: document.getElementById('petOrg').value
-      };
-
       const editingPetId = addPetForm.dataset.editing;
 
       try {
         let res, data;
+        
         if(editingPetId){
-          // EDIT PET
+          // EDIT PET (keep as JSON for now)
           res = await fetchWithAuth(`${PETS_API_URL}/${editingPetId}`, {
             method: 'PATCH',
-            body: JSON.stringify(petData)
+            body: JSON.stringify({
+              name: document.getElementById('petName').value,
+              breed: document.getElementById('petBreed').value,
+              age: document.getElementById('petAge').value,
+              gender: document.getElementById('petGender').value,
+              energyLevel: document.getElementById('petEnergy').value,
+              temperament: document.getElementById('petTemperament').value,
+              organization: document.getElementById('petOrg').value
+            })
           });
           data = await res.json();
           if(res.ok) {
             displayMessage("Pet updated successfully");
             addPetForm.reset();
-            delete addPetForm.dataset.editing; // clear editing state
+            delete addPetForm.dataset.editing;
+            document.getElementById('imagePreview').innerHTML = '';
             await loadUserAndDashboard();
           } else displayMessage(data.msg || "Failed to update pet", true);
         } else {
-          // ADD PET 
-          res = await fetchWithAuth(PETS_API_URL, {
+          // ADD PET with images (use FormData)
+          const formData = new FormData();
+          formData.append('name', document.getElementById('petName').value);
+          formData.append('breed', document.getElementById('petBreed').value);
+          formData.append('age', document.getElementById('petAge').value);
+          formData.append('gender', document.getElementById('petGender').value);
+          formData.append('energyLevel', document.getElementById('petEnergy').value);
+          formData.append('temperament', document.getElementById('petTemperament').value);
+          formData.append('organization', document.getElementById('petOrg').value);
+
+          // Append images
+          const imageFiles = document.getElementById('petImages').files;
+          for (let i = 0; i < imageFiles.length; i++) {
+            formData.append('images', imageFiles[i]);
+          }
+
+          res = await fetch(PETS_API_URL, {
             method: 'POST',
-            body: JSON.stringify(petData)
+            headers: {
+              'x-auth-token': token
+            },
+            body: formData
           });
+          
           data = await res.json();
           if(res.ok){
-            displayMessage("Pet added successfully");
+            displayMessage("Pet added successfully with images!");
             addPetForm.reset();
+            document.getElementById('imagePreview').innerHTML = '';
             await loadUserAndDashboard();
-          } else displayMessage(data.msg || "Failed to add pet", true);
+          } else {
+            displayMessage(data.msg || "Failed to add pet", true);
+          }
         }
       } catch(err){
         console.error(err);
@@ -318,8 +416,7 @@
     // Load organizations when DOM is ready
     document.addEventListener("DOMContentLoaded", loadOrganizations);
 
-
-    // Update pet status (Global scope)
+    // Update pet status
     async function updatePetStatus(petId) {
       const sel = document.getElementById(`statusSelect-${petId}`);
       const newStatus = sel.value;
@@ -333,7 +430,7 @@
         const data = await res.json();
         if (res.ok) {
           displayMessage(`Status updated to ${newStatus}`);
-          await loadUserAndDashboard(); // refresh UI
+          await loadUserAndDashboard();
         } else {
           displayMessage(data.msg || "Failed to update status", true);
         }
@@ -343,8 +440,7 @@
       }
     }
 
-
-    // fetch adoption requests for staff
+    // Fetch adoption requests for staff
     const loadStaffRequests = async () => {
       try {
         const res = await fetchWithAuth(`${ADOPTIONS_API_URL}/requests`);
@@ -388,11 +484,25 @@
                   `;
                   break;
 
-                case 'ignored':
-                case 'rejected':
-                case 'finalized':
-                case 'meeting': 
-                  actionButtons = `<span class="text-gray-500 italic">${req.status.charAt(0).toUpperCase() + req.status.slice(1)}</span>`;
+                case 'meeting':
+                  const meetingDate = req.meeting?.date ? new Date(req.meeting.date).toLocaleString() : 'Not set';
+                  const isConfirmed = req.meeting?.confirmed;
+                  
+                  actionButtons = `
+                    <div class="bg-blue-50 border border-blue-200 rounded p-2 mb-2">
+                      <p class="text-xs text-blue-700"><strong>Meeting:</strong> ${meetingDate}</p>
+                      <p class="text-xs text-blue-700"><strong>Confirmed:</strong> 
+                        <span class="${isConfirmed ? 'text-green-600' : 'text-yellow-600'}">
+                          ${isConfirmed ? 'Yes' : 'No'}
+                        </span>
+                      </p>
+                    </div>
+                    <button onclick="handleRequest('${req._id}','finalized')" class="px-3 py-1 bg-green-700 text-white rounded mt-1">Finalize Adoption</button>
+                    <button onclick="rescheduleStaffMeeting('${req._id}')" class="px-3 py-1 bg-purple-600 text-white rounded mt-1">Reschedule</button>
+                    ${!isConfirmed ? `
+                      <button onclick="sendMeetingReminder('${req._id}')" class="px-3 py-1 bg-orange-500 text-white rounded mt-1">Send Reminder</button>
+                    ` : ''}
+                  `;
                   break;
 
                 default:
@@ -418,8 +528,7 @@
       }
     }; 
 
-
-    // handle approval/ignore
+    // Handle approval/ignore
     const handleRequest = async (requestId, action) => {
       try {
         const res = await fetchWithAuth(`${ADOPTIONS_API_URL}/${requestId}/status`, {
@@ -430,8 +539,8 @@
         const data = await res.json();
         if(res.ok){
           displayMessage(`Request status updated to ${action}`);
-          await loadStaffRequests(); // refresh list
-          await loadUserAndDashboard(); // refresh pet list too (e.g., if finalized)
+          await loadStaffRequests();
+          await loadUserAndDashboard();
         } else displayMessage(data.msg || 'Failed to update request', true);
       } catch(err){
         console.error(err);
@@ -441,50 +550,50 @@
 
     function updateRequestStatus(requestId, status) {
       fetch(`${ADOPTION_API_BASE_URL}/${requestId}/status`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-auth-token': token
-      },
-      body: JSON.stringify({ status })
-    })
-    .then(async res => {
-      const text = await res.text();
-      try {
-        return JSON.parse(text);
-      } catch {
-        throw new Error(text || `Server error: ${res.status}`);
-      }
-    })
-    .then(data => {
-      displayMessage(data.msg || "Updated");
-      loadStaffRequests();
-    })
-    .catch(err => {
-        console.error("Update error:", err);
-        displayMessage(`Update failed: ${err.message}`, true);
-    });
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token
+        },
+        body: JSON.stringify({ status })
+      })
+      .then(async res => {
+        const text = await res.text();
+        try {
+          return JSON.parse(text);
+        } catch {
+          throw new Error(text || `Server error: ${res.status}`);
+        }
+      })
+      .then(data => {
+        displayMessage(data.msg || "Updated");
+        loadStaffRequests();
+      })
+      .catch(err => {
+          console.error("Update error:", err);
+          displayMessage(`Update failed: ${err.message}`, true);
+      });
     }
 
-    // request meeting handler
+    // Request meeting handler
     async function requestMeeting(requestId) {
       const meetingDate = prompt("Enter meeting date & time (YYYY-MM-DDTHH:MM)\nExample: 2025-10-03T14:00");
       if (!meetingDate) return;
 
       try {
         const res = await fetch(`${ADOPTIONS_API_URL}/${requestId}/status`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        "x-auth-token": token,
-      },
-      body: JSON.stringify({ status: 'meeting', meetingDate }),
-    });
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            "x-auth-token": token,
+          },
+          body: JSON.stringify({ status: 'meeting', meetingDate }),
+        });
 
         const data = await res.json();
         if (res.ok) {
           displayMessage("Meeting requested successfully!");
-          await loadStaffRequests(); // refresh the staff view
+          await loadStaffRequests();
         } else {
           displayMessage("Failed to request meeting: " + (data.msg || 'Unknown error'), true);
         }
@@ -494,10 +603,62 @@
       }
     }
 
-    // ------------------------
+    // Reschedule meeting as staff
+    async function rescheduleStaffMeeting(requestId) {
+      const newDate = prompt('Enter new meeting date & time (YYYY-MM-DDTHH:MM):\nExample: 2025-10-20T14:00');
+      if (!newDate) return;
+
+      try {
+        const response = await fetch(`${ADOPTIONS_API_URL}/${requestId}/status`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            "x-auth-token": token,
+          },
+          body: JSON.stringify({ status: 'meeting', meetingDate: newDate }),
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+          displayMessage("Meeting rescheduled successfully!");
+          await loadStaffRequests();
+        } else {
+          displayMessage("Failed to reschedule: " + (data.msg || 'Unknown error'), true);
+        }
+      } catch (err) {
+        console.error(err);
+        displayMessage("Error rescheduling meeting", true);
+      }
+    }
+
+    // Send meeting reminder
+    async function sendMeetingReminder(requestId) {
+      try {
+        const response = await fetch(`${ADOPTIONS_API_URL}/${requestId}/send-reminder`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-auth-token": token,
+          },
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+          displayMessage("Meeting reminder sent to adopter!");
+        } else {
+          displayMessage("Failed to send reminder: " + (data.msg || 'Unknown error'), true);
+        }
+      } catch (err) {
+        console.error(err);
+        displayMessage("Error sending reminder", true);
+      }
+    }
+
     // Logout
-    // ------------------------
-    document.getElementById("logoutBtn").addEventListener("click",()=>{localStorage.removeItem("token"); window.location.href="index.html";});
+    document.getElementById("logoutBtn").addEventListener("click",()=>{
+      localStorage.removeItem("token"); 
+      window.location.href="index.html";
+    });
 
     document.addEventListener("DOMContentLoaded", loadUserAndDashboard);
   </script>

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Adopter Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 </head>
 <body class="bg-gray-50 min-h-screen flex flex-col items-center p-4 sm:p-8">
 
@@ -15,6 +16,11 @@
     <div class="flex justify-between items-center bg-white p-4 rounded-xl shadow-md mb-6">
       <p id="userStatus" class="text-lg font-medium text-gray-700"></p>
       <button id="logoutBtn" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">Sign Out</button>
+                    <!-- Add this button near the logout button -->
+<button onclick="window.location.href='user-profile.html'" 
+class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
+👤 My Profile
+</button>
     </div>
 
     <!-- Available Pets -->
@@ -80,38 +86,122 @@
       `).join("");
     }
 
+    // async function loadMyAdoptionRequests(){
+    //   try{
+    //     const res = await fetchWithAuth(`${ADOPTIONS_API_URL}/my-requests`);
+    //     const requests = await res.json();
+    //     const container = document.getElementById("my-requests");
+    //     container.innerHTML="";
+
+    //     if(requests.length===0){
+    //       container.innerHTML="<p class='col-span-3 text-center text-gray-500'>No requests yet</p>";
+    //       return;
+    //     }
+
+    //     requests.forEach(req=>{
+    //       const pet=req.pet;
+    //       const status=req.status;
+    //       const card=document.createElement("div");
+    //       card.className="bg-white border rounded-xl shadow-md p-4";
+
+    //       card.innerHTML=`
+    //         <h3 class="text-lg font-semibold text-indigo-700">${pet.name}</h3>
+    //         <p class="text-sm text-gray-600">${pet.breed||"Unknown"}</p>
+    //         <p class="mt-2"><b>Status:</b> 
+    //           <span class="px-2 py-1 rounded text-white ${status==='approved'?'bg-green-600':status==='pending'?'bg-yellow-500':'bg-gray-400'}">
+    //             ${status}
+    //           </span>
+    //         </p>
+    //         ${status==='approved'?`<button onclick="startChat('${req._id}')" class="mt-3 w-full bg-blue-600 text-white px-3 py-2 rounded">Chat / Book Meeting</button>`:""}
+    //       `;
+    //       container.appendChild(card);
+    //     });
+    //   }catch(err){console.error(err);}
+    // }
+
+
+
+    // testing
     async function loadMyAdoptionRequests(){
-      try{
-        const res = await fetchWithAuth(`${ADOPTIONS_API_URL}/my-requests`);
-        const requests = await res.json();
-        const container = document.getElementById("my-requests");
-        container.innerHTML="";
+  try{
+    const res = await fetchWithAuth(`${ADOPTIONS_API_URL}/my-requests`);
+    const requests = await res.json();
+    const container = document.getElementById("my-requests");
+    container.innerHTML="";
 
-        if(requests.length===0){
-          container.innerHTML="<p class='col-span-3 text-center text-gray-500'>No requests yet</p>";
-          return;
-        }
-
-        requests.forEach(req=>{
-          const pet=req.pet;
-          const status=req.status;
-          const card=document.createElement("div");
-          card.className="bg-white border rounded-xl shadow-md p-4";
-
-          card.innerHTML=`
-            <h3 class="text-lg font-semibold text-indigo-700">${pet.name}</h3>
-            <p class="text-sm text-gray-600">${pet.breed||"Unknown"}</p>
-            <p class="mt-2"><b>Status:</b> 
-              <span class="px-2 py-1 rounded text-white ${status==='approved'?'bg-green-600':status==='pending'?'bg-yellow-500':'bg-gray-400'}">
-                ${status}
-              </span>
-            </p>
-            ${status==='approved'?`<button onclick="startChat('${req._id}')" class="mt-3 w-full bg-blue-600 text-white px-3 py-2 rounded">Chat / Book Meeting</button>`:""}
-          `;
-          container.appendChild(card);
-        });
-      }catch(err){console.error(err);}
+    if(requests.length===0){
+      container.innerHTML="<p class='col-span-3 text-center text-gray-500'>No requests yet</p>";
+      return;
     }
+
+    requests.forEach(req=>{
+      const pet=req.pet;
+      const status=req.status;
+      const meeting=req.meeting;
+      const card=document.createElement("div");
+      card.className="bg-white border rounded-xl shadow-md p-4";
+
+      let actionButtons = '';
+      
+      if(status==='approved'){
+        actionButtons = `<button onclick="startChat('${req._id}')" class="mt-3 w-full bg-blue-600 text-white px-3 py-2 rounded">Chat / Book Meeting</button>`;
+      }
+      
+      // ✅ NEW: Meeting confirmation interface
+      else if(status==='meeting'){
+        const meetingDate = meeting?.date ? new Date(meeting.date).toLocaleString() : 'Not scheduled';
+        const isConfirmed = meeting?.confirmed;
+        
+        actionButtons = `
+          <div class="mt-3 space-y-2">
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p class="text-sm font-medium text-blue-800">📅 Scheduled Meeting</p>
+              <p class="text-xs text-blue-600 mt-1"><strong>When:</strong> ${meetingDate}</p>
+              <p class="text-xs text-blue-600"><strong>Status:</strong> 
+                <span class="${isConfirmed ? 'text-green-600' : 'text-yellow-600'}">
+                  ${isConfirmed ? 'Confirmed' : 'Pending Your Confirmation'}
+                </span>
+              </p>
+            </div>
+            ${!isConfirmed ? `
+              <button onclick="confirmMeeting('${req._id}')" class="w-full bg-green-600 text-white px-3 py-2 rounded hover:bg-green-700">
+                ✅ Confirm Meeting
+              </button>
+              <button onclick="rescheduleMeeting('${req._id}')" class="w-full bg-yellow-500 text-white px-3 py-2 rounded hover:bg-yellow-600">
+                📅 Request Reschedule
+              </button>
+            ` : `
+              <button onclick="viewMeetingDetails('${req._id}')" class="w-full bg-gray-500 text-white px-3 py-2 rounded">
+                📋 View Meeting Details
+              </button>
+            `}
+          </div>
+        `;
+      }
+      
+      else if(status==='finalized'){
+        actionButtons = `
+          <div class="mt-3 p-2 bg-green-100 border border-green-300 rounded">
+            <p class="text-sm text-green-800 text-center">🎉 Adoption Finalized!</p>
+          </div>
+        `;
+      }
+
+      card.innerHTML=`
+        <h3 class="text-lg font-semibold text-indigo-700">${pet.name}</h3>
+        <p class="text-sm text-gray-600">${pet.breed||"Unknown"}</p>
+        <p class="mt-2"><b>Status:</b> 
+          <span class="px-2 py-1 rounded text-white ${status==='approved'?'bg-green-600':status==='pending'?'bg-yellow-500':status==='meeting'?'bg-blue-500':'bg-gray-400'}">
+            ${status}
+          </span>
+        </p>
+        ${actionButtons}
+      `;
+      container.appendChild(card);
+    });
+  }catch(err){console.error(err);}
+}
+    // testing end
 
     // adoption request handler
     document.addEventListener("click", async(e)=>{
@@ -139,5 +229,413 @@
 
     document.addEventListener("DOMContentLoaded",loadDashboard);
   </script>
+
+<!-- Add this to your Adopter Dashboard HTML, before the closing </body> tag -->
+<script>
+  // Notification testing functions for Adopter Dashboard
+  async function testNotificationEndpoints() {
+    try {
+      const token = localStorage.getItem('token');
+      
+      // Test 1: Get notifications
+      const notificationsRes = await fetch('/api/notifications', {
+        headers: { 'x-auth-token': token }
+      });
+      
+      if (notificationsRes.ok) {
+        const notificationsData = await notificationsRes.json();
+        console.log('📧 Notifications:', notificationsData);
+        
+        // Display notifications in UI
+        displayNotifications(notificationsData.notifications);
+      } else {
+        console.log('Notifications endpoint not working yet');
+      }
+      
+      // Test 2: Get unread count
+      const unreadRes = await fetch('/api/notifications/unread', {
+        headers: { 'x-auth-token': token }
+      });
+      
+      if (unreadRes.ok) {
+        const unreadData = await unreadRes.json();
+        console.log('🔔 Unread count:', unreadData.unreadCount);
+        updateUnreadBadge(unreadData.unreadCount);
+      }
+      
+    } catch (error) {
+      console.log('Notification endpoints not available yet');
+    }
+  }
+  
+  // Display notifications in UI
+  function displayNotifications(notifications) {
+    const notificationSection = document.getElementById('notification-section');
+    if (!notificationSection) {
+      // Create notification section if it doesn't exist
+      const dashboard = document.querySelector('.w-full.max-w-5xl');
+      const notificationHTML = `
+        <div id="notification-section" class="bg-white p-4 rounded-xl shadow-md mb-6">
+          <h2 class="text-2xl font-semibold mb-3 flex items-center">
+            Notifications 
+            <span id="unreadBadge" class="ml-2 bg-red-500 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center hidden">0</span>
+            <button onclick="markAllAsRead()" class="ml-auto text-sm text-indigo-600 hover:text-indigo-800">Mark all read</button>
+          </h2>
+          <div id="notificationsList" class="space-y-2"></div>
+        </div>
+      `;
+      dashboard.insertAdjacentHTML('afterbegin', notificationHTML);
+    }
+    
+    const notificationsList = document.getElementById('notificationsList');
+    if (notifications && notifications.length > 0) {
+      notificationsList.innerHTML = notifications.map(notif => `
+        <div class="p-3 border rounded-lg ${!notif.read ? 'bg-blue-50 border-blue-200' : 'bg-gray-50'}">
+          <div class="flex justify-between items-start">
+            <p class="text-sm flex-1">${notif.message}</p>
+            <button onclick="deleteNotification('${notif._id}')" class="text-gray-400 hover:text-red-500 ml-2">×</button>
+          </div>
+          <div class="flex justify-between items-center mt-2">
+            <span class="text-xs text-gray-500 capitalize">${notif.type.replace('_', ' ')}</span>
+            <span class="text-xs text-gray-400">${new Date(notif.createdAt).toLocaleDateString()}</span>
+          </div>
+          ${!notif.read ? `
+            <button onclick="markAsRead('${notif._id}')" class="text-xs text-blue-600 hover:text-blue-800 mt-1">
+              Mark as read
+            </button>
+          ` : ''}
+        </div>
+      `).join('');
+    } else {
+      notificationsList.innerHTML = '<p class="text-gray-500 text-center">No notifications yet</p>';
+    }
+  }
+  
+  // Update unread badge
+  function updateUnreadBadge(count) {
+    const badge = document.getElementById('unreadBadge');
+    if (badge) {
+      if (count > 0) {
+        badge.textContent = count > 9 ? '9+' : count;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+  }
+  
+  // Notification actions
+  async function markAsRead(notificationId) {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/notifications/${notificationId}/read`, {
+        method: 'PATCH',
+        headers: { 'x-auth-token': token }
+      });
+      
+      if (response.ok) {
+        testNotificationEndpoints(); // Refresh notifications
+      }
+    } catch (error) {
+      console.error('Failed to mark as read:', error);
+    }
+  }
+  
+  async function markAllAsRead() {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/notifications/read-all', {
+        method: 'PATCH',
+        headers: { 'x-auth-token': token }
+      });
+      
+      if (response.ok) {
+        testNotificationEndpoints(); // Refresh notifications
+      }
+    } catch (error) {
+      console.error('Failed to mark all as read:', error);
+    }
+  }
+  
+  async function deleteNotification(notificationId) {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/notifications/${notificationId}`, {
+        method: 'DELETE',
+        headers: { 'x-auth-token': token }
+      });
+      
+      if (response.ok) {
+        testNotificationEndpoints(); // Refresh notifications
+      }
+    } catch (error) {
+      console.error('Failed to delete notification:', error);
+    }
+  }
+  
+  // Load notifications when dashboard loads
+  document.addEventListener('DOMContentLoaded', function() {
+    // Wait a bit for the dashboard to load, then check notifications
+    setTimeout(testNotificationEndpoints, 1000);
+  });
+  </script>
+  <!-- Real-time Socket.io Notifications -->
+<script>
+  // Real-time Socket.io Notifications - FIXED VERSION
+let socket = null;
+
+function initializeSocketIO() {
+  const userToken = localStorage.getItem('token');
+  if (!userToken) {
+    console.log('No token found, skipping Socket.io initialization');
+    return;
+  }
+  
+  console.log('🔄 Initializing Socket.io connection...');
+  console.log('Token present:', !!userToken);
+  
+  try {
+    // Connect to Socket.io server
+    socket = io('http://localhost:5001', {
+      auth: {
+        token: userToken
+      },
+      transports: ['websocket', 'polling'],
+      timeout: 10000 // 10 second timeout
+    });
+    
+    // ✅ MOVE ALL EVENT LISTENERS INSIDE THE CONNECTION BLOCK
+    
+    // Connection events
+    socket.on('connect', () => {
+      console.log('✅ Connected to real-time server, Socket ID:', socket.id);
+      showConnectionStatus('Connected', 'green');
+      
+      // Add other event listeners ONLY after connection is established
+      socket.on('welcome', (data) => {
+        console.log('👋 Welcome message:', data);
+      });
+      
+      socket.on('pong', (data) => {
+        console.log('🏓 Pong received:', data);
+      });
+      
+      socket.on('new-notification', (data) => {
+        console.log('🔔 New real-time notification received:', data);
+        
+        // Show desktop notification if permission granted
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification('Pet Connect - New Update', {
+            body: data.notification.message,
+            icon: '/favicon.ico',
+            tag: 'pet-connect-notification'
+          });
+        }
+        
+        // Show in-app toast notification
+        showNotificationToast(data.notification.message);
+        
+        // Refresh the notifications list
+        setTimeout(() => {
+          testNotificationEndpoints();
+        }, 1000);
+      });
+    });
+    
+    socket.on('disconnect', (reason) => {
+      console.log('❌ Disconnected from real-time server:', reason);
+      showConnectionStatus('Disconnected', 'red');
+      // Clear socket reference
+      socket = null;
+    });
+    
+    socket.on('connect_error', (error) => {
+      console.error('❌ Socket connection error:', error.message);
+      showConnectionStatus('Connection Failed: ' + error.message, 'orange');
+      // Clear socket reference on error
+      socket = null;
+    });
+    
+  } catch (error) {
+    console.error('❌ Failed to initialize Socket.io:', error);
+    socket = null;
+  }
+}
+
+// Connection status indicator
+function showConnectionStatus(message, color) {
+  // Remove existing status if any
+  const existingStatus = document.getElementById('socket-status');
+  if (existingStatus) {
+    existingStatus.remove();
+  }
+  
+  const statusDiv = document.createElement('div');
+  statusDiv.id = 'socket-status';
+  statusDiv.className = `fixed bottom-4 right-4 px-3 py-2 rounded-lg text-white text-sm z-50`;
+  statusDiv.style.backgroundColor = color;
+  statusDiv.innerHTML = `🔔 ${message}`;
+  
+  document.body.appendChild(statusDiv);
+  
+  // Auto-remove after 5 seconds for success, keep errors longer
+  const removeTime = color === 'green' ? 5000 : 10000;
+  setTimeout(() => {
+    if (statusDiv.parentNode) {
+      statusDiv.remove();
+    }
+  }, removeTime);
+}
+
+// Notification toast function
+function showNotificationToast(message) {
+  const toast = document.createElement('div');
+  toast.className = 'fixed top-4 right-4 bg-green-500 text-white p-4 rounded-lg shadow-lg z-50 max-w-sm animate-fade-in';
+  toast.innerHTML = `
+    <div class="flex items-start">
+      <span class="text-lg mr-2">🔔</span>
+      <div class="flex-1">
+        <p class="text-sm font-medium">New Update</p>
+        <p class="text-xs opacity-90 mt-1">${message}</p>
+      </div>
+      <button onclick="this.parentElement.remove()" class="ml-2 text-white hover:text-gray-200">×</button>
+    </div>
+  `;
+  
+  document.body.appendChild(toast);
+  
+  // Auto-remove after 5 seconds
+  setTimeout(() => {
+    if (toast.parentNode) {
+      toast.remove();
+    }
+  }, 5000);
+}
+
+// Test Socket.io connection
+window.testSocketConnection = function() {
+  if (!socket || !socket.connected) {
+    console.log('❌ Socket not connected. Current socket:', socket);
+    initializeSocketIO(); // Try to reconnect
+    return;
+  }
+  
+  console.log('🧪 Testing Socket.io connection...');
+  console.log('Socket connected:', socket.connected);
+  console.log('Socket ID:', socket.id);
+  
+  // Send ping test
+  socket.emit('ping', { 
+    test: 'Hello from adopter!',
+    timestamp: new Date().toISOString(),
+    userId: JSON.parse(localStorage.getItem('user'))?._id
+  });
+};
+
+// Request browser notification permission
+function requestNotificationPermission() {
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission().then(permission => {
+      console.log('Notification permission:', permission);
+    });
+  }
+}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('🚀 Page loaded, initializing real-time features...');
+  requestNotificationPermission();
+  
+  // Wait a bit for page to fully load, then initialize socket
+  setTimeout(initializeSocketIO, 1000);
+  
+  // Add test button to UI
+  setTimeout(() => {
+    const topBar = document.querySelector('.flex.justify-between.items-center.bg-white');
+    if (topBar && !document.getElementById('testSocketBtn')) {
+      const testBtn = document.createElement('button');
+      testBtn.id = 'testSocketBtn';
+      testBtn.textContent = 'Test Socket';
+      testBtn.className = 'bg-blue-500 text-white px-3 py-1 rounded text-sm ml-2 hover:bg-blue-600';
+      testBtn.onclick = window.testSocketConnection;
+      topBar.appendChild(testBtn);
+    }
+  }, 2000);
+});
+
+// Debug function to check current state
+window.debugSocket = function() {
+  console.log('=== SOCKET DEBUG INFO ===');
+  console.log('Socket object:', socket);
+  console.log('Socket connected:', socket?.connected);
+  console.log('Socket ID:', socket?.id);
+  console.log('Token exists:', !!localStorage.getItem('token'));
+  console.log('User data:', JSON.parse(localStorage.getItem('user')));
+  console.log('========================');
+};
+</script>
+  <!--meeting part-->
+
+<script>
+// Meeting functions - add these to your adopter.html script
+function confirmMeeting(requestId) {
+  // Redirect to meeting confirmation page
+  window.location.href = `meeting-confirmation.html?requestId=${requestId}`;
+}
+
+function rescheduleMeeting(requestId) {
+  alert('To reschedule, please contact the shelter directly via chat or email.');
+  // You can enhance this later with a reschedule form
+}
+
+function viewMeetingDetails(requestId) {
+  // For now, redirect to confirmation page which will show details
+  window.location.href = `meeting-confirmation.html?requestId=${requestId}`;
+}
+
+// Enhanced startChat function
+function startChat(reqId) {
+  // For now, show meeting scheduling option
+  const meetingDate = prompt('Enter preferred meeting date & time (YYYY-MM-DDTHH:MM):\nExample: 2025-10-20T14:00');
+  if (meetingDate) {
+    scheduleMeeting(reqId, meetingDate);
+  }
+}
+
+// Function to schedule meeting (for staff use, but accessible here for demo)
+async function scheduleMeeting(requestId, meetingDate) {
+  try {
+    const response = await fetchWithAuth(`${ADOPTIONS_API_URL}/${requestId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ 
+        status: 'meeting', 
+        meetingDate: meetingDate 
+      })
+    });
+    
+    const result = await response.json();
+    if (response.ok) {
+      alert('Meeting scheduled successfully! Please wait for staff confirmation.');
+      loadMyAdoptionRequests(); // Refresh the list
+    } else {
+      alert('Failed to schedule meeting: ' + (result.msg || 'Unknown error'));
+    }
+  } catch (error) {
+    console.error('Error scheduling meeting:', error);
+    alert('Error scheduling meeting. Please try again.');
+  }
+}
+
+</script>
+  <style>
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fade-in {
+    animation: fade-in 0.3s ease-out;
+  }
+  </style>
+
 </body>
 </html>

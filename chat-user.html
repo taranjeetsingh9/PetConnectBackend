@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat System Test</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+        body { font-family: Arial; margin: 20px; }
+        #chat { border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: scroll; margin-bottom: 10px; }
+        #messageInput { width: 70%; padding: 8px; }
+        button { padding: 8px 15px; margin: 5px; }
+        .message { margin: 5px 0; padding: 8px; background: #f0f0f0; border-radius: 5px; }
+        .typing { font-style: italic; color: #666; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Chat System Live Test</h1>
+    
+    <div>
+        <label>Token: </label>
+        <input type="text" id="tokenInput" style="width: 500px;" 
+               value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7ImlkIjoiNjhmMWE5ZmQ3OTQ1MjFkYWZlYzNmYWM3Iiwicm9sZSI6ImFkb3B0ZXIifSwiaWF0IjoxNzYwODUwNzA2LCJleHAiOjE3NjA4NTQzMDZ9.b-cmIq5bNwBrhVsqj82aD-qKbNesG4C1UMqOpZd5gqY" />
+        <button onclick="connectSocket()">Connect</button>
+        <button onclick="joinChat()">Join Chat</button>
+    </div>
+
+    <div id="status">Status: Disconnected</div>
+    
+    <div id="chat"></div>
+    
+    <div>
+        <input type="text" id="messageInput" placeholder="Type your message..." 
+               onkeydown="handleTyping()" onkeyup="stopTyping()" />
+        <button onclick="sendMessage()">Send Message</button>
+        <button onclick="testTyping()">Test Typing</button>
+    </div>
+
+    <script>
+        let socket;
+        const CHAT_ID = "68f3091f93aedc021de79be8"; // Your chat ID
+
+        function connectSocket() {
+            const token = document.getElementById('tokenInput').value;
+            
+            socket = io('http://localhost:5001', {
+                auth: { token: token }
+            });
+
+            socket.on('connect', () => {
+                updateStatus('✅ Connected to server');
+                logMessage('System', 'Connected to WebSocket server');
+            });
+
+            socket.on('welcome', (data) => {
+                logMessage('System', data.message);
+            });
+
+            socket.on('new-message', (message) => {
+                logMessage(message.sender?.name || 'User', message.content);
+            });
+
+            socket.on('user-typing', (data) => {
+                showTyping(data.userName);
+            });
+
+            socket.on('user-stop-typing', (data) => {
+                hideTyping();
+            });
+
+            socket.on('user-joined-chat', (data) => {
+                logMessage('System', `User ${data.userId} joined the chat`);
+            });
+
+            socket.on('error', (error) => {
+                logMessage('System', `Error: ${error.message}`);
+            });
+
+            socket.on('disconnect', () => {
+                updateStatus('❌ Disconnected');
+            });
+        }
+
+        function joinChat() {
+            if (socket) {
+                socket.emit('join-chat', CHAT_ID);
+                logMessage('System', `Joined chat room: ${CHAT_ID}`);
+            }
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (message && socket) {
+                socket.emit('send-message', {
+                    chatId: CHAT_ID,
+                    content: message,
+                    messageType: 'text'
+                });
+                input.value = '';
+            }
+        }
+
+        let typingTimer;
+        function handleTyping() {
+            if (socket) {
+                socket.emit('typing-start', { chatId: CHAT_ID });
+                clearTimeout(typingTimer);
+                typingTimer = setTimeout(stopTyping, 1000);
+            }
+        }
+
+        function stopTyping() {
+            if (socket) {
+                socket.emit('typing-stop', { chatId: CHAT_ID });
+            }
+        }
+
+        function testTyping() {
+            if (socket) {
+                socket.emit('typing-start', { chatId: CHAT_ID });
+                setTimeout(() => {
+                    socket.emit('typing-stop', { chatId: CHAT_ID });
+                }, 2000);
+            }
+        }
+
+        function updateStatus(message) {
+            document.getElementById('status').textContent = `Status: ${message}`;
+        }
+
+        function logMessage(sender, content) {
+            const chat = document.getElementById('chat');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+            messageDiv.innerHTML = `<strong>${sender}:</strong> ${content}`;
+            chat.appendChild(messageDiv);
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        function showTyping(userName) {
+            let typingDiv = document.getElementById('typing-indicator');
+            if (!typingDiv) {
+                typingDiv = document.createElement('div');
+                typingDiv.id = 'typing-indicator';
+                typingDiv.className = 'typing';
+                document.getElementById('chat').appendChild(typingDiv);
+            }
+            typingDiv.textContent = `${userName} is typing...`;
+        }
+
+        function hideTyping() {
+            const typingDiv = document.getElementById('typing-indicator');
+            if (typingDiv) {
+                typingDiv.remove();
+            }
+        }
+
+        // Enter key to send message
+        document.getElementById('messageInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>

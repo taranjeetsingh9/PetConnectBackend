@@ -18,6 +18,19 @@ const UserSchema = new mongoose.Schema({
   location: { type: String },
   role: { type: String, enum: ['adopter', 'vet', 'staff', 'trainer', 'admin'], default: 'adopter' },
 
+
+  // profile 
+  avatar: {
+    url: String,
+    public_id: String,
+    uploadedAt: {
+      type: Date,
+      default: Date.now
+    }
+  },
+
+
+
   lifestyle: {
     activityLevel: String,        
     homeType: String,                

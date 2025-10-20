@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pet Capstone - Secure Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <style>.inter-font { font-family: 'Inter', sans-serif; }</style>
 </head>
 <body class="inter-font bg-gray-50 min-h-screen flex flex-col items-center p-4 sm:p-8">
@@ -67,6 +68,7 @@
       <div class="flex justify-between items-center bg-white p-6 rounded-xl shadow-lg">
         <p id="userStatus" class="text-lg font-medium text-gray-700"></p>
         <button id="logoutBtn" class="bg-red-500 text-white p-3 rounded-lg hover:bg-red-600">Sign Out</button>
+
       </div>
       <div id="dynamicDashboard" class="bg-white p-6 rounded-xl shadow-lg min-h-[400px]"></div>
       <p id="debugToken" class="text-xs text-gray-500">Token: <span id="tokenDisplay"></span></p>
@@ -133,16 +135,31 @@
       }else displayMessage(d.msg||"Auth failed",true);
     };
 
-    const loadUserAndDashboard=async()=>{
-      if(!token){setViewState(false);return;}
-      try{
-        const res=await fetchWithAuth(`${API_BASE_URL}/me`);
-        const user=await res.json();
-        if(res.ok)setViewState(true,user,token);
-        else{displayMessage(user.msg||"Session expired",true);setViewState(false);}
-      }catch{displayMessage("Server error",true);setViewState(false);}
-    };
+    // const loadUserAndDashboard=async()=>{
+    //   if(!token){setViewState(false);return;}
+    //   try{
+    //     const res=await fetchWithAuth(`${API_BASE_URL}/me`);
+    //     const user=await res.json();
+    //     if(res.ok)setViewState(true,user,token);
+    //     else{displayMessage(user.msg||"Session expired",true);setViewState(false);}
+    //   }catch{displayMessage("Server error",true);setViewState(false);}
+    // };
 
+    // test load dashboard
+    const loadUserAndDashboard=async()=>{
+  if(!token){setViewState(false);return;}
+  try{
+    const res=await fetchWithAuth(`${API_BASE_URL}/me`);
+    const user=await res.json();
+    if(res.ok) {
+      // NEW: Store user data for Socket.io before redirecting
+      localStorage.setItem('user', JSON.stringify(user));
+      setViewState(true,user,token);
+    }
+    else{displayMessage(user.msg||"Session expired",true);setViewState(false);}
+  }catch{displayMessage("Server error",true);setViewState(false);}
+};
+    // test end
     // ------------------------
     // Dashboard rendering
     // ------------------------
@@ -159,27 +176,6 @@
         if(user.role==="adopter"){
           window.location.href="adopter.html";
   return;
-          // dash.innerHTML = `
-          //   <h2 class="text-2xl font-bold mb-4">Adopter Dashboard</h2>
-          //   <div id="petsList" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-          // `;
-          // const petsList = document.getElementById("petsList");
-          // const availablePets = pets.filter(p=>p.status==="Available");
-          // if(availablePets.length>0){
-          //   petsList.innerHTML = availablePets.map(pet=>`
-          //     <div class="bg-white border rounded-xl shadow-md overflow-hidden">
-          //       ${pet.images && pet.images[0]? `<img src="${pet.images[0]}" class="w-full h-48 object-cover">`
-          //       : `<div class="w-full h-48 flex items-center justify-center bg-gray-200 text-gray-500">No Image</div>`}
-          //       <div class="p-4">
-          //         <h3 class="text-lg font-semibold text-indigo-700">${pet.name}</h3>
-          //         <p class="text-sm text-gray-600">Breed: ${pet.breed || "Unknown"}</p>
-          //         <p class="text-sm text-gray-600">Energy: ${pet.energyLevel || "N/A"}</p>
-          //         <p class="text-sm text-gray-600">Status: ${pet.status}</p>
-          //       </div>
-          //       <button data-id="${pet._id}" class="requestAdoptionBtn px-3 py-1 bg-green-600 text-white text-sm rounded w-full mt-2">Request Adoption</button>
-          //     </div>
-          //   `).join("");
-          // } else petsList.innerHTML=`<p class="col-span-3 text-center text-gray-500">No pets available</p>`;
         }
 
         // ---------------- Staff ----------------
@@ -212,47 +208,32 @@
           window.location.href = "admin.html";
   return;
         }
-        else if(user.role==="vet"||user.role==="trainer"){
-          dash.innerHTML = `
-            <h2 class="text-2xl font-bold mb-4">Vet/Trainer Dashboard</h2>
-            <div id="petsList" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-          `;
-          const petsList = document.getElementById("petsList");
-          if(pets.length>0){
-            petsList.innerHTML = pets.map(pet=>`
-              <div class="bg-white border rounded-xl shadow-md overflow-hidden p-4">
-                ${pet.images && pet.images[0]? `<img src="${pet.images[0]}" class="w-full h-48 object-cover mb-2">`
-                : `<div class="w-full h-48 flex items-center justify-center bg-gray-200 text-gray-500 mb-2">No Image</div>`}
-                <h3 class="text-lg font-semibold text-indigo-700">${pet.name}</h3>
-                <p class="text-sm text-gray-600">Breed: ${pet.breed || "Unknown"}</p>
-                <p class="text-sm text-gray-600">Energy: ${pet.energyLevel || "N/A"}</p>
-                <p class="text-sm text-gray-600">Status: ${pet.status}</p>
-                <p class="text-sm text-gray-600">Registered Vet: ${pet.vet ? pet.vet.name : "None"}</p>
-
-                ${user.role==="vet" ? `
-                  <p class="mt-2 text-sm font-medium text-gray-700">Health Notes: ${pet.healthNotes || "No notes yet"}</p>
-                  <button onclick="updateHealth('${pet._id}')" class="mt-2 px-3 py-1 bg-green-600 text-white text-sm rounded">Update Health</button>
-                  <p class="mt-2 text-sm font-medium text-gray-700">Health Status: <span id="healthStatus-${pet._id}">${pet.healthNotes || "No notes yet"}</span></p>
-
-<div class="flex space-x-2 mt-2">
-  <select id="healthSelect-${pet._id}" class="border rounded p-1 text-sm">
-    <option value="">Set Status</option>
-    <option value="Good">Good</option>
-    <option value="Fair">Fair</option>
-    <option value="Critical">Critical</option>
-  </select>
-  <button onclick="updateHealthStatus('${pet._id}')" class="px-3 py-1 bg-blue-600 text-white text-sm rounded">Update</button>
-</div>
-                ` : ""}
-
-                ${user.role==="trainer" ? `
-                  <p class="mt-2 text-sm font-medium text-gray-700">Training Notes: ${pet.trainingNotes || "No notes yet"}</p>
-                  <button onclick="updateTraining('${pet._id}')" class="mt-2 px-3 py-1 bg-blue-600 text-white text-sm rounded">Update Training</button>
-                ` : ""}
-              </div>
-            `).join("");
-          } else petsList.innerHTML=`<p class="col-span-3 text-center text-gray-500">No pets available</p>`;
-        }
+// ---------------- Vet ----------------
+else if(user.role==="vet"){
+  // Auto-redirect vet to vet test page with token
+  const vetToken = token;
+  localStorage.setItem('vetToken', vetToken);
+  localStorage.setItem('user', JSON.stringify(user));
+  
+  // Create and redirect to vet dashboard
+  setTimeout(() => {
+    window.location.href = "vet-dashboard.html";
+  }, 500);
+  return;
+}
+// ---------------- Trainer ----------------
+else if(user.role==="trainer"){
+  // Auto-redirect trainer to trainer dashboard with token
+  const trainerToken = token;
+  localStorage.setItem('trainerToken', trainerToken);
+  localStorage.setItem('user', JSON.stringify(user));
+  
+  // Create and redirect to trainer dashboard
+  setTimeout(() => {
+    window.location.href = "trainer-dashboard.html";
+  }, 500);
+  return;
+}
       } catch(err){
         console.error(err);
         displayMessage("Failed to load pets",true);
@@ -430,5 +411,24 @@ document.addEventListener('click', async (e) => {
 
     document.addEventListener("DOMContentLoaded", loadUserAndDashboard);
   </script>
+
+  <!--test socket-->
+  <script>
+    // Request browser notification permission (for all pages)
+    function requestNotificationPermission() {
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission().then(permission => {
+          console.log('Notification permission:', permission);
+        });
+      }
+    }
+    
+    // Initialize when auth page loads
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('🚀 Auth page loaded, requesting notification permissions...');
+      requestNotificationPermission();
+    });
+    </script>
+  <!--test ended-->
 </body>
 </html>
