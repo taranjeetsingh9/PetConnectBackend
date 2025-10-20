@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PetConnect Chat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="max-w-4xl mx-auto h-screen flex flex-col">
+        <!-- Chat Header -->
+        <div class="bg-white shadow-sm border-b p-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <button onclick="goBack()" class="text-gray-600 hover:text-gray-900 p-2 rounded-lg hover:bg-gray-100">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <div id="petImage" class="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+                        <i class="fas fa-paw text-gray-500"></i>
+                    </div>
+                    <div>
+                        <h1 id="petName" class="text-lg font-semibold text-gray-900">Loading...</h1>
+                        <p id="chatStatus" class="text-sm text-gray-500">Foster Chat</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span id="connectionStatus" class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                        <i class="fas fa-circle text-green-500 mr-1"></i>Online
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Messages Container -->
+        <div id="messagesContainer" class="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+            <div class="text-center text-gray-500 py-8">
+                <i class="fas fa-comments text-4xl mb-2 text-gray-300"></i>
+                <p>Loading messages...</p>
+            </div>
+        </div>
+
+        <!-- Typing Indicator -->
+        <div id="typingIndicator" class="hidden px-4 py-2">
+            <div class="flex items-center space-x-2 text-gray-500">
+                <div class="flex space-x-1">
+                    <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                    <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+                    <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                </div>
+                <span class="text-sm" id="typingUser">Someone is typing...</span>
+            </div>
+        </div>
+
+        <!-- Message Input -->
+        <div class="bg-white border-t p-4">
+            <div class="flex space-x-3">
+                <div class="flex-1 relative">
+                    <input 
+                        type="text" 
+                        id="messageInput" 
+                        placeholder="Type your message..." 
+                        class="w-full border border-gray-300 rounded-full px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        maxlength="500"
+                    >
+                    <div class="absolute right-3 top-3 text-xs text-gray-400">
+                        <span id="charCount">0</span>/500
+                    </div>
+                </div>
+                <button 
+                    onclick="sendMessage()" 
+                    id="sendButton"
+                    class="bg-indigo-600 text-white px-6 py-3 rounded-full hover:bg-indigo-700 font-medium transition-colors disabled:bg-indigo-300"
+                    disabled
+                >
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Connection Status Toast -->
+    <div id="connectionToast" class="fixed top-4 right-4 p-4 rounded-lg shadow-lg hidden z-50">
+        <div class="flex items-center space-x-2">
+            <i class="fas fa-wifi"></i>
+            <span id="toastMessage"></span>
+        </div>
+    </div>
+
+    <script>
+
+    // Global variables
+    let socket = null;
+    let currentUser = null;
+    let currentChat = null;
+    let isConnected = false;
+
+    // Get elements
+    const messagesContainer = document.getElementById('messagesContainer');
+    const messageInput = document.getElementById('messageInput');
+    const sendButton = document.getElementById('sendButton');
+    const charCount = document.getElementById('charCount');
+    const typingIndicator = document.getElementById('typingIndicator');
+    const connectionStatus = document.getElementById('connectionStatus');
+    const connectionToast = document.getElementById('connectionToast');
+    const petName = document.getElementById('petName');
+    const petImage = document.getElementById('petImage');
+    const chatStatus = document.getElementById('chatStatus');
+
+    // Authentication
+    const token = localStorage.getItem('token');
+    if (!token) {
+        window.location.href = 'index.html';
+    }
+
+    // Initialize chat when page loads
+    document.addEventListener('DOMContentLoaded', initializeChat);
+
+    function goBack() {
+        if (window.history.length > 1) {
+            window.history.back();
+        } else {
+            window.location.href = 'user-listings.html';
+        }
+    }
+
+    function showToast(message, type = 'info') {
+        const toast = document.getElementById('connectionToast');
+        const toastMessage = document.getElementById('toastMessage');
+        
+        toastMessage.textContent = message;
+        toast.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg flex items-center space-x-2 z-50 ${
+            type === 'error' ? 'bg-red-500 text-white' :
+            type === 'success' ? 'bg-green-500 text-white' :
+            'bg-blue-500 text-white'
+        }`;
+        toast.classList.remove('hidden');
+        
+        setTimeout(() => {
+            toast.classList.add('hidden');
+        }, 3000);
+    }
+
+    // Character count for message input
+    messageInput.addEventListener('input', function() {
+        const length = this.value.length;
+        charCount.textContent = length;
+        
+        // Enable/disable send button
+        sendButton.disabled = length === 0 || length > 500;
+        
+        // Show warning if approaching limit
+        if (length > 450) {
+            charCount.className = 'absolute right-3 top-3 text-xs text-red-500';
+        } else {
+            charCount.className = 'absolute right-3 top-3 text-xs text-gray-400';
+        }
+    });
+
+    // Allow sending message with Enter key
+    messageInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && !sendButton.disabled) {
+            sendMessage();
+        }
+    });
+
+    // Typing indicators
+    let typingTimer = null;
+     let isTyping = false;
+     messageInput.addEventListener('input', function() {
+    const length = this.value.length;
+    charCount.textContent = length;
+    
+    // Enable/disable send button
+    sendButton.disabled = length === 0 || length > 500;
+    
+    // Show warning if approaching limit
+    if (length > 450) {
+        charCount.className = 'absolute right-3 top-3 text-xs text-red-500';
+    } else {
+        charCount.className = 'absolute right-3 top-3 text-xs text-gray-400';
+    }
+
+    // Typing indicators - FIXED: Only trigger once
+    if (length > 0 && socket && isConnected && !isTyping) {
+        isTyping = true;
+        socket.emit('typing-start', { chatId: getChatId() });
+    }
+    
+    // Clear previous timer
+    if (typingTimer) clearTimeout(typingTimer);
+    
+    // Stop typing after 2 seconds of inactivity
+    typingTimer = setTimeout(() => {
+        if (isTyping) {
+            isTyping = false;
+            socket.emit('typing-stop', { chatId: getChatId() });
+        }
+    }, 2000);
+});
+
+    function getChatId() {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('thread');
+    }
+
+    function getChatType() {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('type') || 'foster';
+    }
+
+    // async function initializeChat() {
+    //     showToast('Connecting to chat...', 'info');
+    //     await loadCurrentUser();
+    //     await initializeSocket();
+    //     await loadChatDetails();
+    //     await loadMessages();
+    // }
+
+    async function loadCurrentUser() {
+        try {
+            const response = await fetch('http://localhost:5001/api/users/me', {
+                headers: {
+                    'x-auth-token': token,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                currentUser = await response.json();
+                console.log('Current user loaded:', currentUser.name);
+            } else {
+                throw new Error('Failed to load user profile');
+            }
+        } catch (error) {
+            console.error('Load user error:', error);
+            showToast('Failed to load user profile', 'error');
+        }
+    }
+
+    async function initializeSocket() {
+        try {
+            // Connect to Socket.io
+            socket = io('http://localhost:5001', {
+                auth: {
+                    token: token
+                }
+            });
+
+            socket.on('connect', () => {
+                console.log('✅ Socket connected');
+                isConnected = true;
+                connectionStatus.innerHTML = '<i class="fas fa-circle text-green-500 mr-1"></i>Connected';
+                connectionStatus.className = 'px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full';
+                showToast('Connected to chat', 'success');
+
+                // Join the chat room
+                socket.emit('join-chat', getChatId());
+            });
+
+            socket.on('disconnect', (reason) => {
+                console.log('❌ Socket disconnected:', reason);
+                isConnected = false;
+                connectionStatus.innerHTML = '<i class="fas fa-circle text-red-500 mr-1"></i>Disconnected';
+                connectionStatus.className = 'px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full';
+                showToast('Disconnected from chat', 'error');
+            });
+
+            socket.on('connect_error', (error) => {
+                console.error('Socket connection error:', error);
+                isConnected = false;
+                connectionStatus.innerHTML = '<i class="fas fa-circle text-red-500 mr-1"></i>Connection Failed';
+                connectionStatus.className = 'px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full';
+                showToast('Connection failed: ' + error.message, 'error');
+            });
+
+            // Handle new messages
+            socket.on('new-message', (message) => {
+                console.log('New message received:', message);
+                appendMessage(message);
+                scrollToBottom();
+            });
+
+            // Handle typing indicators
+            socket.on('user-typing', (data) => {
+                if (data.userId !== currentUser._id) {
+                    showTypingIndicator(data.userName || 'Other user');
+                }
+            });
+
+            socket.on('user-stop-typing', (data) => {
+                if (data.userId !== currentUser._id) {
+                    hideTypingIndicator();
+                }
+            });
+
+            // Handle welcome message
+            socket.on('welcome', (data) => {
+                console.log('Welcome message:', data);
+            });
+
+            // Handle errors
+            socket.on('error', (error) => {
+                console.error('Socket error:', error);
+                showToast('Chat error: ' + error.message, 'error');
+            });
+
+        } catch (error) {
+            console.error('Socket initialization error:', error);
+            showToast('Failed to initialize chat connection', 'error');
+        }
+    }
+
+    async function loadChatDetails() {
+        try {
+            const chatId = getChatId();
+            const chatType = getChatType();
+            
+            const endpoint = chatType === 'foster' 
+                ? `/api/foster-chats/${chatId}`
+                : `/api/chats/${chatId}`;
+
+            const response = await fetch(`http://localhost:5001${endpoint}`, {
+                headers: {
+                    'x-auth-token': token,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                currentChat = result.chat;
+                
+                // Update UI with chat details
+                if (currentChat.pet) {
+                    petName.textContent = currentChat.pet.name;
+                    chatStatus.textContent = `${chatType === 'foster' ? 'Foster' : 'Adoption'} Chat`;
+                    
+                    // Set pet image if available
+                    if (currentChat.pet.images && currentChat.pet.images.length > 0) {
+                        petImage.innerHTML = `<img src="${currentChat.pet.images[0].url}" class="w-10 h-10 rounded-full object-cover" alt="${currentChat.pet.name}">`;
+                    }
+                }
+                
+                console.log('Chat details loaded:', currentChat);
+            } else {
+                throw new Error('Failed to load chat details');
+            }
+        } catch (error) {
+            console.error('Load chat details error:', error);
+            showToast('Failed to load chat details', 'error');
+        }
+    }
+
+
+    async function loadMessages() {
+    try {
+        const chatId = getChatId();
+        const chatType = getChatType();
+        
+        console.log('Loading messages for chat:', chatId, 'type:', chatType);
+        
+        const endpoint = chatType === 'foster'
+            ? `/api/foster-chats/${chatId}/messages`
+            : `/api/chats/${chatId}/messages`;
+
+        const response = await fetch(`http://localhost:5001${endpoint}`, {
+            headers: {
+                'x-auth-token': token,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            console.log('Messages loaded:', result.messages);
+            displayMessages(result.messages);
+            scrollToBottom();
+            
+            // Mark messages as read
+            if (socket && isConnected) {
+                socket.emit('mark-messages-read', { chatId: getChatId() });
+            }
+        } else {
+            const errorText = await response.text();
+            console.error('Failed to load messages:', errorText);
+            throw new Error('Failed to load messages');
+        }
+    } catch (error) {
+        console.error('Load messages error:', error);
+        showToast('Failed to load messages: ' + error.message, 'error');
+    }
+}
+
+
+    function displayMessages(messages) {
+        messagesContainer.innerHTML = '';
+
+        if (messages.length === 0) {
+            messagesContainer.innerHTML = `
+                <div class="text-center text-gray-500 py-8">
+                    <i class="fas fa-comments text-4xl mb-2 text-gray-300"></i>
+                    <p>No messages yet. Start the conversation!</p>
+                </div>
+            `;
+            return;
+        }
+
+        messages.forEach(message => {
+            appendMessage(message);
+        });
+    }
+
+    function appendMessage(message) {
+        const isOwnMessage = currentUser && message.sender._id === currentUser._id;
+        
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `flex ${isOwnMessage ? 'justify-end' : 'justify-start'} message-item`;
+        messageDiv.setAttribute('data-message-id', message._id);
+        
+        messageDiv.innerHTML = `
+            <div class="max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                isOwnMessage 
+                    ? 'bg-indigo-600 text-white rounded-br-none' 
+                    : 'bg-white border border-gray-200 rounded-bl-none'
+            } shadow-sm">
+                <div class="flex items-center space-x-2 mb-1">
+                    <span class="text-sm font-medium">${message.sender.name}</span>
+                    <span class="text-xs opacity-70">${formatTime(message.createdAt)}</span>
+                </div>
+                <div class="mt-1 text-sm">${escapeHtml(message.content)}</div>
+                ${message.attachments && message.attachments.length > 0 ? `
+                    <div class="mt-2">
+                        ${message.attachments.map(att => 
+                            `<div class="text-xs text-blue-400 underline">📎 ${att.name}</div>`
+                        ).join('')}
+                    </div>
+                ` : ''}
+            </div>
+        `;
+        
+        messagesContainer.appendChild(messageDiv);
+    }
+
+//     async function sendMessage() {
+//         const content = messageInput.value.trim();
+        
+//         if (!content || !isConnected) {
+//             return;
+//         }
+
+//  // Stop typing indicator
+//     if (isTyping) {
+//         isTyping = false;
+//         socket.emit('typing-stop', { chatId: getChatId() });
+//     }
+
+//         try {
+//             const chatId = getChatId();
+//             const chatType = getChatType();
+            
+//             const endpoint = chatType === 'foster'
+//                 ? `/api/foster-chats/${chatId}/messages`
+//                 : `/api/chats/${chatId}/messages`;
+
+//             // Disable input while sending
+//             messageInput.disabled = true;
+//             sendButton.disabled = true;
+//             sendButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+//             const response = await fetch(`http://localhost:5001${endpoint}`, {
+//                 method: 'POST',
+//                 headers: {
+//                     'x-auth-token': token,
+//                     'Content-Type': 'application/json'
+//                 },
+//                 body: JSON.stringify({ 
+//                     content: content,
+//                     messageType: 'text'
+//                 })
+//             });
+
+//             if (response.ok) {
+//                 // Clear input
+//                 messageInput.value = '';
+//                 charCount.textContent = '0';
+//                 sendButton.disabled = true;
+                
+//                 // Stop typing indicator
+//                 if (socket) {
+//                     socket.emit('typing-stop', { chatId: getChatId() });
+//                 }
+                
+//                 // The message will appear via socket.io
+//             } else {
+//                 const errorData = await response.json();
+//                 throw new Error(errorData.msg || 'Failed to send message');
+//             }
+//         } catch (error) {
+//             console.error('Send message error:', error);
+//             showToast('Failed to send message: ' + error.message, 'error');
+//         } finally {
+//             // Re-enable input
+//             messageInput.disabled = false;
+//             messageInput.focus();
+//             sendButton.disabled = false;
+//             sendButton.innerHTML = '<i class="fas fa-paper-plane"></i>';
+//         }
+//     }
+
+
+async function sendMessage() {
+    const content = messageInput.value.trim();
+    
+    if (!content || !isConnected || !socket) {
+        showToast('Not connected to chat', 'error');
+        return;
+    }
+
+    // Disable input while sending
+    messageInput.disabled = true;
+    sendButton.disabled = true;
+    sendButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+    console.log('🚀 Sending message via Pure WebSocket:', content);
+    
+    // Send via WebSocket ONLY - no REST API
+    socket.emit('send-message', {
+        chatId: getChatId(),
+        content: content,
+        messageType: 'text'
+    });
+
+    // Clear input immediately for better UX
+    messageInput.value = '';
+    charCount.textContent = '0';
+    
+    // Stop typing indicator
+    if (isTyping) {
+        isTyping = false;
+        socket.emit('typing-stop', { chatId: getChatId() });
+    }
+
+    console.log('✅ Message queued via WebSocket');
+
+    // Re-enable input (message will appear via socket response)
+    messageInput.disabled = false;
+    messageInput.focus();
+    sendButton.disabled = false;
+    sendButton.innerHTML = '<i class="fas fa-paper-plane"></i>';
+}
+
+
+    function showTypingIndicator(userName) {
+        document.getElementById('typingUser').textContent = `${userName} is typing...`;
+        typingIndicator.classList.remove('hidden');
+        scrollToBottom();
+    }
+
+    function hideTypingIndicator() {
+        typingIndicator.classList.add('hidden');
+    }
+
+    function scrollToBottom() {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    function formatTime(timestamp) {
+        const date = new Date(timestamp);
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Auto-scroll when new content is added
+    const observer = new MutationObserver(scrollToBottom);
+    observer.observe(messagesContainer, { childList: true, subtree: true });
+
+    // Handle page visibility change (mark messages as read when tab becomes visible)
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden && socket && isConnected) {
+            socket.emit('mark-messages-read', { chatId: getChatId() });
+        }
+    });
+
+    // Handle page before unload
+    window.addEventListener('beforeunload', function() {
+        if (socket) {
+            socket.emit('leave-chat', { chatId: getChatId() });
+            socket.disconnect();
+        }
+    });
+
+// Add this function to validate chat access on page load
+async function validateChatAccess() {
+  return new Promise((resolve) => {
+    if (!socket || !isConnected) {
+      resolve(false);
+      return;
+    }
+    
+    socket.emit('validate-chat-access', { chatId: getChatId() }, (response) => {
+      if (response.success && response.hasAccess) {
+        console.log('✅ Chat access validated');
+        resolve(true);
+      } else {
+        console.error('❌ No access to this chat');
+        showToast('Access denied to this chat', 'error');
+        setTimeout(() => window.location.href = 'my-foster-requests.html', 2000);
+        resolve(false);
+      }
+    });
+  });
+}
+
+// Update your initializeChat function to include validation
+async function initializeChat() {
+  showToast('Connecting to chat...', 'info');
+  await loadCurrentUser();
+  await initializeSocket();
+  
+  // Wait for socket connection
+  await new Promise(resolve => {
+    const checkConnection = setInterval(() => {
+      if (isConnected) {
+        clearInterval(checkConnection);
+        resolve();
+      }
+    }, 100);
+  });
+  
+  const hasAccess = await validateChatAccess();
+  if (!hasAccess) return;
+  
+  await loadChatDetails();
+  await loadMessages();
+}
+
+
+    </script>
+</body>
+</html>

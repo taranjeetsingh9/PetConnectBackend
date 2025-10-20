@@ -1,10 +1,23 @@
 const socketIO = require('socket.io');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-const Message = require('../models/Message'); // Add this
-const Chat = require('../models/chat'); // Add this
+const Message = require('../models/Message'); 
+const Chat = require('../models/chat'); 
+const FosterChat = require('../models/FosterChat'); 
 
 let io;
+
+async function getUserName(userId) {
+  try {
+    const user = await User.findById(userId).select('name');
+    return user ? user.name : 'User';
+  } catch (error) {
+    console.error('Error fetching user name:', error);
+    return 'User';
+  }
+}
+
+
 
 const setupSocket = (server) => {
   io = socketIO(server, {
@@ -98,122 +111,321 @@ io.use(async (socket, next) => {
       console.log(`💬 User ${socket.userId} left chat room: ${chatId}`);
     });
 
-    // Send real-time message
-    socket.on('send-message', async (data) => {
-      try {
-        const { chatId, content, messageType = 'text' } = data;
-        
-        console.log(`💬 User ${socket.userId} sending message to chat ${chatId}:`, content);
 
-        // Validate user has access to this chat
-        const chat = await Chat.findOne({
-          _id: chatId,
-          'participants.user': socket.userId
-        });
+// test it 
+socket.on('send-message', async (data) => {
+  try {
+    const { chatId, content, messageType = 'text' } = data;
+    
+    console.log(`💬 Pure WebSocket: User ${socket.userId} sending to chat ${chatId}:`, content);
 
-        if (!chat) {
-          socket.emit('error', { message: 'No access to this chat' });
-          return;
-        }
+    //  Check both Chat AND FosterChat models
+    let chat = await Chat.findOne({
+      _id: chatId,
+      'participants.user': socket.userId
+    });
 
-        // Create and save message to database
-        const message = new Message({
-          chat: chatId,
-          sender: socket.userId,
-          content: content.trim(),
-          messageType,
-          // readBy: [socket.userId] // Sender has read their own message
-          readBy: [{ 
-            user: socket.userId,  // Use object format instead of direct string
-            readAt: new Date()
-          }]
-        });
+    let chatModel = 'Chat';
+    
+    if (!chat) {
+      // Try FosterChat if not found in Chat
+      chat = await FosterChat.findOne({
+        _id: chatId,
+        'participants.user': socket.userId
+      });
+      chatModel = 'FosterChat';
+    }
 
-        await message.save();
+    if (!chat) {
+      console.log(' No chat access for user:', socket.userId);
+      socket.emit('message-error', { 
+        message: 'No access to this chat',
+        timestamp: new Date().toISOString()
+      });
+      return;
+    }
 
-        // Update chat's last message info
-        chat.lastMessage = content.length > 100 ? content.substring(0, 100) + '...' : content;
-        chat.lastMessageAt = new Date();
-        
-        // Increment unread counts for other participants
-        chat.participants.forEach(participant => {
-          if (participant.user.toString() !== socket.userId) {
-            const currentCount = chat.unreadCounts.get(participant.user.toString()) || 0;
-            chat.unreadCounts.set(participant.user.toString(), currentCount + 1);
-          }
-        });
+    console.log(`Found ${chatModel} for Pure WebSocket message`);
 
-        await chat.save();
+    // Create and save message to database
+    const message = new Message({
+      chat: chatId,
+      sender: socket.userId,
+      content: content.trim(),
+      messageType,
+      readBy: [{ 
+        user: socket.userId,
+        readAt: new Date()
+      }]
+    });
 
-        // Populate message for real-time emission
-        const populatedMessage = await Message.findById(message._id)
-          .populate('sender', 'name email role');
+    await message.save();
+    console.log(' Message saved to database:', message._id);
 
-        // ✅ Broadcast to ALL participants in the chat room
-        io.to(`chat-${chatId}`).emit('new-message', populatedMessage);
-
-        // ✅ Also send notifications to users who are not currently in the chat
-        chat.participants.forEach(participant => {
-          if (participant.user.toString() !== socket.userId) {
-            io.to(`user-${participant.user}`).emit('new-chat-notification', {
-              chatId: chatId,
-              message: content,
-              sender: populatedMessage.sender.name,
-              petName: chat.petName || 'a pet',
-              timestamp: new Date().toISOString()
-            });
-          }
-        });
-
-        console.log(`✅ Message delivered to chat ${chatId}`);
-
-      } catch (error) {
-        console.error('❌ Send message error:', error);
-        socket.emit('error', { message: 'Failed to send message' });
+    // Update chat's last message info
+    chat.lastMessage = content.length > 100 ? content.substring(0, 100) + '...' : content;
+    chat.lastMessageAt = new Date();
+    
+    // Increment unread counts for other participants
+    chat.participants.forEach(participant => {
+      if (participant.user.toString() !== socket.userId) {
+        const currentCount = chat.unreadCounts.get(participant.user.toString()) || 0;
+        chat.unreadCounts.set(participant.user.toString(), currentCount + 1);
       }
     });
 
-    // Typing indicators
-    socket.on('typing-start', (data) => {
-      const { chatId } = data;
-      socket.to(`chat-${chatId}`).emit('user-typing', {
-        userId: socket.userId,
-        userName: 'User', // You might want to fetch actual user name
-        chatId: chatId
-      });
+    await chat.save();
+    console.log(' Chat updated with last message');
+
+    // Populate message for real-time emission
+    const populatedMessage = await Message.findById(message._id)
+      .populate('sender', 'name email avatar role');
+
+    console.log('Message populated for broadcast:', populatedMessage._id);
+
+    // BROADCAST TO ALL PARTICIPANTS IN REAL-TIME
+    io.to(`chat-${chatId}`).emit('new-message', populatedMessage);
+    console.log(`Message broadcasted to chat-${chatId}`);
+
+    //  Send success confirmation to sender
+    socket.emit('message-sent', {
+      messageId: populatedMessage._id,
+      timestamp: new Date().toISOString()
     });
 
-    socket.on('typing-stop', (data) => {
-      const { chatId } = data;
-      socket.to(`chat-${chatId}`).emit('user-stop-typing', {
-        userId: socket.userId,
-        chatId: chatId
-      });
+    // Send notifications to users not in chat
+    chat.participants.forEach(participant => {
+      if (participant.user.toString() !== socket.userId) {
+        io.to(`user-${participant.user}`).emit('new-chat-notification', {
+          chatId: chatId,
+          message: content,
+          sender: populatedMessage.sender.name,
+          petName: chat.pet ? chat.pet.name : 'a pet',
+          timestamp: new Date().toISOString()
+        });
+        console.log(` Notification sent to user-${participant.user}`);
+      }
     });
 
-    // Mark messages as read
-    socket.on('mark-messages-read', async (data) => {
+    console.log(`🎉 Pure WebSocket message completed for ${chatModel}`);
+
+  } catch (error) {
+    console.error(' Pure WebSocket send-message error:', error);
+    socket.emit('message-error', { 
+      message: 'Failed to send message',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+// test end
+
+
+    
+    // Add this new event handler for chat validation
+    socket.on('validate-chat-access', async (data, callback) => {
       try {
         const { chatId } = data;
         
-        // Update unread counts in chat
-        const chat = await Chat.findById(chatId);
-        if (chat && chat.unreadCounts) {
-          chat.unreadCounts.set(socket.userId.toString(), 0);
-          await chat.save();
+        // Check both Chat and FosterChat models
+        let chat = await Chat.findOne({
+          _id: chatId,
+          'participants.user': socket.userId
+        });
+        
+        if (!chat) {
+          chat = await FosterChat.findOne({
+            _id: chatId,
+            'participants.user': socket.userId
+          });
         }
+    
+        if (chat) {
+          callback({ success: true, hasAccess: true });
+        } else {
+          callback({ success: true, hasAccess: false });
+        }
+      } catch (error) {
+        console.error('Validate chat access error:', error);
+        callback({ success: false, error: error.message });
+      }
+    });
+    
 
-        // Notify others that messages were read
-        socket.to(`chat-${chatId}`).emit('messages-read', {
+//  Handle message delivery status
+socket.on('message-delivered', (data) => {
+  console.log('📬 Message delivered to recipient:', data);
+  // You can add delivery receipts here if needed
+});
+
+//  Handle message read receipts  
+socket.on('message-read', (data) => {
+  console.log('👀 Message read by recipient:', data);
+  // You can add read receipts here if needed
+});
+
+// Handle chat presence (who's online in chat)
+socket.on('chat-presence', async (data) => {
+  try {
+    const { chatId, isActive } = data;
+    const userName = await getUserName(socket.userId);
+    
+    console.log(`👤 ${userName} ${isActive ? 'joined' : 'left'} chat ${chatId}`);
+    
+    socket.to(`chat-${chatId}`).emit('user-presence', {
+      userId: socket.userId,
+      userName: userName,
+      chatId: chatId,
+      isActive: isActive,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Chat presence error:', error);
+  }
+});
+
+
+    // Add this event handler for getting chat participants
+    socket.on('get-chat-participants', async (data, callback) => {
+      try {
+        const { chatId } = data;
+        
+        // Check both Chat and FosterChat models
+        let chat = await Chat.findById(chatId)
+          .populate('participants.user', 'name email avatar');
+        
+        if (!chat) {
+          chat = await FosterChat.findById(chatId)
+            .populate('participants.user', 'name email avatar');
+        }
+    
+        if (chat) {
+          callback({ 
+            success: true, 
+            participants: chat.participants 
+          });
+        } else {
+          callback({ success: false, error: 'Chat not found' });
+        }
+      } catch (error) {
+        console.error('Get chat participants error:', error);
+        callback({ success: false, error: error.message });
+      }
+    });
+
+
+    socket.on('typing-start', async (data) => {
+      try {
+        const { chatId } = data;
+        const userName = await getUserName(socket.userId);
+        
+        console.log(`⌨️ ${userName} started typing in chat ${chatId}`);
+        
+        socket.to(`chat-${chatId}`).emit('user-typing', {
           userId: socket.userId,
+          userName: userName,
           chatId: chatId,
           timestamp: new Date().toISOString()
         });
-
       } catch (error) {
-        console.error('Mark messages read error:', error);
+        console.error('Typing start error:', error);
       }
     });
+    
+    socket.on('typing-stop', async (data) => {
+      try {
+        const { chatId } = data;
+        const userName = await getUserName(socket.userId);
+        
+        console.log(`⌨️ ${userName} stopped typing in chat ${chatId}`);
+        
+        socket.to(`chat-${chatId}`).emit('user-stop-typing', {
+          userId: socket.userId,
+          userName: userName,
+          chatId: chatId,
+          timestamp: new Date().toISOString()
+        });
+      } catch (error) {
+        console.error('Typing stop error:', error);
+      }
+    });
+
+
+    // socket.on('typing-stop', (data) => {
+    //   const { chatId } = data;
+    //   socket.to(`chat-${chatId}`).emit('user-stop-typing', {
+    //     userId: socket.userId,
+    //     chatId: chatId
+    //   });
+    // });
+
+    // Mark messages as read
+    // socket.on('mark-messages-read', async (data) => {
+    //   try {
+    //     const { chatId } = data;
+        
+    //     // Update unread counts in chat
+    //     const chat = await Chat.findById(chatId);
+    //     if (chat && chat.unreadCounts) {
+    //       chat.unreadCounts.set(socket.userId.toString(), 0);
+    //       await chat.save();
+    //     }
+
+    //     // Notify others that messages were read
+    //     socket.to(`chat-${chatId}`).emit('messages-read', {
+    //       userId: socket.userId,
+    //       chatId: chatId,
+    //       timestamp: new Date().toISOString()
+    //     });
+
+    //   } catch (error) {
+    //     console.error('Mark messages read error:', error);
+    //   }
+    // });
+
+
+
+// IMPROVED: Mark messages as read with better logging
+socket.on('mark-messages-read', async (data) => {
+  try {
+    const { chatId } = data;
+    
+    console.log(`📖 User ${socket.userId} marking messages as read in chat ${chatId}`);
+    
+    // ✅ Check both Chat AND FosterChat models
+    let chat = await Chat.findById(chatId);
+    let chatModel = 'Chat';
+    
+    if (!chat) {
+      chat = await FosterChat.findById(chatId);
+      chatModel = 'FosterChat';
+    }
+
+    if (chat && chat.unreadCounts) {
+      const previousCount = chat.unreadCounts.get(socket.userId.toString()) || 0;
+      chat.unreadCounts.set(socket.userId.toString(), 0);
+      await chat.save();
+      console.log(`✅ Unread counts reset for ${chatModel} chat ${chatId} (was: ${previousCount})`);
+    }
+
+    // Notify others that messages were read
+    socket.to(`chat-${chatId}`).emit('messages-read', {
+      userId: socket.userId,
+      chatId: chatId,
+      timestamp: new Date().toISOString()
+    });
+
+    console.log(`✅ Messages marked as read in ${chatModel} chat ${chatId}`);
+
+  } catch (error) {
+    console.error('Mark messages read error:', error);
+    socket.emit('error', { 
+      message: 'Failed to mark messages as read',
+      error: error.message 
+    });
+  }
+});
+    // test end
 
 
 // test notification end

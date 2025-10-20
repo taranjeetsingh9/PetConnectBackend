@@ -51,6 +51,9 @@ app.use('/api/trainer', require('./routes/trainer'));
 // admin route
 app.use('/api/admin', require('./routes/admin'));
 
+// foster chat routes
+app.use('/api/foster-chats', require('./routes/fosterChatRoutes'));
+
 // Serve frontend for testing
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'auth.html'));

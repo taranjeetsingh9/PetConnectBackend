@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Foster Requests - PetConnect</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+    <div class="mb-4">
+        <button onclick="debugDisplay()" class="bg-blue-500 text-white px-4 py-2 rounded-lg">
+            🐛 Debug Display
+        </button>
+    </div>
+
+    <nav class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <h1 class="text-xl font-bold text-indigo-700">PetConnect</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button onclick="window.location.href='pet-browser.html'" 
+                            class="text-gray-700 hover:text-indigo-600">
+                        Browse Pets
+                    </button>
+                    <button onclick="window.location.href='user-profile.html'" 
+                            class="text-gray-700 hover:text-indigo-600">
+                        My Profile
+                    </button>
+                    <button id="logoutBtn" 
+                            class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">
+                        Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-4xl mx-auto py-8 px-4">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">My Foster Requests</h1>
+        <p class="text-gray-600 mb-8">Manage your pet foster applications</p>
+
+        <div id="loading" class="text-center py-8">
+            <p class="text-gray-500">Loading your foster requests...</p>
+        </div>
+
+        <div id="fosterRequestsContainer" class="space-y-4 hidden">
+            <!-- Foster requests will be loaded here -->
+        </div>
+
+        <div id="noRequests" class="text-center py-12 bg-white rounded-xl shadow-sm border hidden">
+            <div class="max-w-md mx-auto">
+                <svg class="mx-auto h-16 w-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <h3 class="mt-4 text-lg font-medium text-gray-900">No foster requests yet</h3>
+                <p class="mt-2 text-gray-500">Start by browsing pets and submitting foster requests.</p>
+                <button onclick="window.location.href='pet-browser.html'" 
+                        class="mt-4 bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700">
+                    Browse Pets
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = 'index.html';
+        }
+
+        let socket = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadFosterRequests();
+            setupSocket();
+        });
+
+        // async function loadFosterRequests() {
+        //     try {
+        //         // We need to find all pets where this user has foster requests
+        //         const response = await fetch('http://localhost:5001/api/pets/browse/all', {
+        //             headers: {
+        //                 'x-auth-token': token,
+        //                 'Content-Type': 'application/json'
+        //             }
+        //         });
+
+        //         if (response.ok) {
+        //             const result = await response.json();
+        //             displayFosterRequests(result.pets);
+        //         } else {
+        //             throw new Error('Failed to load pets');
+        //         }
+        //     } catch (error) {
+        //         console.error('Load foster requests error:', error);
+        //         document.getElementById('loading').innerHTML = '<p class="text-red-500">Failed to load requests</p>';
+        //     }
+        // }
+
+//         async function loadFosterRequests() {
+//     try {
+//         console.log('🔍 Loading foster requests for user:', getCurrentUserId());
+        
+//         // Use the new dedicated endpoint
+//         const response = await fetch('http://localhost:5001/api/pet-files/my-foster-requests', {
+//             headers: {
+//                 'x-auth-token': token,
+//                 'Content-Type': 'application/json'
+//             }
+//         });
+
+//         if (response.ok) {
+//             const result = await response.json();
+//             console.log('✅ Foster requests loaded:', result.requests);
+//             displayFosterRequests(result.requests);
+//         } else {
+//             const errorText = await response.text();
+//             console.error('❌ Failed to load foster requests:', errorText);
+//             throw new Error('Failed to load foster requests');
+//         }
+//     } catch (error) {
+//         console.error('Load foster requests error:', error);
+//         document.getElementById('loading').innerHTML = '<p class="text-red-500">Failed to load requests: ' + error.message + '</p>';
+//     }
+// }
+
+
+async function loadFosterRequests() {
+    try {
+        console.log('🔍 Loading foster requests for user:', getCurrentUserId());
+        
+        const response = await fetch('http://localhost:5001/api/pet-files/my-foster-requests', {
+            headers: {
+                'x-auth-token': token,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            console.log('API Response:', result);
+            console.log('Requests array:', result.requests);
+            console.log('Requests count:', result.requests?.length);
+            
+            if (result.requests && result.requests.length > 0) {
+                console.log('First request structure:', result.requests[0]);
+            }
+            
+            displayFosterRequests(result.requests);
+        } else {
+            const errorText = await response.text();
+            console.error(' Failed to load foster requests:', errorText);
+            throw new Error('Failed to load foster requests');
+        }
+    } catch (error) {
+        console.error('Load foster requests error:', error);
+        document.getElementById('loading').innerHTML = '<p class="text-red-500">Failed to load requests: ' + error.message + '</p>';
+    }
+}
+
+
+// function displayFosterRequests(requests) {
+//     const container = document.getElementById('fosterRequestsContainer');
+//     const loading = document.getElementById('loading');
+//     const noRequests = document.getElementById('noRequests');
+
+//     console.log('📊 Displaying foster requests:', requests);
+
+//     if (!requests || requests.length === 0) {
+//         loading.classList.add('hidden');
+//         noRequests.classList.remove('hidden');
+//         return;
+//     }
+
+//     container.innerHTML = requests.map(item => {
+//         const { pet, fosterRequest } = item;
+        
+//         return `
+//             <div class="bg-white rounded-lg shadow-sm border p-6 mb-4">
+//                 <div class="flex justify-between items-start mb-4">
+//                     <div class="flex items-center space-x-4">
+//                         ${pet.images && pet.images.length > 0 ? 
+//                             `<img src="${pet.images[0].url}" class="w-16 h-16 rounded-lg object-cover" alt="${pet.name}">` :
+//                             `<div class="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center">
+//                                 <i class="fas fa-paw text-gray-400 text-xl"></i>
+//                             </div>`
+//                         }
+//                         <div>
+//                             <h3 class="text-lg font-semibold text-gray-900">${pet.name}</h3>
+//                             <p class="text-gray-600">${pet.breed || 'Mixed Breed'} • ${pet.location || 'Unknown location'}</p>
+//                             <p class="text-sm text-gray-500">Submitted ${formatDate(fosterRequest.submittedAt)}</p>
+//                             <p class="text-sm text-gray-500">Listed by: ${pet.owner ? pet.owner.name : 'Unknown Owner'}</p>
+//                         </div>
+//                     </div>
+//                     <span class="px-3 py-1 rounded-full text-sm font-medium ${getStatusClass(fosterRequest.status)}">
+//                         ${getStatusDisplay(fosterRequest.status)}
+//                     </span>
+//                 </div>
+                
+//                 ${fosterRequest.message ? `
+//                     <div class="bg-gray-50 rounded-lg p-3 mb-4">
+//                         <p class="text-sm text-gray-700"><strong>Your message:</strong> "${fosterRequest.message}"</p>
+//                     </div>
+//                 ` : ''}
+
+//                 <div class="flex justify-between items-center">
+//                     <div>
+//                         ${fosterRequest.status === 'in_discussion' && fosterRequest.chatThread ? `
+//                             <button onclick="openChat('${fosterRequest.chatThread}', 'foster')" 
+//                                     class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 font-medium">
+//                                 <i class="fas fa-comments mr-2"></i>Open Chat
+//                             </button>
+//                         ` : `
+//                             <span class="text-sm text-gray-500">
+//                                 ${fosterRequest.status === 'pending' ? 'Waiting for owner response...' : 
+//                                   fosterRequest.status === 'approved' ? 'Foster approved! 🎉' :
+//                                   fosterRequest.status === 'rejected' ? 'Foster request declined' : 
+//                                   'Status: ' + fosterRequest.status}
+//                             </span>
+//                         `}
+//                     </div>
+//                     <div class="text-right">
+//                         ${fosterRequest.chatThread ? `
+//                             <button onclick="openChat('${fosterRequest.chatThread}', 'foster')" 
+//                                     class="text-indigo-600 hover:text-indigo-800 text-sm">
+//                                 <i class="fas fa-external-link-alt mr-1"></i>Chat ID: ${fosterRequest.chatThread.toString().substring(0, 8)}...
+//                             </button>
+//                         ` : ''}
+//                     </div>
+//                 </div>
+//             </div>
+//         `;
+//     }).join('');
+
+//     loading.classList.add('hidden');
+//     container.classList.remove('hidden');
+// }
+function displayFosterRequests(requests) {
+    const container = document.getElementById('fosterRequestsContainer');
+    const loading = document.getElementById('loading');
+    const noRequests = document.getElementById('noRequests');
+
+    console.log('🔍 DEBUG - Raw requests data:', requests);
+    console.log('🔍 DEBUG - Container element:', container);
+    console.log('🔍 DEBUG - Requests array length:', requests.length);
+
+    if (!requests || requests.length === 0) {
+        console.log('❌ No requests found');
+        loading.classList.add('hidden');
+        noRequests.classList.remove('hidden');
+        return;
+    }
+
+    // Log each request to see the structure
+    requests.forEach((item, index) => {
+        console.log(`📋 Request ${index}:`, item);
+        console.log(`   Pet: ${item.pet?.name}`, item.pet);
+        console.log(`   Foster Request:`, item.fosterRequest);
+        console.log(`   Chat Thread:`, item.fosterRequest?.chatThread);
+        console.log(`   Status:`, item.fosterRequest?.status);
+    });
+
+    container.innerHTML = requests.map((item, index) => {
+        const { pet, fosterRequest } = item;
+        
+        console.log(`🎨 Rendering request ${index}: ${pet?.name}`);
+        
+        // Ensure we have the required data
+        if (!pet || !fosterRequest) {
+            console.log(`❌ Skipping invalid request ${index}`, item);
+            return '';
+        }
+
+        const html = `
+            <div class="bg-white rounded-lg shadow-sm border p-6 mb-4">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="flex items-center space-x-4">
+                        ${pet.images && pet.images.length > 0 ? 
+                            `<img src="${pet.images[0].url}" class="w-16 h-16 rounded-lg object-cover" alt="${pet.name}">` :
+                            `<div class="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-paw text-gray-400 text-xl"></i>
+                            </div>`
+                        }
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900">${pet.name || 'Unknown Pet'}</h3>
+                            <p class="text-gray-600">${pet.breed || 'Mixed Breed'} • ${pet.location || 'Unknown location'}</p>
+                            <p class="text-sm text-gray-500">Submitted ${formatDate(fosterRequest.submittedAt)}</p>
+                            <p class="text-sm text-gray-500">Listed by: ${pet.owner ? pet.owner.name : 'Unknown Owner'}</p>
+                        </div>
+                    </div>
+                    <span class="px-3 py-1 rounded-full text-sm font-medium ${getStatusClass(fosterRequest.status)}">
+                        ${getStatusDisplay(fosterRequest.status)}
+                    </span>
+                </div>
+                
+                ${fosterRequest.message ? `
+                    <div class="bg-gray-50 rounded-lg p-3 mb-4">
+                        <p class="text-sm text-gray-700"><strong>Your message:</strong> "${fosterRequest.message}"</p>
+                    </div>
+                ` : ''}
+
+                <div class="flex justify-between items-center">
+                    <div>
+                        ${fosterRequest.status === 'in_discussion' && fosterRequest.chatThread ? `
+                            <button onclick="openChat('${fosterRequest.chatThread}', 'foster')" 
+                                    class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 font-medium">
+                                <i class="fas fa-comments mr-2"></i>Open Chat
+                            </button>
+                        ` : `
+                            <span class="text-sm text-gray-500">
+                                ${fosterRequest.status === 'pending' ? 'Waiting for owner response...' : 
+                                  fosterRequest.status === 'approved' ? 'Foster approved! 🎉' :
+                                  fosterRequest.status === 'rejected' ? 'Foster request declined' : 
+                                  'Status: ' + fosterRequest.status}
+                            </span>
+                        `}
+                    </div>
+                    <div class="text-right">
+                        ${fosterRequest.chatThread ? `
+                            <button onclick="openChat('${fosterRequest.chatThread}', 'foster')" 
+                                    class="text-indigo-600 hover:text-indigo-800 text-sm">
+                                <i class="fas fa-external-link-alt mr-1"></i>Chat ID: ${fosterRequest.chatThread.toString().substring(0, 8)}...
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+                
+                <!-- DEBUG INFO -->
+                <div class="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
+                    <strong>Debug:</strong> Status: ${fosterRequest.status} | 
+                    Chat Thread: ${fosterRequest.chatThread ? 'Yes' : 'No'} |
+                    User Match: ${fosterRequest.user && fosterRequest.user._id === getCurrentUserId() ? 'Yes' : 'No'}
+                </div>
+            </div>
+        `;
+        
+        console.log(`✅ Generated HTML for request ${index}`);
+        return html;
+    }).join('');
+
+    console.log('🎯 Final container HTML length:', container.innerHTML.length);
+    console.log('🎯 Container classes before:', container.className);
+
+    loading.classList.add('hidden');
+    container.classList.remove('hidden');
+    
+    console.log('🎯 Container classes after:', container.className);
+    console.log('✅ Display function completed');
+}
+
+        // function displayFosterRequests(pets) {
+        //     const container = document.getElementById('fosterRequestsContainer');
+        //     const loading = document.getElementById('loading');
+        //     const noRequests = document.getElementById('noRequests');
+
+        //     // Filter pets where user has foster requests
+        //     const petsWithUserRequests = pets.filter(pet => 
+        //         pet.fosterRequests && pet.fosterRequests.some(req => 
+        //             req.user && req.user._id === getCurrentUserId()
+        //         )
+        //     );
+
+        //     if (petsWithUserRequests.length === 0) {
+        //         loading.classList.add('hidden');
+        //         noRequests.classList.remove('hidden');
+        //         return;
+        //     }
+
+        //     container.innerHTML = petsWithUserRequests.map(pet => {
+        //         const userRequest = pet.fosterRequests.find(req => 
+        //             req.user && req.user._id === getCurrentUserId()
+        //         );
+                
+        //         return `
+        //             <div class="bg-white rounded-lg shadow-sm border p-6">
+        //                 <div class="flex justify-between items-start mb-4">
+        //                     <div class="flex items-center space-x-4">
+        //                         ${pet.images && pet.images.length > 0 ? 
+        //                             `<img src="${pet.images[0].url}" class="w-16 h-16 rounded-lg object-cover">` :
+        //                             `<div class="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center">
+        //                                 <i class="fas fa-paw text-gray-400 text-xl"></i>
+        //                             </div>`
+        //                         }
+        //                         <div>
+        //                             <h3 class="text-lg font-semibold text-gray-900">${pet.name}</h3>
+        //                             <p class="text-gray-600">${pet.breed || 'Mixed Breed'} • ${pet.location || 'Unknown location'}</p>
+        //                             <p class="text-sm text-gray-500">Submitted ${formatDate(userRequest.submittedAt)}</p>
+        //                         </div>
+        //                     </div>
+        //                     <span class="px-3 py-1 rounded-full text-sm font-medium ${getStatusClass(userRequest.status)}">
+        //                         ${getStatusDisplay(userRequest.status)}
+        //                     </span>
+        //                 </div>
+                        
+        //                 ${userRequest.message ? `
+        //                     <div class="bg-gray-50 rounded-lg p-3 mb-4">
+        //                         <p class="text-sm text-gray-700"><strong>Your message:</strong> "${userRequest.message}"</p>
+        //                     </div>
+        //                 ` : ''}
+
+        //                 <div class="flex justify-between items-center">
+        //                     <div>
+        //                         ${userRequest.status === 'in_discussion' && userRequest.chatThread ? `
+        //                             <button onclick="openChat('${userRequest.chatThread}', 'foster')" 
+        //                                     class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 font-medium">
+        //                                 <i class="fas fa-comments mr-2"></i>Open Chat
+        //                             </button>
+        //                         ` : `
+        //                             <span class="text-sm text-gray-500">Waiting for owner response...</span>
+        //                         `}
+        //                     </div>
+        //                     <div class="text-sm text-gray-500">
+        //                         Listed by: ${pet.owner ? pet.owner.name : 'Unknown'}
+        //                     </div>
+        //                 </div>
+        //             </div>
+        //         `;
+        //     }).join('');
+
+        //     loading.classList.add('hidden');
+        //     container.classList.remove('hidden');
+        // }
+
+        function openChat(chatThreadId, type) {
+            window.location.href = `chat-interface.html?thread=${chatThreadId}&type=${type}`;
+        }
+
+        function getStatusClass(status) {
+            const classes = {
+                'pending': 'bg-yellow-100 text-yellow-800',
+                'in_discussion': 'bg-blue-100 text-blue-800',
+                'approved': 'bg-green-100 text-green-800',
+                'rejected': 'bg-red-100 text-red-800'
+            };
+            return classes[status] || 'bg-gray-100 text-gray-800';
+        }
+
+        function getStatusDisplay(status) {
+            const displays = {
+                'pending': 'Pending',
+                'in_discussion': 'In Discussion',
+                'approved': 'Approved',
+                'rejected': 'Rejected'
+            };
+            return displays[status] || status;
+        }
+
+        function formatDate(dateString) {
+            return new Date(dateString).toLocaleDateString();
+        }
+
+        function getCurrentUserId() {
+            // You'll need to implement this based on your auth system
+            // For now, return from localStorage or decode JWT
+            try {
+                const token = localStorage.getItem('token');
+                if (token) {
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    return payload.user?.id || payload.id;
+                }
+            } catch (e) {
+                console.error('Failed to get user ID:', e);
+            }
+            return null;
+        }
+
+        function setupSocket() {
+            socket = io('http://localhost:5001', {
+                auth: { token: token }
+            });
+
+            socket.on('connect', () => {
+                console.log('Connected to notifications');
+            });
+
+            // Listen for new chat notifications
+            socket.on('new-chat-notification', (data) => {
+                showNotification(`New message in ${data.petName} chat: ${data.message}`);
+                // Refresh the list to show the chat button
+                loadFosterRequests();
+            });
+        }
+
+        function showNotification(message) {
+            // Create a toast notification
+            const toast = document.createElement('div');
+            toast.className = 'fixed top-4 right-4 bg-blue-500 text-white p-4 rounded-lg shadow-lg z-50';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 5000);
+        }
+
+        // Logout
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            localStorage.removeItem('token');
+            window.location.href = 'index.html';
+        });
+        function debugDisplay() {
+    console.log('🔧 Manual debug triggered');
+    console.log('Container:', document.getElementById('fosterRequestsContainer'));
+    console.log('Loading:', document.getElementById('loading'));
+    console.log('NoRequests:', document.getElementById('noRequests'));
+    
+    // Force re-load requests
+    loadFosterRequests();
+}
+    </script>
+</body>
+</html>

@@ -694,7 +694,7 @@ async function startFosterChat(petId, requestId) {
       
       if (chatId) {
         // Redirect to your chat page - adjust URL as needed
-        window.location.href = `/chat.html?thread=${chatId}`;
+        window.location.href = `/chat-interface.html?thread=${chatId}&type=foster`;
       } else {
         console.warn('No chat ID returned in response:', result);
         showMessage('Chat created but no chat ID returned', 'warning');

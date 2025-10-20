@@ -8,6 +8,7 @@ const User = require('../models/User');
 const logActivity = require('../utils/logActivity');
 const { cloudinary } = require('../config/cloudinary');
 const Chat = require('../models/chat');
+const FosterChat = require('../models/FosterChat');
 
 // ========================
 // 👤 USER PET FILES (Personal Pet Listings - Kijiji Style)
@@ -362,7 +363,7 @@ router.delete('/user-pet/:id', auth, async (req, res) => {
 });
 
 
-// ✅ ENTERPRISE SOLUTION: Get user's personal pet listings WITH foster requests and detailed analytics
+// ENTERPRISE SOLUTION: Get user's personal pet listings WITH foster requests and detailed analytics
 router.get('/my-listings/detailed', auth, async (req, res) => {
   try {
     const personalPets = await Pet.find({ 
@@ -405,178 +406,25 @@ router.get('/my-listings/detailed', auth, async (req, res) => {
   }
 });
 
-// ✅ PROFESSIONAL: Start chat for foster request
-// router.post('/:id/foster-requests/:requestId/start-chat', auth, async (req, res) => {
-//   try {
-//     const pet = await Pet.findById(req.params.id);
-//     if (!pet) return res.status(404).json({ msg: "Pet not found" });
-
-//     // Check if user owns the pet
-//     const isOwner = pet.owner && pet.owner.toString() === req.user.id;
-//     if (!isOwner) return res.status(403).json({ msg: "Access denied" });
-
-//     const fosterRequest = pet.fosterRequests.id(req.params.requestId);
-//     if (!fosterRequest) return res.status(404).json({ msg: "Foster request not found" });
-
-//     // Create chat thread (you'll need to integrate with your chat system)
-//     // This is a placeholder - integrate with your actual chat API
-//     const chatData = {
-//       participants: [req.user.id, fosterRequest.user],
-//       context: {
-//         type: 'foster_discussion',
-//         petId: pet._id,
-//         petName: pet.name,
-//         fosterRequestId: fosterRequest._id
-//       },
-//       initialMessage: `Discussion started for fostering ${pet.name}. ${fosterRequest.message ? `Initial message: "${fosterRequest.message}"` : ''}`
-//     };
-
-//     // TODO: Integrate with your chat API to create thread
-//     // const chatThread = await createChatThread(chatData);
-    
-//     // For now, simulate chat creation
-//     const chatThread = { _id: new mongoose.Types.ObjectId() };
-
-//     // Update foster request
-//     fosterRequest.status = 'in_discussion';
-//     fosterRequest.chatThread = chatThread._id;
-//     await pet.save();
-
-//     res.json({
-//       success: true,
-//       msg: "Chat started successfully",
-//       chatThreadId: chatThread._id,
-//       fosterRequest: fosterRequest
-//     });
-
-//   } catch (err) {
-//     console.error('Start chat error:', err);
-//     res.status(500).send("Server Error");
-//   }
-// });
-
-// ✅ PROFESSIONAL: Start chat for foster request (INTEGRATED WITH YOUR CHAT SYSTEM)
-// router.post('/:id/foster-requests/:requestId/start-chat', auth, async (req, res) => {
-//   try {
-//     const pet = await Pet.findById(req.params.id)
-//       .populate('owner', 'name email')
-//       .populate('fosterRequests.user', 'name email');
-    
-//     if (!pet) return res.status(404).json({ msg: "Pet not found" });
-
-//     // Check if user owns the pet
-//     const isOwner = pet.owner && pet.owner.toString() === req.user.id;
-//     if (!isOwner) return res.status(403).json({ msg: "Access denied" });
-
-//     const fosterRequest = pet.fosterRequests.id(req.params.requestId);
-//     if (!fosterRequest) return res.status(404).json({ msg: "Foster request not found" });
-
-//     // Check if chat already exists
-//     if (fosterRequest.chatThread) {
-//       const existingChat = await Chat.findById(fosterRequest.chatThread)
-//         .populate('participants.user', 'name email role');
-      
-//       if (existingChat) {
-//         return res.json({
-//           success: true,
-//           msg: "Chat already exists",
-//           chatThreadId: fosterRequest.chatThread,
-//           existing: true,
-//           chat: existingChat
-//         });
-//       }
-//     }
-
-//     // Create chat using your existing Chat model structure
-//     const chat = new Chat({
-//       participants: [
-//         { 
-//           user: req.user.id, // Pet owner
-//           role: 'owner',
-//           lastReadAt: new Date(),
-//           joinedAt: new Date()
-//         },
-//         { 
-//           user: fosterRequest.user._id || fosterRequest.user, // Foster requester
-//           role: 'foster_seeker', 
-//           lastReadAt: new Date(),
-//           joinedAt: new Date()
-//         }
-//       ],
-//       // Since we don't have adoptionRequest for foster, we'll use metadata
-//       adoptionRequest: null, // Keep this field but set to null
-//       lastMessage: `Chat started for fostering ${pet.name}. ${fosterRequest.message ? `Initial interest: "${fosterRequest.message}"` : ''}`,
-//       lastMessageAt: new Date(),
-//       isActive: true
-//     });
-
-//     // Initialize unread counts
-//     chat.unreadCounts.set(req.user.id.toString(), 0);
-//     chat.unreadCounts.set((fosterRequest.user._id || fosterRequest.user).toString(), 0);
-
-//     await chat.save();
-
-//     // Update foster request with chat thread
-//     fosterRequest.status = 'in_discussion';
-//     fosterRequest.chatThread = chat._id;
-//     await pet.save();
-
-//     // Populate the chat for response
-//     const populatedChat = await Chat.findById(chat._id)
-//       .populate('participants.user', 'name email role');
-
-//     res.json({
-//       success: true,
-//       msg: "Chat started successfully",
-//       chatThreadId: chat._id,
-//       chat: populatedChat,
-//       fosterRequest: {
-//         _id: fosterRequest._id,
-//         status: fosterRequest.status,
-//         user: fosterRequest.user
-//       }
-//     });
-
-//   } catch (err) {
-//     console.error('Start chat error:', err);
-//     res.status(500).json({ 
-//       success: false,
-//       msg: "Server Error",
-//       error: err.message 
-//     });
-//   }
-// });
-
-// ✅ DEBUG: Start chat for foster request (WITH LOGGING)
+//ENTERPRISE: Start chat for foster request (USING SEPARATE FOSTERCHAT MODEL)
 router.post('/:id/foster-requests/:requestId/start-chat', auth, async (req, res) => {
   try {
-    console.log('🔍 CHAT DEBUG - User ID:', req.user.id);
-    console.log('🔍 CHAT DEBUG - Pet ID:', req.params.id);
-    console.log('🔍 CHAT DEBUG - Request ID:', req.params.requestId);
-
+    console.log('🔍 FOSTER CHAT DEBUG - Starting foster chat...');
+    
     const pet = await Pet.findById(req.params.id)
       .populate('owner', 'name email')
       .populate('fosterRequests.user', 'name email');
     
     if (!pet) {
-      console.log('❌ CHAT DEBUG - Pet not found');
+      console.log('❌ FOSTER CHAT DEBUG - Pet not found');
       return res.status(404).json({ msg: "Pet not found" });
     }
 
-    console.log('🔍 CHAT DEBUG - Pet owner:', pet.owner);
-    console.log('🔍 CHAT DEBUG - Pet owner ID:', pet.owner?._id?.toString());
-    console.log('🔍 CHAT DEBUG - Pet owner type:', typeof pet.owner);
-    console.log('🔍 CHAT DEBUG - Request user ID:', req.user.id);
-    console.log('🔍 CHAT DEBUG - Owner equals user?', pet.owner?._id?.toString() === req.user.id);
-
-    // Check if user owns the pet - FIXED VERSION
+    // Check if user owns the pet
     const isOwner = pet.owner && pet.owner._id.toString() === req.user.id;
-    console.log('🔍 CHAT DEBUG - Is owner?', isOwner);
+    console.log('🔍 FOSTER CHAT DEBUG - Is owner?', isOwner);
     
     if (!isOwner) {
-      console.log('❌ CHAT DEBUG - Access denied: User is not owner');
-      console.log('🔍 CHAT DEBUG - Pet owner ID:', pet.owner?._id?.toString());
-      console.log('🔍 CHAT DEBUG - Current user ID:', req.user.id);
       return res.status(403).json({ 
         success: false,
         msg: "Access denied - You are not the owner of this pet" 
@@ -585,26 +433,18 @@ router.post('/:id/foster-requests/:requestId/start-chat', auth, async (req, res)
 
     const fosterRequest = pet.fosterRequests.id(req.params.requestId);
     if (!fosterRequest) {
-      console.log('❌ CHAT DEBUG - Foster request not found');
       return res.status(404).json({ msg: "Foster request not found" });
     }
 
-    console.log('🔍 CHAT DEBUG - Foster request found:', fosterRequest._id);
-    console.log('🔍 CHAT DEBUG - Foster request user:', fosterRequest.user);
-
-    // Continue with chat creation...
-    // [Rest of your existing chat creation code]
-
-    // Check if chat already exists
+    // Check if foster chat already exists
     if (fosterRequest.chatThread) {
-      const existingChat = await Chat.findById(fosterRequest.chatThread)
+      const existingChat = await FosterChat.findById(fosterRequest.chatThread)
         .populate('participants.user', 'name email role');
       
       if (existingChat) {
-        console.log('✅ CHAT DEBUG - Existing chat found');
         return res.json({
           success: true,
-          msg: "Chat already exists",
+          msg: "Foster chat already exists",
           chatThreadId: fosterRequest.chatThread,
           existing: true,
           chat: existingChat
@@ -612,10 +452,8 @@ router.post('/:id/foster-requests/:requestId/start-chat', auth, async (req, res)
       }
     }
 
-    console.log('🔍 CHAT DEBUG - Creating new chat...');
-
-    // Create chat using your existing Chat model structure
-    const chat = new Chat({
+    // Create new FOSTER chat (not adoption chat)
+    const fosterChat = new FosterChat({
       participants: [
         { 
           user: req.user.id, // Pet owner
@@ -630,35 +468,35 @@ router.post('/:id/foster-requests/:requestId/start-chat', auth, async (req, res)
           joinedAt: new Date()
         }
       ],
-      adoptionRequest: null,
-      lastMessage: `Chat started for fostering ${pet.name}. ${fosterRequest.message ? `Initial interest: "${fosterRequest.message}"` : ''}`,
+      fosterRequest: fosterRequest._id,
+      pet: pet._id,
+      lastMessage: `Foster chat started for ${pet.name}. ${fosterRequest.message ? `Initial interest: "${fosterRequest.message}"` : ''}`,
       lastMessageAt: new Date(),
       isActive: true
     });
 
     // Initialize unread counts
-    chat.unreadCounts.set(req.user.id.toString(), 0);
-    chat.unreadCounts.set((fosterRequest.user._id || fosterRequest.user).toString(), 0);
+    fosterChat.unreadCounts.set(req.user.id.toString(), 0);
+    fosterChat.unreadCounts.set((fosterRequest.user._id || fosterRequest.user).toString(), 0);
 
-    await chat.save();
-    console.log('✅ CHAT DEBUG - New chat created:', chat._id);
+    await fosterChat.save();
 
     // Update foster request with chat thread
     fosterRequest.status = 'in_discussion';
-    fosterRequest.chatThread = chat._id;
+    fosterRequest.chatThread = fosterChat._id;
     await pet.save();
-    console.log('✅ CHAT DEBUG - Foster request updated');
 
     // Populate the chat for response
-    const populatedChat = await Chat.findById(chat._id)
-      .populate('participants.user', 'name email role');
+    const populatedChat = await FosterChat.findById(fosterChat._id)
+      .populate('participants.user', 'name email role')
+      .populate('pet', 'name images');
 
-    console.log('✅ CHAT DEBUG - Chat creation successful');
+    console.log(' FOSTER CHAT DEBUG - Foster chat created successfully:', fosterChat._id);
     
     res.json({
       success: true,
-      msg: "Chat started successfully",
-      chatThreadId: chat._id,
+      msg: "Foster chat started successfully",
+      chatThreadId: fosterChat._id,
       chat: populatedChat,
       fosterRequest: {
         _id: fosterRequest._id,
@@ -668,7 +506,7 @@ router.post('/:id/foster-requests/:requestId/start-chat', auth, async (req, res)
     });
 
   } catch (err) {
-    console.error('❌ CHAT DEBUG - Start chat error:', err);
+    console.error(' FOSTER CHAT DEBUG - Start chat error:', err);
     res.status(500).json({ 
       success: false,
       msg: "Server Error",
@@ -677,7 +515,7 @@ router.post('/:id/foster-requests/:requestId/start-chat', auth, async (req, res)
   }
 });
 
-// ✅ PROFESSIONAL: Schedule meeting for foster request
+//ENTERPRISE: Schedule meeting for foster request
 router.patch('/:id/foster-requests/:requestId/schedule-meeting', auth, async (req, res) => {
   try {
     const { meetingDate, meetingLocation, notes } = req.body;
@@ -718,6 +556,62 @@ router.patch('/:id/foster-requests/:requestId/schedule-meeting', auth, async (re
   }
 });
 
+
+router.get('/my-foster-requests', auth, async (req, res) => {
+  try {
+    console.log('🔍 Fetching foster requests for user:', req.user.id);
+    
+    // Find all pets where this user has foster requests
+    const petsWithUserRequests = await Pet.find({
+      'fosterRequests.user': req.user.id
+    })
+    .populate('owner', 'name email avatar')
+    .populate('fosterRequests.user', 'name email avatar')
+    .select('name breed age gender description location images status fosterRequests listingType owner');
+    
+    console.log('📋 Found pets with user requests:', petsWithUserRequests.length);
+    
+    // Filter and format the response
+    const userFosterRequests = petsWithUserRequests.map(pet => {
+      const userRequest = pet.fosterRequests.find(req => 
+        req.user && req.user._id.toString() === req.user.id
+      );
+      
+      return {
+        pet: {
+          _id: pet._id,
+          name: pet.name,
+          breed: pet.breed,
+          age: pet.age,
+          gender: pet.gender,
+          description: pet.description,
+          location: pet.location,
+          images: pet.images,
+          status: pet.status,
+          listingType: pet.listingType,
+          owner: pet.owner
+        },
+        fosterRequest: userRequest
+      };
+    }).filter(item => item.fosterRequest); // Remove items where no matching request found
+
+    console.log('✅ User foster requests:', userFosterRequests.length);
+    
+    res.json({
+      success: true,
+      requests: userFosterRequests,
+      total: userFosterRequests.length
+    });
+
+  } catch (error) {
+    console.error('Get foster requests error:', error);
+    res.status(500).json({ 
+      success: false,
+      msg: 'Server error fetching foster requests',
+      error: error.message 
+    });
+  }
+});
 
 
 module.exports = router;
