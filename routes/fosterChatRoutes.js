@@ -24,3 +24,4 @@ router.post('/:chatId/messages', auth, fosterChatController.sendMessage);
 router.patch('/:chatId/read', auth, fosterChatController.markAsRead);
 
 module.exports = router;
+

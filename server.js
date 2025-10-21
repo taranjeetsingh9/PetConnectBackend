@@ -44,6 +44,8 @@ app.use('/api/notifications', require('./routes/notificationRoutes'));
 // chat routes
 app.use('/api/chats', require('./routes/chatRoutes'));
 
+// foster chat routes
+app.use('/api/foster-chats', require('./routes/fosterChatRoutes'));
 
 // trainer routes
 app.use('/api/trainer', require('./routes/trainer'));
@@ -51,8 +53,7 @@ app.use('/api/trainer', require('./routes/trainer'));
 // admin route
 app.use('/api/admin', require('./routes/admin'));
 
-// foster chat routes
-app.use('/api/foster-chats', require('./routes/fosterChatRoutes'));
+
 
 // Serve frontend for testing
 app.get('/', (req, res) => {
