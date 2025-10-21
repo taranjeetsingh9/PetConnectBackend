@@ -26,13 +26,13 @@ const MessageSchema = new mongoose.Schema({
     default: 'text'
   },
   
-  // ✅ IMPROVED: Track read status with timestamps
+  //  IMPROVED: Track read status with timestamps
   readBy: [{
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     readAt: { type: Date, default: Date.now }
   }],
   
-  // ✅ NEW: Message metadata
+  // NEW: Message metadata
   attachments: [{
     url: String,
     type: String,
@@ -40,7 +40,7 @@ const MessageSchema = new mongoose.Schema({
     size: Number
   }],
   
-  // ✅ NEW: For system messages (like "Meeting scheduled")
+  //  NEW: For system messages (like "Meeting scheduled")
   metadata: {
     type: Map,
     of: mongoose.Schema.Types.Mixed
@@ -48,7 +48,7 @@ const MessageSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
-// ✅ Better indexing
+// Better indexing
 MessageSchema.index({ chat: 1, createdAt: 1 }); // For chronological order
 MessageSchema.index({ createdAt: -1 }); // For recent messages
 MessageSchema.index({ 'readBy.user': 1 }); // For read status queries

@@ -18,6 +18,14 @@ class Notifier {
   static async notifyUser({ user, type, message, meta = {} }, context = {}) {
     try {
       const io = context.io || getIO();
+
+    console.log(' DEBUG Notifier:', { 
+      user, 
+      type, 
+      hasIO: !!io,
+      ioFromContext: !!context.io,
+      ioFromGetIO: !context.io && !!getIO()
+    });
       
       if (!user || !type || !message) {
         throw new Error('Notification requires user, type, and message.');
@@ -42,6 +50,8 @@ class Notifier {
           meta,
           createdAt: notification.createdAt,
         });
+      }else {
+        console.log(' Cannot emit - io is undefined');
       }
 
       if (context.sendEmail) {

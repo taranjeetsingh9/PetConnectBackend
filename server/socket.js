@@ -6,7 +6,6 @@ const Chat = require('../models/chat');
 const FosterChat = require('../models/FosterChat'); 
 
 let io;
-
 async function getUserName(userId) {
   try {
     const user = await User.findById(userId).select('name');
@@ -17,15 +16,15 @@ async function getUserName(userId) {
   }
 }
 
-
-
 const setupSocket = (server) => {
   io = socketIO(server, {
     cors: {
       origin: ["http://localhost:3000", "http://127.0.0.1:5500", "http://localhost:5500", "http://localhost:5001"],
       methods: ["GET", "POST"],
       credentials: true
-    }
+    },
+    transports: ['websocket', 'polling'], 
+    pingTimeout: 30000
   });
 
   // Socket.io middleware for authentication - SIMPLIFIED VERSION

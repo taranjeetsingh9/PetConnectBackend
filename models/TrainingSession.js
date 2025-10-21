@@ -46,7 +46,7 @@ const TrainingSessionSchema = new mongoose.Schema({
         }]
     },
     
-    // 📊 QUANTITATIVE PROGRESS METRICS - For AI analysis
+    //  QUANTITATIVE PROGRESS METRICS - For AI analysis
     progressMetrics: {
         // Command Success Rates (1-10 scale)
         commandPerformance: {
@@ -86,7 +86,7 @@ const TrainingSessionSchema = new mongoose.Schema({
         }]
     },
     
-    // 🧠 AI TRAINING DATA - For predictive modeling
+    //  AI TRAINING DATA - For predictive modeling
     aiTrainingData: {
         // Session difficulty and outcomes
         sessionIntensity: {
@@ -121,7 +121,7 @@ const TrainingSessionSchema = new mongoose.Schema({
         trainingVector: [Number]
     },
     
-    // 📝 TRAINER OBSERVATIONS & RECOMMENDATIONS
+    //  TRAINER OBSERVATIONS & RECOMMENDATIONS
     trainerObservations: {
         strengthsNoted: [String],
         areasForImprovement: [String],
@@ -137,7 +137,7 @@ const TrainingSessionSchema = new mongoose.Schema({
         default: 'slight_improvement'
     },
     
-    // 🎯 NEXT STEPS
+    //  NEXT STEPS
     recommendations: {
         nextSessionDate: Date,
         suggestedSessionType: String,

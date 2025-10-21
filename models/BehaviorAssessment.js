@@ -16,7 +16,7 @@ const BehaviorAssessmentSchema = new mongoose.Schema({
         default: Date.now
     },
     
-    // 🧠 AI TRAINING FIELDS - Structured for machine learning
+    // AI TRAINING FIELDS - Structured for machine learning
     behaviorProfile: {
         // Energy & Activity Level (for matching with adopter lifestyle)
         energyLevel: {
