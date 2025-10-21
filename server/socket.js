@@ -83,14 +83,10 @@ io.use(async (socket, next) => {
   io.on('connection', (socket) => {
     console.log('✅ User connected - ID:', socket.userId, 'Role:', socket.userRole, 'Socket:', socket.id);
 
-    // Join user to their personal room
-    socket.join(`user-${socket.userId}`);
-    console.log(`📍 User ${socket.userId} joined room user-${socket.userId}`);
-
-
-// test chat notification
-
-// ✅ NEW: CHAT-RELATED EVENTS
+    //  FIX: Join user to BOTH room formats for compatibility
+    socket.join(socket.userId); // For your Notifier class (no prefix)
+    socket.join(`user-${socket.userId}`); // For your chat system (with prefix)
+    console.log(` User ${socket.userId} joined rooms: ${socket.userId} AND user-${socket.userId}`);
 
     // Join specific chat room
     socket.on('join-chat', (chatId) => {
@@ -350,41 +346,6 @@ socket.on('chat-presence', async (data) => {
       }
     });
 
-
-    // socket.on('typing-stop', (data) => {
-    //   const { chatId } = data;
-    //   socket.to(`chat-${chatId}`).emit('user-stop-typing', {
-    //     userId: socket.userId,
-    //     chatId: chatId
-    //   });
-    // });
-
-    // Mark messages as read
-    // socket.on('mark-messages-read', async (data) => {
-    //   try {
-    //     const { chatId } = data;
-        
-    //     // Update unread counts in chat
-    //     const chat = await Chat.findById(chatId);
-    //     if (chat && chat.unreadCounts) {
-    //       chat.unreadCounts.set(socket.userId.toString(), 0);
-    //       await chat.save();
-    //     }
-
-    //     // Notify others that messages were read
-    //     socket.to(`chat-${chatId}`).emit('messages-read', {
-    //       userId: socket.userId,
-    //       chatId: chatId,
-    //       timestamp: new Date().toISOString()
-    //     });
-
-    //   } catch (error) {
-    //     console.error('Mark messages read error:', error);
-    //   }
-    // });
-
-
-
 // IMPROVED: Mark messages as read with better logging
 socket.on('mark-messages-read', async (data) => {
   try {
@@ -426,12 +387,6 @@ socket.on('mark-messages-read', async (data) => {
   }
 });
     // test end
-
-
-// test notification end
-
-
-
 
     // Test: Send immediate welcome message
     socket.emit('welcome', {

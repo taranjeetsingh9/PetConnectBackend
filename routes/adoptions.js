@@ -1,4 +1,3 @@
-
 // routes/adoptions.js
 const express = require('express');
 const router = express.Router();
@@ -6,11 +5,11 @@ const auth = require('../middleware/auth');
 const AdoptionRequest = require('../models/AdopterRequest');
 const Pet = require('../models/Pet');
 const User = require('../models/User');
-const Notification = require('../models/Notification');
-const { createNotification, NOTIFICATION_TYPES } = require('../utils/notificationService');
+const Chat = require('../models/chat');
+const Notifier = require('../utils/notifier');
+const NOTIFICATION_TYPES = require('../constants/notificationTypes');
 
-
-// --- Role Based Middleware --- shift later
+// Role Based Middleware
 const roleAuth = (allowedRoles) => async (req, res, next) => {
   try {
     const user = await User.findById(req.user.id).select('role');
@@ -27,7 +26,6 @@ const roleAuth = (allowedRoles) => async (req, res, next) => {
 
 // Helper function to get staff users for an organization
 const getStaffUsers = async (organizationId) => {
-  const User = require('../models/User');
   return await User.find({ 
     organization: organizationId, 
     role: 'staff' 
@@ -41,21 +39,41 @@ const getStaffUsers = async (organizationId) => {
  */
 router.post('/:petId/request', auth, roleAuth(['adopter']), async (req, res) => {
   try {
-    const pet = await Pet.findById(req.params.petId);
+    const pet = await Pet.findById(req.params.petId).populate('organization');
     if (!pet) return res.status(404).json({ msg: 'Pet not found' });
     if (pet.status !== 'Available') return res.status(400).json({ msg: 'Pet is not available' });
 
     // Check duplicate
-    const existingRequest = await AdoptionRequest.findOne({ pet: pet._id, adopter: req.user.id });
-    if (existingRequest) return res.status(400).json({ msg: 'You have already requested this pet' });
+    const existingRequest = await AdoptionRequest.findOne({ 
+      pet: pet._id, 
+      adopter: req.user.id 
+    });
+    if (existingRequest) {
+      return res.status(400).json({ msg: 'You have already requested this pet' });
+    }
 
     const request = new AdoptionRequest({
       pet: pet._id,
       adopter: req.user.id,
-      organization: pet.organization
+      organization: pet.organization._id
     });
 
     await request.save();
+
+    // Notify organization staff
+    const staffUsers = await getStaffUsers(pet.organization._id);
+    
+    await Notifier.notifyUsers(staffUsers, {
+      type: NOTIFICATION_TYPES.ADOPTION_REQUEST_NEW,
+      message: `New adoption request for ${pet.name}`,
+      meta: { 
+        petId: pet._id, 
+        adopterId: req.user.id, 
+        requestId: request._id,
+        action: 'review_request'
+      }
+    });
+
     res.json({ msg: 'Adoption request submitted', request });
   } catch (err) {
     console.error(err);
@@ -65,7 +83,7 @@ router.post('/:petId/request', auth, roleAuth(['adopter']), async (req, res) => 
 
 /**
  * @route   GET /api/adoptions/requests
- * @desc    Get all adoption requests for staff's organization
+ * @desc    Get all adoption requests for staff's organization (EXCLUDE DELETED PETS)
  * @access  Private (Staff only)
  */
 router.get('/requests', auth, roleAuth(['staff', 'admin']), async (req, res) => {
@@ -75,17 +93,27 @@ router.get('/requests', auth, roleAuth(['staff', 'admin']), async (req, res) => 
       return res.status(403).json({ msg: 'Staff does not belong to an organization' });
     }
 
-    const requests = await AdoptionRequest.find()
-      .populate({
-        path: 'pet',
-        match: { organization: staff.organization },
-        select: 'name breed status images'
-      })
-      .populate('adopter', 'name email location');
+    // ✅ FIX: Only get requests where pet exists and belongs to organization
+    const requests = await AdoptionRequest.find({ 
+      organization: staff.organization 
+    })
+    .populate({
+      path: 'pet',
+      match: { 
+        organization: staff.organization,
+        _id: { $exists: true } // Ensure pet still exists
+      },
+      select: 'name breed status images'
+    })
+    .populate('adopter', 'name email location')
+    .sort({ createdAt: -1 });
 
-    // filter out requests with no matching pet
-    const filtered = requests.filter(r => r.pet !== null);
-    res.json(filtered);
+    // ✅ FIX: Filter out requests where pet is null (deleted)
+    const validRequests = requests.filter(request => request.pet !== null);
+
+    console.log(`✅ Loaded ${validRequests.length} valid adoption requests (filtered out ${requests.length - validRequests.length} with deleted pets)`);
+
+    res.json(validRequests);
   } catch (err) {
     console.error(err);
     res.status(500).send('Server Error');
@@ -94,12 +122,11 @@ router.get('/requests', auth, roleAuth(['staff', 'admin']), async (req, res) => 
 
 /**
  * @route   PATCH /api/adoptions/:id/status
- * @desc    Staff update adoption request status (approve, reject, ignore, chat, finalized, etc.)
+ * @desc    Staff update adoption request status
  * @access  Private (Staff/Admin only)
  */
 router.patch('/:id/status', auth, roleAuth(['staff', 'admin']), async (req, res) => {
   try {
-    // const { status: rawStatus } = req.body;
     const { status: rawStatus, meetingDate } = req.body;
     if (!rawStatus) return res.status(400).json({ msg: 'Status is required' });
 
@@ -111,11 +138,9 @@ router.patch('/:id/status', auth, roleAuth(['staff', 'admin']), async (req, res)
     }
 
     const request = await AdoptionRequest.findById(req.params.id)
-      .populate({
-        path: 'pet',
-        populate: { path: 'organization', select: '_id name' }
-      })
-      .populate('adopter');
+      .populate('pet')
+      .populate('adopter')
+      .populate('organization');
 
     if (!request) return res.status(404).json({ msg: 'Adoption request not found' });
 
@@ -124,246 +149,166 @@ router.patch('/:id/status', auth, roleAuth(['staff', 'admin']), async (req, res)
       return res.status(403).json({ msg: 'Staff does not belong to any organization' });
     }
 
-    if (!request.pet || String(request.pet.organization?._id) !== String(staff.organization)) {
+    if (String(request.organization._id) !== String(staff.organization)) {
       return res.status(403).json({ msg: 'Not authorized to manage this request' });
     }
 
-    // if (['ignored','rejected'].includes(status)) {
-    //   request.status = status;
-    //   await request.save();
-    //   await Notification.create({
-    //     user: request.adopter._id,
-    //     type: `adoption_${status}`,
-    //     message: `Your adoption request for "${request.pet.name}" was ${status}.`,
-    //     meta: { pet: request.pet._id, request: request._id }
-    //   });
-    //   return res.json({ msg: `Adoption ${status}`, request });
-    // }
-
-    // testing
-
-    if (['ignored','rejected'].includes(status)) {
+    // Handle ignored/rejected status
+    if (['ignored', 'rejected'].includes(status)) {
       request.status = status;
       await request.save();
-      
-      // ✅ ENHANCED: Use notification service
-      await createNotification(
-        request.adopter._id,
-        status === 'rejected' ? NOTIFICATION_TYPES.ADOPTION_REJECTED : 'adoption_ignored',
-        `Your adoption request for "${request.pet.name}" was ${status}.`,
-        { 
+
+      await Notifier.notifyUser({
+        user: request.adopter._id,
+        type: NOTIFICATION_TYPES.ADOPTION_REJECTED,
+        message: `Your adoption request for "${request.pet.name}" was ${status}.`,
+        meta: { 
           petId: request.pet._id, 
-          petName: request.pet.name,
           requestId: request._id,
           action: 'browse_other_pets'
         }
-      );
-      
-      return res.json({ msg: `Adoption ${status}`, request });
+      });
+
+      return res.json({ msg: `Request ${status}`, request });
     }
 
-    // testing end
-
-
-
-    
-// adoption flow
-    // if (status === 'approved') {
-    //   request.status = 'approved';
-    //   await request.save();
-    
-    //   // Pet remains Available until finalized
-    //   // Other requests for same pet → on-hold
-    //   await AdoptionRequest.updateMany(
-    //     { pet: request.pet._id, _id: { $ne: request._id }, status: { $in: ['pending', 'on-hold'] } },
-    //     { $set: { status: 'on-hold' } }
-    //   );
-    
-    //   await Notification.create({
-    //     user: request.adopter._id,
-    //     type: 'adoption_approved',
-    //     message: `Your adoption request for "${request.pet.name}" is approved! Please chat with staff to schedule a meeting and finalize the adoption.`,
-    //     meta: { pet: request.pet._id, request: request._id }
-    //   });
-    
-    //   return res.json({ msg: 'Request approved. Awaiting chat/meeting.', request });
-    // }
-
-    // testr
+    // Handle approved status
     if (status === 'approved') {
       request.status = 'approved';
       await request.save();
-    
-      // Pet remains Available until finalized
-      // Other requests for same pet → on-hold
+
+      // Put other requests on hold
       await AdoptionRequest.updateMany(
-        { pet: request.pet._id, _id: { $ne: request._id }, status: { $in: ['pending', 'on-hold'] } },
+        { 
+          pet: request.pet._id, 
+          _id: { $ne: request._id }, 
+          status: { $in: ['pending', 'on-hold'] } 
+        },
         { $set: { status: 'on-hold' } }
       );
-    // autocreate chat message
- // ✅ NEW: Auto-create chat for approved adoption
- try {
-  console.log('🔧 Creating chat for approved adoption:', request._id);
-  
-  // Create participants array
-  const participants = [
-    { user: request.adopter._id, role: 'adopter' }
-  ];
 
-  // Add staff members from the organization
-  const User = require('../models/User');
-  const staffMembers = await User.find({ 
-    organization: request.organization._id,
-    role: 'staff'
-  }).select('_id name email');
+      // Auto-create chat for approved adoption
+      try {
+        const participants = [
+          { user: request.adopter._id, role: 'adopter' }
+        ];
 
-  staffMembers.forEach(staff => {
-    participants.push({ user: staff._id, role: 'staff' });
-  });
+        const staffMembers = await getStaffUsers(request.organization._id);
+        staffMembers.forEach(staff => {
+          participants.push({ user: staff._id, role: 'staff' });
+        });
 
-  // Create the chat
-  const chat = new Chat({
-    participants,
-    adoptionRequest: request._id,
-    lastMessage: `Chat started for ${request.pet.name}'s adoption process`,
-    lastMessageAt: new Date()
-  });
+        const chat = new Chat({
+          participants,
+          adoptionRequest: request._id,
+          lastMessage: `Chat started for ${request.pet.name}'s adoption process`,
+          lastMessageAt: new Date()
+        });
 
-  await chat.save();
-  console.log('✅ Chat created successfully:', chat._id);
+        await chat.save();
+        console.log('Chat created successfully:', chat._id);
 
+        // Notify adopter
+        await Notifier.notifyUser({
+          user: request.adopter._id,
+          type: NOTIFICATION_TYPES.ADOPTION_APPROVED,
+          message: `🎉 Your adoption request for "${request.pet.name}" is approved! You can now chat with staff.`,
+          meta: { 
+            petId: request.pet._id, 
+            requestId: request._id, 
+            chatId: chat._id,
+            action: 'open_chat' 
+          }
+        });
 
-  await createNotification(
-    request.adopter._id,
-    NOTIFICATION_TYPES.NEW_MESSAGE,
-    `💬 Chat started! You can now message the shelter about ${request.pet.name}'s adoption.`,
-    {
-      adoptionRequestId: request._id,
-      petId: request.pet._id,
-      petName: request.pet.name,
-      action: 'open_chat'
+      } catch (chatError) {
+        console.error('❌ Failed to create chat:', chatError);
+      }
+
+      return res.json({ msg: 'Request approved. Chat created.', request });
     }
-  );
 
-} catch (chatError) {
-  console.error('❌ Failed to create chat:', chatError);
-  // Don't fail the approval if chat creation fails
-}
+    // Handle meeting scheduling
+    if (status === 'meeting') {
+      if (!meetingDate) {
+        return res.status(400).json({ msg: 'Meeting date is required' });
+      }
 
-    // chat message logic end
-
-
-
-      //  Use notification service
-      await createNotification(
-        request.adopter._id,
-        NOTIFICATION_TYPES.ADOPTION_APPROVED,
-        `🎉 Your adoption request for "${request.pet.name}" is approved! Please chat with staff to schedule a meeting and finalize the adoption.`,
-        { 
-          petId: request.pet._id, 
-          petName: request.pet.name,
-          requestId: request._id,
-          action: 'start_chat'
-        }
-      );
-    
-      return res.json({ msg: 'Request approved. Awaiting chat/meeting.', request });
-    }
-    // testended
-  
-    // Chat flow
-    if (status === 'chat') {
-      request.status = 'chat';
+      request.status = 'meeting';
+      request.meeting = {
+        date: new Date(meetingDate),
+        confirmed: false
+      };
       await request.save();
-    
-      await Notification.create({
+
+      await Notifier.notifyUser({
         user: request.adopter._id,
-        type: 'adoption_chat',
-        message: `Your adoption request for "${request.pet.name}" is approved. Please join the chat to schedule a meeting.`,
-        meta: { pet: request.pet._id, request: request._id }
+        type: NOTIFICATION_TYPES.MEETING_SCHEDULED,
+        message: ` A meeting for "${request.pet.name}" has been scheduled on ${new Date(meetingDate).toLocaleString()}.`,
+        meta: { 
+          meetingDate, 
+          petId: request.pet._id, 
+          requestId: request._id,
+          action: 'confirm_meeting'
+        }
       });
-    
-      return res.json({ msg: 'Chat started for this adoption', request });
+
+      return res.json({ msg: 'Meeting scheduled', request });
     }
-        // --- Meeting flow ---
-if (status === 'meeting') {
-  if (!meetingDate) return res.status(400).json({ msg: 'Meeting date is required' });
 
-  request.status = 'meeting';
-  request.meeting.date = new Date(meetingDate);
-  request.meeting.confirmed = false; // not confirmed yet
-  await request.save();
-
-  await Notification.create({
-    user: request.adopter._id,
-    type: 'adoption_meeting',
-    message: `A staff has requested a meeting for "${request.pet.name}" on ${new Date(meetingDate).toLocaleString()}. Please confirm the meeting.`,
-    meta: { pet: request.pet._id, request: request._id }
-  });
-
-  return res.json({ msg: 'Meeting requested', request });
-}
-    // Finalize adoption
-    // if (status === 'finalized') {
-    //   request.status = 'finalized';
-    //   await request.save();
-    
-    //   const updatedPet = await Pet.findByIdAndUpdate(
-    //     request.pet._id,
-    //     { $set: { status: 'Adopted', adopter: request.adopter._id } },
-    //     { new: true }
-    //   );
-    
-    //   await Notification.create({
-    //     user: request.adopter._id,
-    //     type: 'adoption_finalized',
-    //     message: `Congratulations! Your adoption for "${request.pet.name}" has been finalized.`,
-    //     meta: { pet: request.pet._id, request: request._id }
-    //   });
-    
-    //   return res.json({ msg: 'Adoption finalized', request, pet: updatedPet });
-    // }
-    //testing start
+    // Handle finalized status
     if (status === 'finalized') {
       request.status = 'finalized';
       await request.save();
-    
+
       const updatedPet = await Pet.findByIdAndUpdate(
         request.pet._id,
         { $set: { status: 'Adopted', adopter: request.adopter._id } },
         { new: true }
       );
-    
-      // ✅ ENHANCED: Use notification service
-      await createNotification(
-        request.adopter._id,
-        NOTIFICATION_TYPES.ADOPTION_FINALIZED,
-        `🏠 Congratulations! Your adoption for "${request.pet.name}" has been finalized. Thank you for giving them a forever home!`,
+
+      // Reject all other pending requests for this pet
+      await AdoptionRequest.updateMany(
         { 
+          pet: request.pet._id, 
+          _id: { $ne: request._id }, 
+          status: { $nin: ['finalized', 'rejected'] } 
+        },
+        { $set: { status: 'rejected' } }
+      );
+
+      await Notifier.notifyUser({
+        user: request.adopter._id,
+        type: NOTIFICATION_TYPES.ADOPTION_FINALIZED,
+        message: `🏠 Congratulations! Your adoption for "${request.pet.name}" has been finalized.`,
+        meta: { 
           petId: request.pet._id, 
-          petName: request.pet.name,
           requestId: request._id,
           action: 'view_pet_profile'
         }
-      );
-    
+      }, { sendEmail: true });
+
       return res.json({ msg: 'Adoption finalized', request, pet: updatedPet });
     }
-// testing end
-    res.status(400).json({ msg: 'Unhandled status action' });
+    res.json({ msg: 'Status updated', request });
+
   } catch (err) {
     console.error(err);
-    res.status(500).json({ msg: 'Server Error', error: err.message });
+    res.status(500).json({ msg: 'Server error', error: err.message });
   }
 });
 
-// GET /api/adoptions/my-requests
-// Adopter can see all their adoption requests (pending, approved, etc.)
+/**
+ * @route   GET /api/adoptions/my-requests
+ * @desc    Adopter can see all their adoption requests
+ * @access  Private (Adopter only)
+ */
 router.get('/my-requests', auth, roleAuth(['adopter']), async (req, res) => {
   try {
     const requests = await AdoptionRequest.find({ adopter: req.user.id })
       .populate('pet', 'name breed age gender status images')
-      .populate('organization', 'name');
+      .populate('organization', 'name')
+      .sort({ createdAt: -1 });
 
     res.json(requests);
   } catch (err) {
@@ -372,9 +317,6 @@ router.get('/my-requests', auth, roleAuth(['adopter']), async (req, res) => {
   }
 });
 
-
-
-// testing meeting booking system
 /**
  * @route   PATCH /api/adoptions/:id/confirm-meeting
  * @desc    Adopter confirms a meeting
@@ -382,7 +324,7 @@ router.get('/my-requests', auth, roleAuth(['adopter']), async (req, res) => {
  */
 router.patch('/:id/confirm-meeting', auth, roleAuth(['adopter']), async (req, res) => {
   try {
-    const { notes } = req.body; // Optional notes from adopter
+    const { notes } = req.body;
     
     const request = await AdoptionRequest.findById(req.params.id)
       .populate('pet')
@@ -393,13 +335,11 @@ router.patch('/:id/confirm-meeting', auth, roleAuth(['adopter']), async (req, re
       return res.status(404).json({ msg: 'Adoption request not found' });
     }
 
-    // Verify this adopter owns the request
     if (request.adopter._id.toString() !== req.user.id) {
       return res.status(403).json({ msg: 'Not authorized to confirm this meeting' });
     }
 
-    // Check if meeting is scheduled
-    if (request.status !== 'meeting' || !request.meeting.date) {
+    if (request.status !== 'meeting' || !request.meeting?.date) {
       return res.status(400).json({ msg: 'No meeting scheduled to confirm' });
     }
 
@@ -409,36 +349,19 @@ router.patch('/:id/confirm-meeting', auth, roleAuth(['adopter']), async (req, re
     request.meeting.adopterNotes = notes;
     await request.save();
 
-    // ✅ Send real-time notification to staff
-    const { createNotification, NOTIFICATION_TYPES } = require('../utils/notificationService');
+    // Notify all staff members
     const staffUsers = await getStaffUsers(request.organization._id);
     
-    for (const staff of staffUsers) {
-      await createNotification(
-        staff._id,
-        NOTIFICATION_TYPES.MEETING_CONFIRMED,
-        `✅ ${request.adopter.name} confirmed the meeting for ${request.pet.name} on ${request.meeting.date.toLocaleString()}`,
-        {
-          adoptionRequestId: request._id,
-          petId: request.pet._id,
-          petName: request.pet.name,
-          adopterName: request.adopter.name,
-          meetingDate: request.meeting.date,
-          action: 'view_meeting_details'
-        }
-      );
-
-      // Real-time socket notification
-      const { getIO } = require('../server/socket');
-      const io = getIO();
-      io.to(`user-${staff._id}`).emit('meeting-confirmed', {
-        adoptionRequestId: request._id,
-        petName: request.pet.name,
-        adopterName: request.adopter.name,
-        meetingDate: request.meeting.date,
-        timestamp: new Date().toISOString()
-      });
-    }
+    await Notifier.notifyUsers(staffUsers, {
+      type: NOTIFICATION_TYPES.MEETING_CONFIRMED,
+      message: ` ${request.adopter.name} confirmed the meeting for ${request.pet.name} on ${request.meeting.date.toLocaleString()}`,
+      meta: { 
+        meetingDate: request.meeting.date, 
+        petId: request.pet._id, 
+        requestId: request._id,
+        action: 'view_meeting_details'
+      }
+    });
 
     res.json({
       msg: 'Meeting confirmed successfully!',
@@ -471,24 +394,21 @@ router.post('/:id/send-reminder', auth, roleAuth(['staff', 'admin']), async (req
       return res.status(404).json({ msg: 'Adoption request not found' });
     }
 
-    if (request.status !== 'meeting' || !request.meeting.date) {
+    if (request.status !== 'meeting' || !request.meeting?.date) {
       return res.status(400).json({ msg: 'No meeting scheduled' });
     }
 
-    const { createNotification, NOTIFICATION_TYPES } = require('../utils/notificationService');
-    
-    await createNotification(
-      request.adopter._id,
-      NOTIFICATION_TYPES.MEETING_REMINDER,
-      `🔔 Reminder: Your meeting for ${request.pet.name} is scheduled for ${request.meeting.date.toLocaleString()}. Please confirm your attendance.`,
-      {
-        adoptionRequestId: request._id,
-        petId: request.pet._id,
-        petName: request.pet.name,
+    await Notifier.notifyUser({
+      user: request.adopter._id,
+      type: NOTIFICATION_TYPES.MEETING_REMINDER,
+      message: `🔔 Reminder: Your meeting for ${request.pet.name} is scheduled for ${request.meeting.date.toLocaleString()}.`,
+      meta: { 
+        petId: request.pet._id, 
+        requestId: request._id,
         meetingDate: request.meeting.date,
         action: 'confirm_meeting'
       }
-    );
+    }, { sendEmail: true });
 
     res.json({
       msg: 'Meeting reminder sent successfully',
