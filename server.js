@@ -28,8 +28,8 @@ app.use("/api/users", require("./routes/userroutes"));
 app.use('/api/organizations', require('./routes/organizations'));
 
 // adoptionRoutes
-// const adoptionRoutes = app.use('/api/adoptions',require('./routes/adoptions'));
 app.use('/api/adoptions', require('./routes/adoptions'));
+
 // vet
 app.use('/api/vet', require('./routes/vet'));
 
@@ -52,8 +52,6 @@ app.use('/api/trainer', require('./routes/trainer'));
 
 // admin route
 app.use('/api/admin', require('./routes/admin'));
-
-
 
 // Serve frontend for testing
 app.get('/', (req, res) => {
