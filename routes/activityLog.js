@@ -1,14 +1,15 @@
 // routes/activityLog.js
 const express = require('express');
 const router = express.Router();
-const { getAllLogs, getUserLogs } = require('../controllers/activityLogController');
+const activityLogController = require('../controllers/activityLogController');
 const auth = require('../middleware/auth');
 const roleAuth = require('../middleware/roleAuth');
 
 // Admin can view all logs
-// router.get('/', auth, roleAuth(['admin']), getAllLogs);
+router.get('/', auth, roleAuth(['admin']), activityLogController.getAllLogs);
 
-// specific user route. // for futre approaches.
-router.get('/:userId', auth, getUserLogs);
+// Specific user route
+router.get('/:userId', auth, activityLogController.getUserLogs);
 
 module.exports = router;
+
