@@ -2,6 +2,7 @@ const Pet = require('../models/Pet');
 const User = require('../models/User');
 const logActivity = require('../utils/logActivity');
 const cloudinary = require('../config/cloudinary'); // optional if using cloudinary for images
+const softDeletePetRelations = require('../utils/cleanupRelations');
 const createError = (msg, status = 400) => { const err = new Error(msg); err.status = status; return err; };
 
 // Get pets (with adopter matching logic)
@@ -74,23 +75,55 @@ exports.updatePet = async (petId, data) => {
   return pet;
 };
 
-// Delete a pet
+//--------------------------------------------------------
+// Note: If in future team agrees to apply hard delete
+//--------------------------------------------------------
+// exports.deletePet = async (petId, user) => {
+//   const pet = await Pet.findById(petId);
+//   if (!pet) throw createError('Pet not found', 404);
+
+//   await pet.deleteOne();
+
+//   await logActivity({
+//     userId: user.id,  
+//     role: user.role,
+//     action: 'Deleted Pet',
+//     target: pet._id,
+//     targetModel: 'Pet',
+//     details: `Pet "${pet.name}" deleted`
+//   });
+
+//   return true;
+// };
+
+// Soft delete a pet
 exports.deletePet = async (petId, user) => {
   const pet = await Pet.findById(petId);
   if (!pet) throw createError('Pet not found', 404);
 
-  await pet.deleteOne();
+  //  Soft delete instead of hard delete
+  pet.isDeleted = true;
+  pet.deletedAt = new Date();
+  pet.deletedBy = user.id;
+
+  await pet.save();
+
+  // Optional: remove vet association
+  pet.vet = null;
+  await pet.save();
+
+  await softDeletePetRelations(pet._id);
 
   await logActivity({
     userId: user.id,
     role: user.role,
-    action: 'Deleted Pet',
+    action: 'Soft Deleted Pet',
     target: pet._id,
     targetModel: 'Pet',
-    details: `Pet "${pet.name}" deleted`
+    details: `Pet "${pet.name}" marked as deleted by ${user.role}`
   });
 
-  return true;
+  return { success: true, message: `Pet "${pet.name}" soft deleted successfully` };
 };
 
 // Update pet status

@@ -3,6 +3,8 @@ const mongoose = require('mongoose');
 const PetSchema = new mongoose.Schema({
 
 
+
+
   name: { type: String, required: true },
   breed: String,
   age: Number,
@@ -135,10 +137,22 @@ documents: [{
 }],
 
 
-
-
   // Blockchain
-  blockchainId: { type: String, unique: true, sparse: true } // optional, unique if exists
+  blockchainId: { type: String, unique: true, sparse: true },// optional, unique if exists
+
+//soft delete 
+isDeleted: { type: Boolean, default: false },
+deletedAt: { type: Date },
+deletedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+
 }, { timestamps: true });
+
+// Hide deleted pets by default in all find queries
+PetSchema.pre(/^find/, function (next) {
+  if (!this.getQuery().includeDeleted) {
+    this.where({ isDeleted: { $ne: true } });
+  }
+  next();
+});
 
 module.exports = mongoose.models.Pet || mongoose.model('Pet', PetSchema);
