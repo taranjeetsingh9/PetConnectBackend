@@ -7,7 +7,7 @@ const BehaviorAssessment = require('../models/BehaviorAssessment');
 const TrainingSession = require('../models/TrainingSession');
 const logActivity = require('../utils/logActivity');
 
-// ✅ GET all pets assigned to current trainer
+//  GET all pets assigned to current trainer
 router.get('/my-trainees', auth, isTrainer, async (req, res) => {
     try {
         const pets = await Pet.find({ trainer: req.user.id })
@@ -30,7 +30,7 @@ router.get('/my-trainees', auth, isTrainer, async (req, res) => {
     }
 });
 
-// ✅ GET behavior assessments for a pet
+//  GET behavior assessments for a pet
 router.get('/pets/:petId/behavior-assessments', auth, isTrainer, async (req, res) => {
     try {
         const petId = req.params.petId;
@@ -76,7 +76,7 @@ router.get('/pets/:petId/behavior-assessments', auth, isTrainer, async (req, res
     }
 });
 
-// ✅ POST new behavior assessment
+//  POST new behavior assessment
 router.post('/pets/:petId/behavior-assessments', auth, isTrainer, async (req, res) => {
     try {
         const {
@@ -146,7 +146,7 @@ router.post('/pets/:petId/behavior-assessments', auth, isTrainer, async (req, re
             details: `Added behavior assessment for ${pet.name}`
         });
 
-        console.log(`✅ Behavior assessment created for ${pet.name}`);
+        console.log(` Behavior assessment created for ${pet.name}`);
 
         res.status(201).json({
             success: true,
@@ -163,7 +163,7 @@ router.post('/pets/:petId/behavior-assessments', auth, isTrainer, async (req, re
     }
 });
 
-// ✅ GET training sessions for a pet
+//  GET training sessions for a pet
 router.get('/pets/:petId/training-sessions', auth, isTrainer, async (req, res) => {
     try {
         const petId = req.params.petId;
@@ -209,7 +209,7 @@ router.get('/pets/:petId/training-sessions', auth, isTrainer, async (req, res) =
     }
 });
 
-// ✅ POST new training session
+//  POST new training session
 router.post('/pets/:petId/training-sessions', auth, isTrainer, async (req, res) => {
     try {
         const {
@@ -306,7 +306,7 @@ router.post('/pets/:petId/training-sessions', auth, isTrainer, async (req, res) 
             details: `Added training session for ${pet.name}: ${sessionDetails.sessionType}`
         });
 
-        console.log(`✅ Training session created for ${pet.name}`);
+        console.log(` Training session created for ${pet.name}`);
 
         res.status(201).json({
             success: true,
@@ -323,7 +323,7 @@ router.post('/pets/:petId/training-sessions', auth, isTrainer, async (req, res) 
     }
 });
 
-// ✅ GET trainer's upcoming sessions
+//  GET trainer's upcoming sessions
 router.get('/upcoming-sessions', auth, isTrainer, async (req, res) => {
     try {
         const today = new Date();
@@ -355,7 +355,7 @@ router.get('/upcoming-sessions', auth, isTrainer, async (req, res) => {
     }
 });
 
-// ✅ GET pets needing follow-up assessments
+//  GET pets needing follow-up assessments
 router.get('/needs-followup', auth, isTrainer, async (req, res) => {
     try {
         const today = new Date();
