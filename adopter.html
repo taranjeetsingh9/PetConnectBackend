@@ -15,12 +15,13 @@
     <!-- Top Bar -->
     <div class="flex justify-between items-center bg-white p-4 rounded-xl shadow-md mb-6">
       <p id="userStatus" class="text-lg font-medium text-gray-700"></p>
-      <button id="logoutBtn" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">Sign Out</button>
-                    <!-- Add this button near the logout button -->
-<button onclick="window.location.href='user-profile.html'" 
-class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
-👤 My Profile
-</button>
+      <div class="flex gap-2">
+        <button onclick="window.location.href='user-profile.html'" 
+                class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
+          👤 My Profile
+        </button>
+        <button id="logoutBtn" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">Sign Out</button>
+      </div>
     </div>
 
     <!-- Available Pets -->
@@ -29,25 +30,98 @@ class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
 
     <!-- My Requests -->
     <h2 class="text-2xl font-semibold mb-3">My Adoption Requests</h2>
-    <div id="my-requests" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    <div id="my-requests" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8"></div>
+
+    <!-- Training Services Section -->
+    <div class="bg-white p-6 rounded-xl shadow-lg mb-6">
+      <h2 class="text-2xl font-bold mb-4">🎯 Professional Training Services</h2>
+      
+      <!-- My Training Requests -->
+      <div class="mb-6">
+        <h3 class="text-xl font-semibold mb-3">My Training Requests</h3>
+        <div id="my-training-requests" class="space-y-4">
+          <!-- Training requests will be loaded here -->
+        </div>
+      </div>
+
+      <!-- Available Trainers -->
+      <div>
+        <h3 class="text-xl font-semibold mb-3">Available Professional Trainers</h3>
+        <div id="available-trainers" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+          <!-- Trainers will be loaded here -->
+        </div>
+        
+        <!-- Training Request Form (Hidden by default) -->
+        <div id="training-request-form" class="hidden bg-blue-50 p-4 rounded-lg mt-4">
+          <h4 class="text-lg font-semibold mb-3">Request Training Session</h4>
+          <form id="requestTrainingForm">
+            <input type="hidden" id="selectedPetId">
+            <input type="hidden" id="selectedTrainerId">
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+              <div>
+                <label class="block text-sm font-medium mb-1">Session Type</label>
+                <select id="sessionType" class="w-full p-2 border rounded" required>
+                  <option value="">Select session type</option>
+                  <option value="basic_obedience">Basic Obedience - $50</option>
+                  <option value="leash_training">Leash Training - $45</option>
+                  <option value="socialization">Socialization - $60</option>
+                  <option value="advanced_obedience">Advanced Obedience - $75</option>
+                  <option value="behavior_modification">Behavior Modification - $100</option>
+                  <option value="therapy_prep">Therapy Preparation - $120</option>
+                </select>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium mb-1">Preferred Date</label>
+                <input type="date" id="preferredDate" class="w-full p-2 border rounded">
+              </div>
+            </div>
+            
+            <div class="mb-3">
+              <label class="block text-sm font-medium mb-1">Notes & Special Instructions</label>
+              <textarea id="trainingNotes" placeholder="Tell the trainer about your pet's needs, behavior issues, or specific goals..." 
+                        class="w-full p-2 border rounded h-20"></textarea>
+            </div>
+            
+            <div class="flex gap-2">
+              <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                Submit Request
+              </button>
+              <button type="button" onclick="hideTrainingForm()" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
     const PETS_API_URL = "http://localhost:5001/api/pets";
     const ADOPTIONS_API_URL = "http://localhost:5001/api/adoptions";
+    const TRAINING_REQUESTS_API = "http://localhost:5001/api/training-requests";
     let token = localStorage.getItem("token");
 
-    const fetchWithAuth = (url,opt={})=>{
-      return fetch(url,{...opt,headers:{'Content-Type':'application/json','x-auth-token':token,...opt.headers}});
+    const fetchWithAuth = (url, opt = {}) => {
+      return fetch(url, {
+        ...opt,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token,
+          ...opt.headers
+        }
+      });
     };
 
-    // Load dashboard
+    // Dashboard load
     async function loadDashboard() {
       try {
         // user info
         const userRes = await fetchWithAuth("http://localhost:5001/api/auth/me");
         const user = await userRes.json();
-        if(!userRes.ok) return window.location.href="index.html";
+        if (!userRes.ok) return window.location.href = "index.html";
 
         document.getElementById("userStatus").innerText = `Welcome ${user.name}`;
 
@@ -58,27 +132,30 @@ class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
 
         // fetch my requests
         loadMyAdoptionRequests();
+        
+        // Load training data
+        loadTrainingData();
 
-      } catch(err){
+      } catch (err) {
         console.error(err);
         alert("Failed to load dashboard");
       }
     }
 
-    function renderPets(pets){
+    function renderPets(pets) {
       const petsList = document.getElementById("petsList");
-      const available = pets.filter(p=>p.status==="Available");
-      if(available.length===0){
+      const available = pets.filter(p => p.status === "Available");
+      if (available.length === 0) {
         petsList.innerHTML = `<p class="col-span-3 text-center text-gray-500">No pets available</p>`;
         return;
       }
-      petsList.innerHTML = available.map(pet=>`
+      petsList.innerHTML = available.map(pet => `
         <div class="bg-white border rounded-xl shadow-md overflow-hidden">
           ${pet.images && pet.images[0] ? `<img src="${pet.images[0]}" class="w-full h-48 object-cover">`
           : `<div class="w-full h-48 flex items-center justify-center bg-gray-200 text-gray-500">No Image</div>`}
           <div class="p-4">
             <h3 class="text-lg font-semibold text-indigo-700">${pet.name}</h3>
-            <p class="text-sm text-gray-600">Breed: ${pet.breed||"Unknown"}</p>
+            <p class="text-sm text-gray-600">Breed: ${pet.breed || "Unknown"}</p>
             <p class="text-sm text-gray-600">Status: ${pet.status}</p>
           </div>
           <button data-id="${pet._id}" class="requestAdoptionBtn w-full bg-green-600 text-white px-3 py-2">Request Adoption</button>
@@ -86,555 +163,582 @@ class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
       `).join("");
     }
 
-    // async function loadMyAdoptionRequests(){
-    //   try{
-    //     const res = await fetchWithAuth(`${ADOPTIONS_API_URL}/my-requests`);
-    //     const requests = await res.json();
-    //     const container = document.getElementById("my-requests");
-    //     container.innerHTML="";
+    async function loadMyAdoptionRequests() {
+      try {
+        const res = await fetchWithAuth(`${ADOPTIONS_API_URL}/my-requests`);
+        const requests = await res.json();
+        const container = document.getElementById("my-requests");
+        container.innerHTML = "";
 
-    //     if(requests.length===0){
-    //       container.innerHTML="<p class='col-span-3 text-center text-gray-500'>No requests yet</p>";
-    //       return;
-    //     }
+        if (requests.length === 0) {
+          container.innerHTML = "<p class='col-span-3 text-center text-gray-500'>No requests yet</p>";
+          return;
+        }
 
-    //     requests.forEach(req=>{
-    //       const pet=req.pet;
-    //       const status=req.status;
-    //       const card=document.createElement("div");
-    //       card.className="bg-white border rounded-xl shadow-md p-4";
+        requests.forEach(req => {
+          const pet = req.pet;
+          const status = req.status;
+          const meeting = req.meeting;
+          const card = document.createElement("div");
+          card.className = "bg-white border rounded-xl shadow-md p-4";
 
-    //       card.innerHTML=`
-    //         <h3 class="text-lg font-semibold text-indigo-700">${pet.name}</h3>
-    //         <p class="text-sm text-gray-600">${pet.breed||"Unknown"}</p>
-    //         <p class="mt-2"><b>Status:</b> 
-    //           <span class="px-2 py-1 rounded text-white ${status==='approved'?'bg-green-600':status==='pending'?'bg-yellow-500':'bg-gray-400'}">
-    //             ${status}
-    //           </span>
-    //         </p>
-    //         ${status==='approved'?`<button onclick="startChat('${req._id}')" class="mt-3 w-full bg-blue-600 text-white px-3 py-2 rounded">Chat / Book Meeting</button>`:""}
-    //       `;
-    //       container.appendChild(card);
-    //     });
-    //   }catch(err){console.error(err);}
-    // }
+          let actionButtons = '';
+          
+          if (status === 'approved') {
+            actionButtons = `<button onclick="startChat('${req._id}')" class="mt-3 w-full bg-blue-600 text-white px-3 py-2 rounded">Chat / Book Meeting</button>`;
+          } else if (status === 'meeting') {
+            const meetingDate = meeting?.date ? new Date(meeting.date).toLocaleString() : 'Not scheduled';
+            const isConfirmed = meeting?.confirmed;
+            
+            actionButtons = `
+              <div class="mt-3 space-y-2">
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p class="text-sm font-medium text-blue-800">📅 Scheduled Meeting</p>
+                  <p class="text-xs text-blue-600 mt-1"><strong>When:</strong> ${meetingDate}</p>
+                  <p class="text-xs text-blue-600"><strong>Status:</strong> 
+                    <span class="${isConfirmed ? 'text-green-600' : 'text-yellow-600'}">
+                      ${isConfirmed ? 'Confirmed' : 'Pending Your Confirmation'}
+                    </span>
+                  </p>
+                </div>
+                ${!isConfirmed ? `
+                  <button onclick="confirmMeeting('${req._id}')" class="w-full bg-green-600 text-white px-3 py-2 rounded hover:bg-green-700">
+                    ✅ Confirm Meeting
+                  </button>
+                  <button onclick="rescheduleMeeting('${req._id}')" class="w-full bg-yellow-500 text-white px-3 py-2 rounded hover:bg-yellow-600">
+                    📅 Request Reschedule
+                  </button>
+                ` : `
+                  <button onclick="viewMeetingDetails('${req._id}')" class="w-full bg-gray-500 text-white px-3 py-2 rounded">
+                    📋 View Meeting Details
+                  </button>
+                `}
+              </div>
+            `;
+          } else if (status === 'finalized') {
+            actionButtons = `
+              <div class="mt-3 p-2 bg-green-100 border border-green-300 rounded">
+                <p class="text-sm text-green-800 text-center">🎉 Adoption Finalized!</p>
+              </div>
+            `;
+          }
 
-
-
-    // testing
-    async function loadMyAdoptionRequests(){
-  try{
-    const res = await fetchWithAuth(`${ADOPTIONS_API_URL}/my-requests`);
-    const requests = await res.json();
-    const container = document.getElementById("my-requests");
-    container.innerHTML="";
-
-    if(requests.length===0){
-      container.innerHTML="<p class='col-span-3 text-center text-gray-500'>No requests yet</p>";
-      return;
+          card.innerHTML = `
+            <h3 class="text-lg font-semibold text-indigo-700">${pet.name}</h3>
+            <p class="text-sm text-gray-600">${pet.breed || "Unknown"}</p>
+            <p class="mt-2"><b>Status:</b> 
+              <span class="px-2 py-1 rounded text-white ${status === 'approved' ? 'bg-green-600' : status === 'pending' ? 'bg-yellow-500' : status === 'meeting' ? 'bg-blue-500' : 'bg-gray-400'}">
+                ${status}
+              </span>
+            </p>
+            ${actionButtons}
+          `;
+          container.appendChild(card);
+        });
+      } catch (err) {
+        console.error(err);
+      }
     }
 
-    requests.forEach(req=>{
-      const pet=req.pet;
-      const status=req.status;
-      const meeting=req.meeting;
-      const card=document.createElement("div");
-      card.className="bg-white border rounded-xl shadow-md p-4";
-
-      let actionButtons = '';
-      
-      if(status==='approved'){
-        actionButtons = `<button onclick="startChat('${req._id}')" class="mt-3 w-full bg-blue-600 text-white px-3 py-2 rounded">Chat / Book Meeting</button>`;
-      }
-      
-      // ✅ NEW: Meeting confirmation interface
-      else if(status==='meeting'){
-        const meetingDate = meeting?.date ? new Date(meeting.date).toLocaleString() : 'Not scheduled';
-        const isConfirmed = meeting?.confirmed;
-        
-        actionButtons = `
-          <div class="mt-3 space-y-2">
-            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <p class="text-sm font-medium text-blue-800">📅 Scheduled Meeting</p>
-              <p class="text-xs text-blue-600 mt-1"><strong>When:</strong> ${meetingDate}</p>
-              <p class="text-xs text-blue-600"><strong>Status:</strong> 
-                <span class="${isConfirmed ? 'text-green-600' : 'text-yellow-600'}">
-                  ${isConfirmed ? 'Confirmed' : 'Pending Your Confirmation'}
-                </span>
-              </p>
-            </div>
-            ${!isConfirmed ? `
-              <button onclick="confirmMeeting('${req._id}')" class="w-full bg-green-600 text-white px-3 py-2 rounded hover:bg-green-700">
-                ✅ Confirm Meeting
-              </button>
-              <button onclick="rescheduleMeeting('${req._id}')" class="w-full bg-yellow-500 text-white px-3 py-2 rounded hover:bg-yellow-600">
-                📅 Request Reschedule
-              </button>
-            ` : `
-              <button onclick="viewMeetingDetails('${req._id}')" class="w-full bg-gray-500 text-white px-3 py-2 rounded">
-                📋 View Meeting Details
-              </button>
-            `}
-          </div>
-        `;
-      }
-      
-      else if(status==='finalized'){
-        actionButtons = `
-          <div class="mt-3 p-2 bg-green-100 border border-green-300 rounded">
-            <p class="text-sm text-green-800 text-center">🎉 Adoption Finalized!</p>
-          </div>
-        `;
-      }
-
-      card.innerHTML=`
-        <h3 class="text-lg font-semibold text-indigo-700">${pet.name}</h3>
-        <p class="text-sm text-gray-600">${pet.breed||"Unknown"}</p>
-        <p class="mt-2"><b>Status:</b> 
-          <span class="px-2 py-1 rounded text-white ${status==='approved'?'bg-green-600':status==='pending'?'bg-yellow-500':status==='meeting'?'bg-blue-500':'bg-gray-400'}">
-            ${status}
-          </span>
-        </p>
-        ${actionButtons}
-      `;
-      container.appendChild(card);
-    });
-  }catch(err){console.error(err);}
-}
-    // testing end
-
-    // adoption request handler
-    document.addEventListener("click", async(e)=>{
-      if(e.target.classList.contains("requestAdoptionBtn")){
+    // Adoption request handler
+    document.addEventListener("click", async (e) => {
+      if (e.target.classList.contains("requestAdoptionBtn")) {
         const petId = e.target.dataset.id;
-        try{
-          const res=await fetchWithAuth(`${ADOPTIONS_API_URL}/${petId}/request`,{method:"POST"});
-          const data=await res.json();
-          if(res.ok){
+        try {
+          const res = await fetchWithAuth(`${ADOPTIONS_API_URL}/${petId}/request`, { method: "POST" });
+          const data = await res.json();
+          if (res.ok) {
             alert("Request submitted");
             loadMyAdoptionRequests();
-          } else alert(data.msg||"Failed");
-        }catch(err){console.error(err);}
+          } else alert(data.msg || "Failed");
+        } catch (err) {
+          console.error(err);
+        }
       }
     });
 
-    function startChat(reqId){
-      alert("Chat/Booking flow coming soon for request "+reqId);
+    function startChat(reqId) {
+      alert("Chat/Booking flow coming soon for request " + reqId);
     }
 
-    document.getElementById("logoutBtn").addEventListener("click",()=>{
+    document.getElementById("logoutBtn").addEventListener("click", () => {
       localStorage.removeItem("token");
-      window.location.href="auth.html";
+      window.location.href = "auth.html";
     });
 
-    document.addEventListener("DOMContentLoaded",loadDashboard);
-  </script>
+    // Meeting functions
+    function confirmMeeting(requestId) {
+      window.location.href = `meeting-confirmation.html?requestId=${requestId}`;
+    }
 
-<!-- Add this to your Adopter Dashboard HTML, before the closing </body> tag -->
-<script>
-  // Notification testing functions for Adopter Dashboard
-  async function testNotificationEndpoints() {
+    function rescheduleMeeting(requestId) {
+      alert('To reschedule, please contact the shelter directly via chat or email.');
+    }
+
+    function viewMeetingDetails(requestId) {
+      window.location.href = `meeting-confirmation.html?requestId=${requestId}`;
+    }
+
+    // Enhanced startChat function
+    function startChat(reqId) {
+      const meetingDate = prompt('Enter preferred meeting date & time (YYYY-MM-DDTHH:MM):\nExample: 2025-10-20T14:00');
+      if (meetingDate) {
+        scheduleMeeting(reqId, meetingDate);
+      }
+    }
+
+    // Function to schedule meeting
+    async function scheduleMeeting(requestId, meetingDate) {
+      try {
+        const response = await fetchWithAuth(`${ADOPTIONS_API_URL}/${requestId}/status`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            status: 'meeting',
+            meetingDate: meetingDate
+          })
+        });
+
+        const result = await response.json();
+        if (response.ok) {
+          alert('Meeting scheduled successfully! Please wait for staff confirmation.');
+          loadMyAdoptionRequests();
+        } else {
+          alert('Failed to schedule meeting: ' + (result.msg || 'Unknown error'));
+        }
+      } catch (error) {
+        console.error('Error scheduling meeting:', error);
+        alert('Error scheduling meeting. Please try again.');
+      }
+    }
+
+    // Training functions
+    async function loadTrainingData() {
+      try {
+        await loadMyTrainingRequests();
+        await loadAvailableTrainers();
+      } catch (error) {
+        console.log('Training endpoints not available yet');
+      }
+    }
+
+    // Load adopter's training requests
+    async function loadMyTrainingRequests() {
+      try {
+        const response = await fetchWithAuth(`${TRAINING_REQUESTS_API}/my-requests`);
+
+        if (!response.ok) {
+          document.getElementById('my-training-requests').innerHTML = `
+            <div class="text-center py-6 bg-yellow-50 rounded-lg">
+              <p class="text-yellow-600">Training requests feature coming soon</p>
+            </div>
+          `;
+          return;
+        }
+
+        const data = await response.json();
+        const container = document.getElementById('my-training-requests');
+
+        if (!data.success || !data.requests || data.requests.length === 0) {
+          container.innerHTML = `
+            <div class="text-center py-6 bg-gray-50 rounded-lg">
+              <p class="text-gray-500">No training requests yet</p>
+              <p class="text-sm text-gray-400 mt-1">Request a trainer to get started!</p>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = data.requests.map(request => `
+          <div class="bg-white border rounded-lg p-4 shadow-sm">
+            <div class="flex justify-between items-start">
+              <div class="flex-1">
+                <h4 class="font-semibold text-indigo-700">${request.pet?.name || 'Unknown Pet'}</h4>
+                <div class="grid grid-cols-2 gap-2 text-sm text-gray-600 mt-1">
+                  <div><strong>Trainer:</strong> ${request.trainer?.name || 'Unknown'}</div>
+                  <div><strong>Session:</strong> ${formatSessionType(request.sessionType)}</div>
+                  <div><strong>Price:</strong> $${request.price || 'N/A'}</div>
+                  <div><strong>Duration:</strong> ${request.duration || 'N/A'} mins</div>
+                </div>
+                <div class="mt-2">
+                  <span class="px-2 py-1 rounded-full text-xs ${getRequestStatusColor(request.status)}">
+                    ${(request.status || 'pending').toUpperCase()}
+                  </span>
+                </div>
+                ${request.notes ? `
+                  <div class="mt-2">
+                    <p class="text-sm text-gray-700"><strong>Notes:</strong> ${request.notes}</p>
+                  </div>
+                ` : ''}
+                ${request.trainerResponse ? `
+                  <div class="mt-2 bg-blue-50 border border-blue-200 rounded p-2">
+                    <p class="text-sm text-blue-700"><strong>Trainer Response:</strong> ${request.trainerResponse.message}</p>
+                    ${request.trainerResponse.proposedDate ? `
+                      <p class="text-xs text-blue-600 mt-1">
+                        <strong>Proposed Date:</strong> ${new Date(request.trainerResponse.proposedDate).toLocaleDateString()}
+                      </p>
+                    ` : ''}
+                  </div>
+                ` : ''}
+              </div>
+              <div class="ml-4 flex flex-col gap-2">
+                ${request.status === 'pending' ? `
+                  <button onclick="cancelTrainingRequest('${request._id}')" 
+                          class="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700">
+                    Cancel
+                  </button>
+                ` : ''}
+                ${request.status === 'approved' ? `
+                  <button onclick="viewTrainingDetails('${request._id}')" 
+                          class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
+                    View Details
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+          </div>
+        `).join('');
+      } catch (error) {
+        console.error('Error loading training requests:', error);
+        document.getElementById('my-training-requests').innerHTML = `
+          <div class="text-center py-6 bg-red-50 rounded-lg">
+            <p class="text-red-500">Failed to load training requests</p>
+          </div>
+        `;
+      }
+    }
+
+    // Load available trainers
+    async function loadAvailableTrainers() {
+      try {
+        const response = await fetchWithAuth(`${TRAINING_REQUESTS_API}/trainers/available`);
+
+        const container = document.getElementById('available-trainers');
+
+        if (!response.ok) {
+          container.innerHTML = `
+            <div class="col-span-3 text-center py-6 bg-yellow-50 rounded-lg">
+              <p class="text-yellow-600">Trainer directory coming soon</p>
+              <p class="text-sm text-yellow-500 mt-1">This feature will be available shortly</p>
+            </div>
+          `;
+          return;
+        }
+
+        const data = await response.json();
+
+        if (!data.success || !data.trainers || data.trainers.length === 0) {
+          container.innerHTML = `
+            <div class="col-span-3 text-center py-6 bg-gray-50 rounded-lg">
+              <p class="text-gray-500">No trainers available at the moment</p>
+              <p class="text-sm text-gray-400 mt-1">Please check back later</p>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = data.trainers.map(trainer => `
+          <div class="bg-white border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
+            <div class="text-center">
+              ${trainer.profileImage ? `
+                <img src="${trainer.profileImage}" alt="${trainer.name}" 
+                     class="w-16 h-16 rounded-full mx-auto mb-3 object-cover border">
+              ` : `
+                <div class="w-16 h-16 bg-indigo-100 rounded-full mx-auto mb-3 flex items-center justify-center text-indigo-600 font-semibold">
+                  ${trainer.name?.charAt(0) || 'T'}
+                </div>
+              `}
+              <h4 class="font-semibold text-gray-800">${trainer.name || 'Professional Trainer'}</h4>
+              <p class="text-sm text-gray-600 mb-2">${trainer.specialization || 'Professional Trainer'}</p>
+              <div class="flex justify-center items-center mb-3">
+                <span class="text-yellow-500">⭐</span>
+                <span class="text-sm text-gray-700 ml-1">${trainer.rating || '5.0'}</span>
+              </div>
+              ${trainer.bio ? `
+                <p class="text-xs text-gray-500 mb-3 line-clamp-2">${trainer.bio}</p>
+              ` : ''}
+              <button onclick="showTrainingForm('${trainer._id}')" 
+                      class="w-full bg-indigo-600 text-white py-2 rounded text-sm hover:bg-indigo-700 transition-colors">
+                Request Session
+              </button>
+            </div>
+          </div>
+        `).join('');
+      } catch (error) {
+        console.error('Error loading trainers:', error);
+        const container = document.getElementById('available-trainers');
+        container.innerHTML = `
+          <div class="col-span-3 text-center py-6 bg-red-50 rounded-lg">
+            <p class="text-red-500">Failed to load trainers</p>
+            <p class="text-sm text-red-400 mt-1">Please try again later</p>
+          </div>
+        `;
+      }
+    }
+
+// Show training request form - FIXED VERSION
+async function showTrainingForm(trainerId) {
     try {
-      const token = localStorage.getItem('token');
-      
-      // Test 1: Get notifications
-      const notificationsRes = await fetch('/api/notifications', {
-        headers: { 'x-auth-token': token }
-      });
-      
-      if (notificationsRes.ok) {
-        const notificationsData = await notificationsRes.json();
-        console.log('📧 Notifications:', notificationsData);
+        console.log('🔍 Loading adopted pets for training request...');
         
-        // Display notifications in UI
-        displayNotifications(notificationsData.notifications);
-      } else {
-        console.log('Notifications endpoint not working yet');
-      }
-      
-      // Test 2: Get unread count
-      const unreadRes = await fetch('/api/notifications/unread', {
-        headers: { 'x-auth-token': token }
-      });
-      
-      if (unreadRes.ok) {
-        const unreadData = await unreadRes.json();
-        console.log('🔔 Unread count:', unreadData.unreadCount);
-        updateUnreadBadge(unreadData.unreadCount);
-      }
-      
-    } catch (error) {
-      console.log('Notification endpoints not available yet');
-    }
-  }
-  
-  // Display notifications in UI
-  function displayNotifications(notifications) {
-    const notificationSection = document.getElementById('notification-section');
-    if (!notificationSection) {
-      // Create notification section if it doesn't exist
-      const dashboard = document.querySelector('.w-full.max-w-5xl');
-      const notificationHTML = `
-        <div id="notification-section" class="bg-white p-4 rounded-xl shadow-md mb-6">
-          <h2 class="text-2xl font-semibold mb-3 flex items-center">
-            Notifications 
-            <span id="unreadBadge" class="ml-2 bg-red-500 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center hidden">0</span>
-            <button onclick="markAllAsRead()" class="ml-auto text-sm text-indigo-600 hover:text-indigo-800">Mark all read</button>
-          </h2>
-          <div id="notificationsList" class="space-y-2"></div>
-        </div>
-      `;
-      dashboard.insertAdjacentHTML('afterbegin', notificationHTML);
-    }
-    
-    const notificationsList = document.getElementById('notificationsList');
-    if (notifications && notifications.length > 0) {
-      notificationsList.innerHTML = notifications.map(notif => `
-        <div class="p-3 border rounded-lg ${!notif.read ? 'bg-blue-50 border-blue-200' : 'bg-gray-50'}">
-          <div class="flex justify-between items-start">
-            <p class="text-sm flex-1">${notif.message}</p>
-            <button onclick="deleteNotification('${notif._id}')" class="text-gray-400 hover:text-red-500 ml-2">×</button>
-          </div>
-          <div class="flex justify-between items-center mt-2">
-            <span class="text-xs text-gray-500 capitalize">${notif.type.replace('_', ' ')}</span>
-            <span class="text-xs text-gray-400">${new Date(notif.createdAt).toLocaleDateString()}</span>
-          </div>
-          ${!notif.read ? `
-            <button onclick="markAsRead('${notif._id}')" class="text-xs text-blue-600 hover:text-blue-800 mt-1">
-              Mark as read
-            </button>
-          ` : ''}
-        </div>
-      `).join('');
-    } else {
-      notificationsList.innerHTML = '<p class="text-gray-500 text-center">No notifications yet</p>';
-    }
-  }
-  
-  // Update unread badge
-  function updateUnreadBadge(count) {
-    const badge = document.getElementById('unreadBadge');
-    if (badge) {
-      if (count > 0) {
-        badge.textContent = count > 9 ? '9+' : count;
-        badge.classList.remove('hidden');
-      } else {
-        badge.classList.add('hidden');
-      }
-    }
-  }
-  
-  // Notification actions
-  async function markAsRead(notificationId) {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/notifications/${notificationId}/read`, {
-        method: 'PATCH',
-        headers: { 'x-auth-token': token }
-      });
-      
-      if (response.ok) {
-        testNotificationEndpoints(); // Refresh notifications
-      }
-    } catch (error) {
-      console.error('Failed to mark as read:', error);
-    }
-  }
-  
-  async function markAllAsRead() {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/notifications/read-all', {
-        method: 'PATCH',
-        headers: { 'x-auth-token': token }
-      });
-      
-      if (response.ok) {
-        testNotificationEndpoints(); // Refresh notifications
-      }
-    } catch (error) {
-      console.error('Failed to mark all as read:', error);
-    }
-  }
-  
-  async function deleteNotification(notificationId) {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/notifications/${notificationId}`, {
-        method: 'DELETE',
-        headers: { 'x-auth-token': token }
-      });
-      
-      if (response.ok) {
-        testNotificationEndpoints(); // Refresh notifications
-      }
-    } catch (error) {
-      console.error('Failed to delete notification:', error);
-    }
-  }
-  
-  // Load notifications when dashboard loads
-  document.addEventListener('DOMContentLoaded', function() {
-    // Wait a bit for the dashboard to load, then check notifications
-    setTimeout(testNotificationEndpoints, 1000);
-  });
-  </script>
-  <!-- Real-time Socket.io Notifications -->
-<script>
-  // Real-time Socket.io Notifications - FIXED VERSION
-let socket = null;
+        // Load adopter's adopted pets using the correct endpoint
+        const response = await fetchWithAuth(`${ADOPTIONS_API_URL}/my-adopted-pets`);
+        
+        console.log('📊 Adopted pets response status:', response.status);
+        
+        if (!response.ok) {
+            console.error('❌ Adopted pets endpoint failed:', response.status);
+            alert('Failed to load your adopted pets. Please try again.');
+            return;
+        }
 
-function initializeSocketIO() {
-  const userToken = localStorage.getItem('token');
-  if (!userToken) {
-    console.log('No token found, skipping Socket.io initialization');
-    return;
-  }
-  
-  console.log('🔄 Initializing Socket.io connection...');
-  console.log('Token present:', !!userToken);
-  
-  try {
-    // Connect to Socket.io server
-    socket = io('http://localhost:5001', {
-      auth: {
-        token: userToken
-      },
-      transports: ['websocket', 'polling'],
-      timeout: 10000 // 10 second timeout
+        const data = await response.json();
+        console.log('📦 Adopted pets data:', data);
+
+        // ✅ FIX: Check the actual response structure
+        let adoptedPets = [];
+        
+        if (data.pets && Array.isArray(data.pets)) {
+            adoptedPets = data.pets;
+        } else if (data.adoptedPets && Array.isArray(data.adoptedPets)) {
+            adoptedPets = data.adoptedPets;
+        } else if (Array.isArray(data)) {
+            adoptedPets = data;
+        } else if (data.data && Array.isArray(data.data)) {
+            adoptedPets = data.data;
+        }
+
+        console.log('🐾 Found adopted pets:', adoptedPets);
+
+        if (!adoptedPets || adoptedPets.length === 0) {
+            alert('You must have at least one adopted pet to request training.');
+            return;
+        }
+
+        // Populate the pet dropdown dynamically
+        const form = document.getElementById('training-request-form');
+        
+        // Clear any existing pet dropdown
+        const existingPetSelect = form.querySelector('#selectedPetId');
+        if (existingPetSelect) existingPetSelect.remove();
+
+        const petSelectHTML = `
+            <div class="mb-3">
+                <label class="block text-sm font-medium mb-1">Select Pet</label>
+                <select id="selectedPetId" class="w-full p-2 border rounded" required>
+                    <option value="">Select your pet</option>
+                    ${adoptedPets.map(pet => {
+                        // ✅ FIX: Handle null/undefined pet objects
+                        if (!pet || !pet._id) {
+                            console.warn('⚠️ Invalid pet data:', pet);
+                            return '';
+                        }
+                        return `<option value="${pet._id}">${pet.name || 'Unknown'} (${pet.breed || 'Unknown breed'})</option>`;
+                    }).join('')}
+                </select>
+            </div>
+        `;
+
+        form.querySelector('form').insertAdjacentHTML('afterbegin', petSelectHTML);
+        form.classList.remove('hidden');
+        document.getElementById('selectedTrainerId').value = trainerId;
+        
+        console.log('✅ Training form shown successfully');
+
+    } catch (error) {
+        console.error('❌ Error showing training form:', error);
+        alert('Failed to load pets for training request: ' + error.message);
+    }
+}
+    // Hide the form
+    function hideTrainingForm() {
+      const form = document.getElementById('training-request-form');
+      form.classList.add('hidden');
+      form.querySelector('form').reset();
+      const existingPetSelect = form.querySelector('#selectedPetId');
+      if (existingPetSelect) existingPetSelect.remove();
+    }
+
+    // Handle training form submission - FIXED VERSION
+    document.getElementById('requestTrainingForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const petId = document.getElementById('selectedPetId').value;
+      const trainerId = document.getElementById('selectedTrainerId').value;
+      const sessionType = document.getElementById('sessionType').value;
+      const preferredDate = document.getElementById('preferredDate').value;
+      const notes = document.getElementById('trainingNotes').value;
+      
+      if (!sessionType) {
+        alert('Please select a session type');
+        return;
+      }
+      
+      try {
+        console.log('🚀 Submitting training request...', {
+          petId, trainerId, sessionType, preferredDate, notes
+        });
+
+        // ✅ CORRECT: Use the proper endpoint format
+        const response = await fetchWithAuth(`${TRAINING_REQUESTS_API}/pets/${petId}/request`, {
+          method: 'POST',
+          body: JSON.stringify({
+            trainerId: trainerId,
+            sessionType: sessionType,
+            preferredDates: preferredDate ? [{ 
+              date: preferredDate, 
+              timeSlot: 'afternoon' 
+            }] : [],
+            notes: notes,
+            location: 'At shelter facility',
+            specialInstructions: notes
+          })
+        });
+        
+        console.log('📊 Response status:', response.status);
+
+        // Handle response
+        if (!response.ok) {
+          const errorData = await response.json();
+          alert('❌ Failed to submit training request: ' + (errorData.msg || 'Unknown error'));
+          return;
+        }
+
+        const data = await response.json();
+        
+        if (data.success) {
+          alert('✅ Training request submitted successfully! The trainer will respond soon.');
+          hideTrainingForm();
+          await loadMyTrainingRequests();
+        } else {
+          throw new Error(data.msg || 'Failed to submit request');
+        }
+      } catch (error) {
+        console.error('Error submitting training request:', error);
+        alert('❌ Failed to submit training request: ' + error.message);
+      }
     });
-    
-    // ✅ MOVE ALL EVENT LISTENERS INSIDE THE CONNECTION BLOCK
-    
-    // Connection events
-    socket.on('connect', () => {
-      console.log('✅ Connected to real-time server, Socket ID:', socket.id);
-      showConnectionStatus('Connected', 'green');
+
+    // Cancel training request - FIXED VERSION
+    async function cancelTrainingRequest(requestId) {
+      if (!confirm('Are you sure you want to cancel this training request?')) return;
       
-      // Add other event listeners ONLY after connection is established
-      socket.on('welcome', (data) => {
-        console.log('👋 Welcome message:', data);
-      });
-      
-      socket.on('pong', (data) => {
-        console.log('🏓 Pong received:', data);
-      });
-      
-      socket.on('new-notification', (data) => {
-        console.log('🔔 New real-time notification received:', data);
+      try {
+        // ✅ CORRECT: Use the proper endpoint
+        const response = await fetchWithAuth(`${TRAINING_REQUESTS_API}/requests/${requestId}/cancel`, {
+          method: 'PATCH'
+        });
         
-        // Show desktop notification if permission granted
-        if ('Notification' in window && Notification.permission === 'granted') {
-          new Notification('Pet Connect - New Update', {
-            body: data.notification.message,
-            icon: '/favicon.ico',
-            tag: 'pet-connect-notification'
-          });
+        if (!response.ok) {
+          alert('Training cancellation is not available yet.');
+          return;
         }
         
-        // Show in-app toast notification
-        showNotificationToast(data.notification.message);
+        const data = await response.json();
         
-        // Refresh the notifications list
-        setTimeout(() => {
-          testNotificationEndpoints();
-        }, 1000);
-      });
-    });
-    
-    socket.on('disconnect', (reason) => {
-      console.log('❌ Disconnected from real-time server:', reason);
-      showConnectionStatus('Disconnected', 'red');
-      // Clear socket reference
-      socket = null;
-    });
-    
-    socket.on('connect_error', (error) => {
-      console.error('❌ Socket connection error:', error.message);
-      showConnectionStatus('Connection Failed: ' + error.message, 'orange');
-      // Clear socket reference on error
-      socket = null;
-    });
-    
-  } catch (error) {
-    console.error('❌ Failed to initialize Socket.io:', error);
-    socket = null;
-  }
-}
-
-// Connection status indicator
-function showConnectionStatus(message, color) {
-  // Remove existing status if any
-  const existingStatus = document.getElementById('socket-status');
-  if (existingStatus) {
-    existingStatus.remove();
-  }
-  
-  const statusDiv = document.createElement('div');
-  statusDiv.id = 'socket-status';
-  statusDiv.className = `fixed bottom-4 right-4 px-3 py-2 rounded-lg text-white text-sm z-50`;
-  statusDiv.style.backgroundColor = color;
-  statusDiv.innerHTML = `🔔 ${message}`;
-  
-  document.body.appendChild(statusDiv);
-  
-  // Auto-remove after 5 seconds for success, keep errors longer
-  const removeTime = color === 'green' ? 5000 : 10000;
-  setTimeout(() => {
-    if (statusDiv.parentNode) {
-      statusDiv.remove();
+        if (data.success) {
+          alert('✅ Training request cancelled');
+          await loadMyTrainingRequests();
+        } else {
+          throw new Error(data.msg || 'Failed to cancel request');
+        }
+      } catch (error) {
+        console.error('Error cancelling training request:', error);
+        alert('❌ Failed to cancel training request: ' + error.message);
+      }
     }
-  }, removeTime);
-}
 
-// Notification toast function
-function showNotificationToast(message) {
-  const toast = document.createElement('div');
-  toast.className = 'fixed top-4 right-4 bg-green-500 text-white p-4 rounded-lg shadow-lg z-50 max-w-sm animate-fade-in';
-  toast.innerHTML = `
-    <div class="flex items-start">
-      <span class="text-lg mr-2">🔔</span>
-      <div class="flex-1">
-        <p class="text-sm font-medium">New Update</p>
-        <p class="text-xs opacity-90 mt-1">${message}</p>
-      </div>
-      <button onclick="this.parentElement.remove()" class="ml-2 text-white hover:text-gray-200">×</button>
-    </div>
-  `;
-  
-  document.body.appendChild(toast);
-  
-  // Auto-remove after 5 seconds
-  setTimeout(() => {
-    if (toast.parentNode) {
-      toast.remove();
+    // View training details
+    function viewTrainingDetails(requestId) {
+      window.location.href = `training-details.html?requestId=${requestId}`;
     }
-  }, 5000);
+
+    // Helper functions
+    function formatSessionType(sessionType) {
+      const typeMap = {
+        'basic_obedience': 'Basic Obedience',
+        'leash_training': 'Leash Training',
+        'socialization': 'Socialization',
+        'advanced_obedience': 'Advanced Obedience',
+        'behavior_modification': 'Behavior Modification',
+        'therapy_prep': 'Therapy Preparation'
+      };
+      return typeMap[sessionType] || sessionType;
+    }
+
+    function getRequestStatusColor(status) {
+      const colors = {
+        'pending': 'bg-yellow-100 text-yellow-800',
+        'approved': 'bg-green-100 text-green-800',
+        'rejected': 'bg-red-100 text-red-800',
+        'completed': 'bg-blue-100 text-blue-800',
+        'cancelled': 'bg-gray-100 text-gray-800'
+      };
+      return colors[status] || 'bg-gray-100 text-gray-800';
+    }
+
+
+    // Add this debug function to test the adopted pets endpoint
+async function debugAdoptedPets() {
+    try {
+        console.log('🐛 Debugging adopted pets endpoint...');
+        const response = await fetchWithAuth(`${ADOPTIONS_API_URL}/my-adopted-pets`);
+        console.log('🔍 Response status:', response.status);
+        console.log('🔍 Response headers:', response.headers);
+        
+        const data = await response.json();
+        console.log('🔍 Full response data:', data);
+        
+        // Check different possible structures
+        console.log('🔍 Checking data structure:');
+        console.log('- data.pets:', data.pets);
+        console.log('- data.adoptedPets:', data.adoptedPets);
+        console.log('- data.data:', data.data);
+        console.log('- Array.isArray(data):', Array.isArray(data));
+        console.log('- data.success:', data.success);
+        console.log('- data.msg:', data.msg);
+        
+    } catch (error) {
+        console.error('❌ Debug error:', error);
+    }
 }
 
-// Test Socket.io connection
-window.testSocketConnection = function() {
-  if (!socket || !socket.connected) {
-    console.log('❌ Socket not connected. Current socket:', socket);
-    initializeSocketIO(); // Try to reconnect
-    return;
-  }
-  
-  console.log('🧪 Testing Socket.io connection...');
-  console.log('Socket connected:', socket.connected);
-  console.log('Socket ID:', socket.id);
-  
-  // Send ping test
-  socket.emit('ping', { 
-    test: 'Hello from adopter!',
-    timestamp: new Date().toISOString(),
-    userId: JSON.parse(localStorage.getItem('user'))?._id
-  });
-};
+// Call this function to debug
+debugAdoptedPets();
 
-// Request browser notification permission
-function requestNotificationPermission() {
-  if ('Notification' in window && Notification.permission === 'default') {
-    Notification.requestPermission().then(permission => {
-      console.log('Notification permission:', permission);
+    // Set min date dynamically for preferred date input
+    document.addEventListener('DOMContentLoaded', () => {
+      const dateInput = document.getElementById('preferredDate');
+      if (dateInput) {
+        const today = new Date().toISOString().split('T')[0];
+        dateInput.setAttribute('min', today);
+      }
+      
+      // Load dashboard
+      loadDashboard();
     });
-  }
-}
 
-// Initialize when page loads
-document.addEventListener('DOMContentLoaded', function() {
-  console.log('🚀 Page loaded, initializing real-time features...');
-  requestNotificationPermission();
-  
-  // Wait a bit for page to fully load, then initialize socket
-  setTimeout(initializeSocketIO, 1000);
-  
-  // Add test button to UI
-  setTimeout(() => {
-    const topBar = document.querySelector('.flex.justify-between.items-center.bg-white');
-    if (topBar && !document.getElementById('testSocketBtn')) {
-      const testBtn = document.createElement('button');
-      testBtn.id = 'testSocketBtn';
-      testBtn.textContent = 'Test Socket';
-      testBtn.className = 'bg-blue-500 text-white px-3 py-1 rounded text-sm ml-2 hover:bg-blue-600';
-      testBtn.onclick = window.testSocketConnection;
-      topBar.appendChild(testBtn);
-    }
-  }, 2000);
-});
+  </script>
 
-// Debug function to check current state
-window.debugSocket = function() {
-  console.log('=== SOCKET DEBUG INFO ===');
-  console.log('Socket object:', socket);
-  console.log('Socket connected:', socket?.connected);
-  console.log('Socket ID:', socket?.id);
-  console.log('Token exists:', !!localStorage.getItem('token'));
-  console.log('User data:', JSON.parse(localStorage.getItem('user')));
-  console.log('========================');
-};
-</script>
-  <!--meeting part-->
-
-<script>
-// Meeting functions - add these to your adopter.html script
-function confirmMeeting(requestId) {
-  // Redirect to meeting confirmation page
-  window.location.href = `meeting-confirmation.html?requestId=${requestId}`;
-}
-
-function rescheduleMeeting(requestId) {
-  alert('To reschedule, please contact the shelter directly via chat or email.');
-  // You can enhance this later with a reschedule form
-}
-
-function viewMeetingDetails(requestId) {
-  // For now, redirect to confirmation page which will show details
-  window.location.href = `meeting-confirmation.html?requestId=${requestId}`;
-}
-
-// Enhanced startChat function
-function startChat(reqId) {
-  // For now, show meeting scheduling option
-  const meetingDate = prompt('Enter preferred meeting date & time (YYYY-MM-DDTHH:MM):\nExample: 2025-10-20T14:00');
-  if (meetingDate) {
-    scheduleMeeting(reqId, meetingDate);
-  }
-}
-
-// Function to schedule meeting (for staff use, but accessible here for demo)
-async function scheduleMeeting(requestId, meetingDate) {
-  try {
-    const response = await fetchWithAuth(`${ADOPTIONS_API_URL}/${requestId}/status`, {
-      method: 'PATCH',
-      body: JSON.stringify({ 
-        status: 'meeting', 
-        meetingDate: meetingDate 
-      })
-    });
-    
-    const result = await response.json();
-    if (response.ok) {
-      alert('Meeting scheduled successfully! Please wait for staff confirmation.');
-      loadMyAdoptionRequests(); // Refresh the list
-    } else {
-      alert('Failed to schedule meeting: ' + (result.msg || 'Unknown error'));
-    }
-  } catch (error) {
-    console.error('Error scheduling meeting:', error);
-    alert('Error scheduling meeting. Please try again.');
-  }
-}
-
-</script>
   <style>
-  @keyframes fade-in {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  .animate-fade-in {
-    animation: fade-in 0.3s ease-out;
-  }
+    @keyframes fade-in {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in {
+      animation: fade-in 0.3s ease-out;
+    }
+    .line-clamp-2 {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .transition-colors {
+      transition: background-color 0.2s ease;
+    }
+    .transition-shadow {
+      transition: box-shadow 0.2s ease;
+    }
   </style>
 
 </body>

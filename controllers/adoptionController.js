@@ -60,3 +60,14 @@ exports.sendMeetingReminder = async (req, res) => {
     res.status(err.status || 500).json({ msg: err.message || 'Server Error' });
   }
 };
+
+// Get adopter's adopted pets for training requests
+exports.getMyAdoptedPets = async (req, res) => {
+  try {
+    const result = await adoptionService.getMyAdoptedPets(req.user.id);
+    res.json(result);
+  } catch (err) {
+    console.error('Error in getMyAdoptedPets:', err);
+    res.status(err.status || 500).json({ msg: err.message || 'Server Error' });
+  }
+};

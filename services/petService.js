@@ -129,7 +129,8 @@ exports.deletePet = async (petId, user) => {
 // Update pet status
 exports.updatePetStatus = async (petId, status, user) => {
   const allowedStatuses = [
-    'Available','Fostered','Adopted','Ready for Treatment','In Treatment','Ready for Adoption','Unavailable'
+    'Available','Fostered','Adopted','Ready for Treatment','In Treatment',
+    'Ready for Adoption','Unavailable','In Training','Training Complete' // ADD THESE
   ];
 
   if (!status || !allowedStatuses.includes(status)) throw createError('Invalid status');
@@ -358,4 +359,110 @@ exports.getCurrentUser = async (userId) => {
   const user = await User.findById(userId).select('-password');
   if (!user) throw createError('User not found', 404);
   return user;
+};
+
+// test trainer
+// Get pets available for trainer assignment
+exports.getPetsAvailableForTraining = async () => {
+  try {
+    // Just get ALL pets - staff can assign trainers to any pet
+    const pets = await Pet.find({})
+      .populate('organization', 'name')
+      .populate('trainer', 'name email')
+      .select('name breed age gender status images')
+      .sort({ name: 1 });
+
+    console.log(`📊 Showing ALL ${pets.length} pets for trainer assignment`);
+    return pets;
+  } catch (error) {
+    console.error('Error getting pets:', error);
+    throw error;
+  }
+};
+
+
+// Assign trainer to pet
+exports.assignTrainerToPet = async (petId, trainerId, trainingData, user) => {
+  const { trainingNotes, estimatedDuration } = trainingData;
+
+  if (!trainerId) {
+    throw createError('Trainer ID is required');
+  }
+
+  // Verify pet exists
+  const pet = await Pet.findById(petId);
+  if (!pet) {
+    throw createError('Pet not found', 404);
+  }
+
+  // Verify trainer exists and is actually a trainer
+  const trainer = await User.findOne({ _id: trainerId, role: 'trainer' });
+  if (!trainer) {
+    throw createError('Trainer not found', 404);
+  }
+
+  // Assign trainer to pet
+  pet.trainer = trainerId;
+  pet.status = 'In Training';
+  if (trainingNotes) pet.trainingNotes = trainingNotes;
+  if (estimatedDuration) pet.trainingDuration = estimatedDuration;
+
+  await pet.save();
+
+  await logActivity({
+    userId: user.id,
+    role: user.role,
+    action: 'Assigned Trainer to Pet',
+    target: petId,
+    targetModel: 'Pet',
+    details: `Assigned ${pet.name} to trainer ${trainer.name}`
+  });
+
+  return pet;
+};
+
+// Get pets currently assigned to trainers
+exports.getPetsWithTrainers = async () => {
+  const pets = await Pet.find({ 
+    trainer: { $exists: true, $ne: null }
+  })
+  .populate('trainer', 'name email')
+  .populate('organization', 'name')
+  .select('name breed age gender status trainer trainingNotes trainingDuration')
+  .sort({ name: 1 });
+
+  return pets;
+};
+
+// Remove trainer assignment
+exports.removeTrainerFromPet = async (petId, user) => {
+  const pet = await Pet.findById(petId);
+  if (!pet) {
+    throw createError('Pet not found', 404);
+  }
+
+  // Remove trainer assignment
+  pet.trainer = undefined;
+  pet.status = 'Available';
+  await pet.save();
+
+  await logActivity({
+    userId: user.id,
+    role: user.role,
+    action: 'Removed Trainer Assignment',
+    target: petId,
+    targetModel: 'Pet',
+    details: `Removed trainer assignment for ${pet.name}`
+  });
+
+  return pet;
+};
+
+// Get all trainers (for dropdown selection)
+exports.getAllTrainers = async () => {
+  const trainers = await User.find({ role: 'trainer' })
+    .select('name email specialization experience yearsExperience')
+    .sort({ name: 1 });
+
+  return trainers;
 };

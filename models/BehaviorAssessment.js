@@ -136,7 +136,7 @@ const BehaviorAssessmentSchema = new mongoose.Schema({
         }]
     },
     
-    // 📊 QUANTITATIVE SCORING FOR AI
+    //  QUANTITATIVE SCORING FOR AI
     compatibilityScores: {
         withFamilies: {
             type: Number,
@@ -170,7 +170,7 @@ const BehaviorAssessmentSchema = new mongoose.Schema({
         }
     },
     
-    // 🎯 AI MATCHING METADATA
+    //  AI MATCHING METADATA
     aiMetadata: {
         matchingVector: [Number], // For vector similarity search
         lastTrained: Date,
@@ -181,8 +181,8 @@ const BehaviorAssessmentSchema = new mongoose.Schema({
             default: 0.8
         }
     },
-    
-    // 📝 TRAINER NOTES
+
+    //  TRAINER NOTES
     trainerNotes: String,
     recommendations: [String],
     followUpRequired: {

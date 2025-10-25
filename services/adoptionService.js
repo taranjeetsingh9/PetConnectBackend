@@ -206,3 +206,33 @@ exports.sendMeetingReminder = async (requestId) => {
 
   return { msg: 'Meeting reminder sent', adopter: request.adopter.email, meetingDate: request.meeting.date };
 };
+
+
+exports.getMyAdoptedPets = async (adopterId) => {
+  try {
+      console.log(`🐾 Adopter ${adopterId} fetching their adopted pets`);
+      
+      // Find adoption requests that are approved or finalized
+      const adoptedPets = await AdoptionRequest.find({
+          adopter: adopterId,
+          status: { $in: ['approved', 'finalized', 'meeting'] }
+      })
+      .populate('pet', 'name breed age images status')
+      .sort({ updatedAt: -1 });
+
+      const pets = adoptedPets.map(request => request.pet);
+
+      return {
+          success: true,
+          count: pets.length,
+          pets
+      };
+  } catch (error) {
+      console.error('Get adopted pets service error:', error);
+      return { 
+          success: false,
+          msg: 'Server error while fetching adopted pets',
+          status: 500
+      };
+  }
+};

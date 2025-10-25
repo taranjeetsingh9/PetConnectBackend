@@ -203,35 +203,6 @@ router.delete('/favorites/:petId', auth, async (req, res) => {
   }
 });
 
-// // ✅ NEW: Avatar upload endpoint (placeholder for Cloudinary)
-// router.post('/upload-avatar', auth, async (req, res) => {
-//   try {
-//     // Placeholder - Cloudinary integration coming next
-//     await logActivity({
-//       userId: req.user.id,
-//       role: req.user.role,
-//       action: 'Uploaded Avatar',
-//       target: req.user.id,
-//       targetModel: 'User',
-//       details: 'Uploaded profile picture'
-//     });
-
-//     res.json({
-//       success: true,
-//       message: 'Avatar upload endpoint ready - Cloudinary integration coming next!',
-//       avatarUrl: null
-//     });
-//   } catch (error) {
-//     console.error('Avatar upload error:', error);
-//     res.status(500).json({ 
-//       success: false,
-//       msg: 'Server error during avatar upload' 
-//     });
-//   }
-// });
-
-
-
 // ✅ REAL: Avatar upload endpoint with Cloudinary
 router.post('/upload-avatar', auth, avatarUpload.single('avatar'), async (req, res) => {
   try {

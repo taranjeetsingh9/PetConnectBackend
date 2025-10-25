@@ -170,3 +170,133 @@ exports.getCurrentUser = async (req, res) => {
     res.status(err.status || 500).json({ msg: err.message });
   }
 };
+
+
+
+// test
+// Get pets available for trainer assignment
+exports.getPetsAvailableForTraining = async (req, res) => {
+  try {
+    const pets = await petService.getPetsAvailableForTraining();
+    
+    res.json({
+      success: true,
+      pets
+    });
+  } catch (error) {
+    console.error('Get available pets error:', error);
+    res.status(500).json({
+      success: false,
+      msg: 'Server error while fetching available pets'
+    });
+  }
+};
+
+// Assign trainer to pet
+exports.assignTrainerToPet = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { trainerId, trainingNotes, estimatedDuration } = req.body;
+
+    const pet = await petService.assignTrainerToPet(
+      id, 
+      trainerId, 
+      { trainingNotes, estimatedDuration }, 
+      req.user
+    );
+
+    res.json({
+      success: true,
+      message: `Pet ${pet.name} assigned to trainer successfully`,
+      pet
+    });
+
+  } catch (error) {
+    console.error('Assign trainer error:', error);
+    
+    if (error.message === 'Pet not found' || error.message === 'Trainer not found') {
+      return res.status(404).json({
+        success: false,
+        msg: error.message
+      });
+    }
+    
+    if (error.message === 'Trainer ID is required') {
+      return res.status(400).json({
+        success: false,
+        msg: error.message
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      msg: 'Server error while assigning trainer'
+    });
+  }
+};
+
+// Get pets currently assigned to trainers
+exports.getPetsWithTrainers = async (req, res) => {
+  try {
+    const pets = await petService.getPetsWithTrainers();
+
+    res.json({
+      success: true,
+      pets
+    });
+  } catch (error) {
+    console.error('Get assigned pets error:', error);
+    res.status(500).json({
+      success: false,
+      msg: 'Server error while fetching assigned pets'
+    });
+  }
+};
+
+// Remove trainer assignment
+exports.removeTrainerFromPet = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const pet = await petService.removeTrainerFromPet(id, req.user);
+
+    res.json({
+      success: true,
+      message: 'Trainer assignment removed successfully',
+      pet
+    });
+
+  } catch (error) {
+    console.error('Remove trainer error:', error);
+    
+    if (error.message === 'Pet not found') {
+      return res.status(404).json({
+        success: false,
+        msg: error.message
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      msg: 'Server error while removing trainer assignment'
+    });
+  }
+};
+
+// Get all trainers
+exports.getAllTrainers = async (req, res) => {
+  try {
+    const trainers = await petService.getAllTrainers();
+
+    res.json({
+      success: true,
+      trainers
+    });
+  } catch (error) {
+    console.error('Get trainers error:', error);
+    res.status(500).json({
+      success: false,
+      msg: 'Server error while fetching trainers'
+    });
+  }
+};
