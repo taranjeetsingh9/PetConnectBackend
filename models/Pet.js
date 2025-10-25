@@ -2,9 +2,6 @@ const mongoose = require('mongoose');
 
 const PetSchema = new mongoose.Schema({
 
-
-
-
   name: { type: String, required: true },
   breed: String,
   age: Number,
@@ -32,7 +29,11 @@ const PetSchema = new mongoose.Schema({
     'Ready for Treatment',
     'In Treatment', 
     'Ready for Adoption',
-    'Unavailable'
+    'Unavailable',
+
+    // training
+    'In Training',
+    'Training Complete'
     ],
     default: 'Available'
   },
@@ -95,7 +96,43 @@ healthHistory: [
   }
 ],
   // Training
-  trainingNotes: { type: String, default: "" }, // 🐕 for trainers to update
+  trainingNotes: { type: String, default: "" }, 
+
+
+  // 🎯 ADD TRAINING MANAGEMENT FIELDS (Step 2)
+  trainingType: {
+    type: String,
+    enum: ['none', 'shelter_training', 'personal_training'],
+    default: 'none'
+  },
+  
+  trainingStartDate: Date,
+  trainingDuration: String, // "4 weeks", "8 weeks"
+  trainingGoals: [String],
+
+  // Personal training sessions (for adopters)
+  personalTrainingSessions: [{
+    trainer: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    sessionDate: Date,
+    duration: Number, // in minutes (60 = 1 hour)
+    sessionType: {
+      type: String,
+      enum: [
+        'basic_obedience', 'leash_training', 'behavior_consultation',
+        'socialization', 'advanced_commands', 'therapy_prep'
+      ]
+    },
+    status: {
+      type: String,
+      enum: ['scheduled', 'completed', 'cancelled'],
+      default: 'scheduled'
+    },
+    notes: String,
+    bookedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Adopter
+    bookedAt: { type: Date, default: Date.now },
+    price: { type: Number, default: 50 } // Session price in dollars
+  }],
+
   
   // References
   // owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },

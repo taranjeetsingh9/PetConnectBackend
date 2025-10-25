@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Trainer Dashboard - PetConnect</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .loading { opacity: 0.6; pointer-events: none; }
+        .assessment-form { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
+        .assessment-form.open { max-height: 2000px; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen p-6">
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-indigo-700">🎯 Trainer Dashboard</h1>
+                <p id="trainerInfo" class="text-gray-600">Loading...</p>
+            </div>
+            <div class="space-x-4">
+                <button onclick="refreshData()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+                    🔄 Refresh
+                </button>
+                <button onclick="window.location.href='user-profile.html'" 
+        class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
+    👤 My Profile
+</button>
+                <button onclick="window.location.href='index.html'" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700">
+                    ← Back to Main
+                </button>
+            </div>
+        </div>
+
+        <!-- Stats Overview -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <div class="bg-white p-4 rounded-lg shadow border">
+                <h3 class="text-lg font-semibold text-gray-700">My Trainees</h3>
+                <p id="traineesCount" class="text-2xl font-bold text-indigo-600">-</p>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow border">
+                <h3 class="text-lg font-semibold text-gray-700">Upcoming Sessions</h3>
+                <p id="sessionsCount" class="text-2xl font-bold text-yellow-600">-</p>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow border">
+                <h3 class="text-lg font-semibold text-gray-700">Needs Follow-up</h3>
+                <p id="followupCount" class="text-2xl font-bold text-red-600">-</p>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow border">
+                <h3 class="text-lg font-semibold text-gray-700">Today's Date</h3>
+                <p id="todayDate" class="text-lg font-medium text-gray-600">-</p>
+            </div>
+        </div>
+
+        <!-- Main Content Tabs -->
+        <div class="bg-white rounded-lg shadow-lg mb-6">
+            <div class="border-b">
+                <nav class="flex -mb-px">
+                    <button id="tabTrainees" class="py-4 px-6 font-medium border-b-2 border-indigo-600 text-indigo-600">
+                        My Trainees
+                    </button>
+                    <button id="tabAssessments" class="py-4 px-6 font-medium text-gray-500 hover:text-gray-700">
+                        Behavior Assessments
+                    </button>
+                    <button id="tabSessions" class="py-4 px-6 font-medium text-gray-500 hover:text-gray-700">
+                        Training Sessions
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="p-6">
+                <!-- Trainees Tab -->
+                <div id="contentTrainees">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-semibold">My Assigned Pets</h2>
+                        <div class="text-sm text-gray-500" id="traineesStatus"></div>
+                    </div>
+                    <div id="traineesList" class="space-y-4">
+                        <!-- Trainees will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Assessments Tab -->
+                <div id="contentAssessments" class="hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div>
+                            <h3 class="text-lg font-medium mb-3">New Behavior Assessment</h3>
+                            <div class="space-y-3">
+                                <select id="assessmentPetSelect" class="w-full p-3 border rounded-lg">
+                                    <option value="">Select a pet</option>
+                                </select>
+                                
+                                <!-- Behavior Profile -->
+                                <div class="border rounded-lg p-4 bg-blue-50">
+                                    <h4 class="font-medium mb-3">🧠 Behavior Profile</h4>
+                                    
+                                    <div class="space-y-3">
+                                        <div>
+                                            <label class="block text-sm font-medium mb-1">Energy Level</label>
+                                            <select id="energyLevel" class="w-full p-2 border rounded">
+                                                <option value="very_low">Very Low</option>
+                                                <option value="low">Low</option>
+                                                <option value="moderate" selected>Moderate</option>
+                                                <option value="high">High</option>
+                                                <option value="very_high">Very High</option>
+                                            </select>
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-sm font-medium mb-1">Social Behavior - With Adults</label>
+                                            <select id="socialAdults" class="w-full p-2 border rounded">
+                                                <option value="shy">Shy</option>
+                                                <option value="cautious">Cautious</option>
+                                                <option value="friendly" selected>Friendly</option>
+                                                <option value="very_friendly">Very Friendly</option>
+                                                <option value="overly_excited">Overly Excited</option>
+                                            </select>
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-sm font-medium mb-1">Social Behavior - With Children</label>
+                                            <select id="socialChildren" class="w-full p-2 border rounded">
+                                                <option value="not_recommended">Not Recommended</option>
+                                                <option value="supervised_only">Supervised Only</option>
+                                                <option value="good" selected>Good</option>
+                                                <option value="excellent">Excellent</option>
+                                            </select>
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-sm font-medium mb-1">Trainability - Intelligence</label>
+                                            <select id="intelligence" class="w-full p-2 border rounded">
+                                                <option value="low">Low</option>
+                                                <option value="average" selected>Average</option>
+                                                <option value="high">High</option>
+                                                <option value="very_high">Very High</option>
+                                            </select>
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-sm font-medium mb-1">Environment Needs - Space Required</label>
+                                            <select id="spaceRequired" class="w-full p-2 border rounded">
+                                                <option value="apartment_ok">Apartment OK</option>
+                                                <option value="small_yard" selected>Small Yard</option>
+                                                <option value="large_yard">Large Yard</option>
+                                                <option value="rural">Rural</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Trainer Notes -->
+                                <div>
+                                    <label class="block text-sm font-medium mb-1">Trainer Notes</label>
+                                    <textarea id="trainerNotes" placeholder="Behavior observations and recommendations..." class="w-full p-3 border rounded-lg h-24"></textarea>
+                                </div>
+
+                                <button onclick="addBehaviorAssessment()" class="w-full bg-indigo-600 text-white p-3 rounded-lg hover:bg-indigo-700">
+                                    Save Behavior Assessment
+                                </button>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-medium mb-3">Recent Assessments</h3>
+                            <div id="recentAssessments" class="space-y-3 max-h-96 overflow-y-auto">
+                                <!-- Recent assessments will appear here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sessions Tab -->
+                <div id="contentSessions" class="hidden">
+                    <h2 class="text-xl font-semibold mb-4">Training Sessions</h2>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div>
+                            <h3 class="text-lg font-medium mb-3">Record Training Session</h3>
+                            <div class="space-y-3">
+                                <select id="sessionPetSelect" class="w-full p-3 border rounded-lg">
+                                    <option value="">Select a pet</option>
+                                </select>
+                                <select id="sessionType" class="w-full p-3 border rounded-lg">
+                                    <option value="obedience_basic">Basic Obedience</option>
+                                    <option value="obedience_advanced">Advanced Obedience</option>
+                                    <option value="behavior_modification">Behavior Modification</option>
+                                    <option value="socialization">Socialization</option>
+                                    <option value="aggression_management">Aggression Management</option>
+                                </select>
+                                <input type="datetime-local" id="sessionDate" class="w-full p-3 border rounded-lg">
+                                <input type="number" id="sessionDuration" placeholder="Duration (minutes)" class="w-full p-3 border rounded-lg">
+                                <textarea id="sessionSummary" placeholder="Session summary..." class="w-full p-3 border rounded-lg h-20"></textarea>
+                                <button onclick="addTrainingSession()" class="w-full bg-green-600 text-white p-3 rounded-lg hover:bg-green-700">
+                                    Record Training Session
+                                </button>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-medium mb-3">Upcoming Sessions</h3>
+                            <div id="upcomingSessions" class="space-y-3">
+                                <!-- Upcoming sessions will appear here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+                <p class="mt-3 text-gray-600">Loading...</p>
+            </div>
+        </div>
+    </div>
+    <script>
+        const TRAINER_API_URL = 'http://localhost:5001/api/trainer';
+        let trainerToken = localStorage.getItem('trainerToken') || localStorage.getItem('token');
+        let currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+        let myTrainees = [];
+    
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!trainerToken) {
+                alert('No authentication token found. Please login again.');
+                window.location.href = 'index.html';
+                return;
+            }
+    
+            document.getElementById('trainerInfo').textContent = `Welcome, ${currentUser.name || 'Trainer'} | ${currentUser.email || ''}`;
+            document.getElementById('todayDate').textContent = new Date().toLocaleDateString();
+            
+            setupTabNavigation();
+            loadInitialData();
+        });
+    
+        function setupTabNavigation() {
+            const tabs = ['tabTrainees', 'tabAssessments', 'tabSessions'];
+            const contents = ['contentTrainees', 'contentAssessments', 'contentSessions'];
+    
+            tabs.forEach(tabId => {
+                document.getElementById(tabId).addEventListener('click', function() {
+                    // Update tab styles
+                    tabs.forEach(t => {
+                        const tab = document.getElementById(t);
+                        tab.classList.remove('border-indigo-600', 'text-indigo-600');
+                        tab.classList.add('text-gray-500');
+                    });
+                    this.classList.add('border-indigo-600', 'text-indigo-600');
+                    this.classList.remove('text-gray-500');
+    
+                    // Show corresponding content
+                    contents.forEach(contentId => {
+                        document.getElementById(contentId).classList.add('hidden');
+                    });
+                    const contentId = 'content' + tabId.replace('tab', '');
+                    document.getElementById(contentId).classList.remove('hidden');
+    
+                    // Load data when tab is clicked
+                    if (tabId === 'tabAssessments') {
+                        loadRecentAssessments();
+                    } else if (tabId === 'tabSessions') {
+                        loadUpcomingSessions();
+                    }
+                });
+            });
+        }
+    
+        async function loadInitialData() {
+            showLoading();
+            try {
+                await Promise.all([
+                    loadMyTrainees(),
+                    loadUpcomingSessionsCount(),
+                    loadFollowupCount()
+                ]);
+            } catch (error) {
+                console.error('Error loading initial data:', error);
+                alert('Failed to load data. Please check your connection.');
+            } finally {
+                hideLoading();
+            }
+        }
+    
+        // ✅ CORRECT: Using trainer-specific endpoint
+        async function loadMyTrainees() {
+            try {
+                const response = await fetch(`${TRAINER_API_URL}/my-trainees`, {
+                    headers: { 
+                        'x-auth-token': trainerToken,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    myTrainees = data.pets || [];
+                    document.getElementById('traineesCount').textContent = data.count || myTrainees.length;
+                    renderTraineesList();
+                    updatePetSelects();
+                    
+                    document.getElementById('traineesStatus').textContent = 
+                        `Loaded ${myTrainees.length} assigned pets`;
+                } else {
+                    throw new Error(data.msg || 'Failed to load trainees');
+                }
+            } catch (error) {
+                console.error('Error loading trainees:', error);
+                document.getElementById('traineesStatus').textContent = 'Error: ' + error.message;
+                document.getElementById('traineesList').innerHTML = 
+                    '<p class="text-center text-red-500 py-4">Failed to load trainees: ' + error.message + '</p>';
+            }
+        }
+    
+        function renderTraineesList() {
+            const container = document.getElementById('traineesList');
+            
+            if (myTrainees.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8">
+                        <p class="text-gray-500 mb-4">No pets assigned to you for training yet.</p>
+                        <p class="text-sm text-gray-400">Staff members will assign pets to you for training.</p>
+                    </div>`;
+                return;
+            }
+    
+            container.innerHTML = myTrainees.map(trainee => `
+                <div class="bg-gray-50 border rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div class="flex gap-4">
+                        <!-- Pet Image -->
+                        <div class="flex-shrink-0">
+                            ${trainee.images && trainee.images.length > 0 ? 
+                                `<img src="${trainee.images[0]}" class="w-24 h-24 object-cover rounded-lg border" alt="${trainee.name}">` :
+                                `<div class="w-24 h-24 bg-gray-200 rounded-lg border flex items-center justify-center text-gray-500 text-sm">No Image</div>`
+                            }
+                        </div>
+                        
+                        <!-- Pet Info -->
+                        <div class="flex-1">
+                            <div class="flex justify-between items-start">
+                                <div class="flex-1">
+                                    <h3 class="text-lg font-semibold text-indigo-700">${trainee.name}</h3>
+                                    <div class="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm text-gray-600 mt-2">
+                                        <div><strong>Breed:</strong> ${trainee.breed || 'Unknown'}</div>
+                                        <div><strong>Age:</strong> ${trainee.age || 'Unknown'} years</div>
+                                        <div><strong>Gender:</strong> ${trainee.gender || 'Unknown'}</div>
+                                    </div>
+                                    <div class="mt-2">
+                                        <strong>Training Notes:</strong> 
+                                        <span class="text-gray-700">${trainee.trainingNotes || 'No notes yet'}</span>
+                                    </div>
+                                    <div class="mt-1">
+                                        <strong>Status:</strong> 
+                                        <span class="px-2 py-1 rounded-full text-xs ${getStatusColor(trainee.status)}">${trainee.status}</span>
+                                    </div>
+                                    ${trainee.organization ? `
+                                        <div class="mt-1">
+                                            <strong>Organization:</strong> 
+                                            <span class="text-gray-700">${trainee.organization.name}</span>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                                <div class="space-y-2 ml-4">
+                                    <button onclick="quickTrainingNote('${trainee._id}')" class="block w-full bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
+                                        Quick Note
+                                    </button>
+                                    <button onclick="viewAssessments('${trainee._id}')" class="block w-full bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">
+                                        View Assessments
+                                    </button>
+                                    <button onclick="addTrainingSessionModal('${trainee._id}')" class="block w-full bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700">
+                                        Add Session
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+    
+        function getStatusColor(status) {
+            const colors = {
+                'Available': 'bg-green-100 text-green-800',
+                'In Treatment': 'bg-yellow-100 text-yellow-800',
+                'Adopted': 'bg-blue-100 text-blue-800',
+                'Unavailable': 'bg-red-100 text-red-800',
+                'In Training': 'bg-purple-100 text-purple-800',
+                'Ready for Adoption': 'bg-green-100 text-green-800'
+            };
+            return colors[status] || 'bg-gray-100 text-gray-800';
+        }
+    
+        function updatePetSelects() {
+            const petSelects = ['assessmentPetSelect', 'sessionPetSelect'];
+            
+            petSelects.forEach(selectId => {
+                const select = document.getElementById(selectId);
+                select.innerHTML = '<option value="">Select a pet</option>' +
+                    myTrainees.map(trainee => 
+                        `<option value="${trainee._id}">${trainee.name} (${trainee.breed})</option>`
+                    ).join('');
+            });
+        }
+    
+        // ✅ CORRECT: Using trainer-specific endpoint for training notes
+        async function quickTrainingNote(petId) {
+            const pet = myTrainees.find(p => p._id === petId);
+            if (!pet) return;
+    
+            const note = prompt(`Quick training note for ${pet.name}:`, pet.trainingNotes || '');
+            if (note === null) return;
+    
+            try {
+                const response = await fetch(`http://localhost:5001/api/pets/${petId}/training`, {
+                    method: 'PATCH',
+                    headers: {
+                        'x-auth-token': trainerToken,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ trainingNotes: note })
+                });
+    
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('✅ Training note updated successfully');
+                    await loadMyTrainees(); // Refresh to show updated note
+                } else {
+                    throw new Error(data.msg);
+                }
+            } catch (error) {
+                console.error('Error updating training note:', error);
+                alert('❌ Failed to update training note: ' + error.message);
+            }
+        }
+    
+        // ✅ CORRECT: Using trainer-specific endpoint for behavior assessments
+        async function loadRecentAssessments() {
+            try {
+                if (myTrainees.length > 0) {
+                    const firstPetId = myTrainees[0]._id;
+                    const response = await fetch(`${TRAINER_API_URL}/pets/${firstPetId}/behavior-assessments`, {
+                        headers: { 'x-auth-token': trainerToken }
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    const container = document.getElementById('recentAssessments');
+                    
+                    if (data.success && data.assessments && data.assessments.length > 0) {
+                        container.innerHTML = data.assessments.map(assessment => `
+                            <div class="bg-white border rounded-lg p-3">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <h4 class="font-medium">${data.pet.name}</h4>
+                                        <p class="text-sm text-gray-600">
+                                            Energy: ${assessment.behaviorProfile?.energyLevel || 'N/A'} | 
+                                            Intelligence: ${assessment.behaviorProfile?.trainability?.intelligence || 'N/A'}
+                                        </p>
+                                        <p class="text-xs text-gray-500">
+                                            ${new Date(assessment.assessmentDate).toLocaleDateString()}
+                                        </p>
+                                    </div>
+                                    <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                                        Score: ${assessment.compatibilityScores?.withFamilies || 'N/A'}/5
+                                    </span>
+                                </div>
+                                ${assessment.trainerNotes ? 
+                                    `<p class="text-sm text-gray-700 mt-2">${assessment.trainerNotes}</p>` : 
+                                    '<p class="text-sm text-gray-500 mt-2">No notes</p>'
+                                }
+                                <div class="mt-2 flex gap-2">
+                                    <button onclick="editAssessment('${assessment._id}')" class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                        Edit
+                                    </button>
+                                    <button onclick="deleteAssessment('${assessment._id}')" class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">
+                                        Delete
+                                    </button>
+                                </div>
+                            </div>
+                        `).join('');
+                    } else {
+                        container.innerHTML = '<p class="text-gray-500 text-center py-4">No behavior assessments yet</p>';
+                    }
+                } else {
+                    document.getElementById('recentAssessments').innerHTML = 
+                        '<p class="text-gray-500 text-center py-4">No pets assigned for assessments</p>';
+                }
+            } catch (error) {
+                console.error('Error loading recent assessments:', error);
+                document.getElementById('recentAssessments').innerHTML = 
+                    '<p class="text-red-500 text-center py-4">Error loading assessments</p>';
+            }
+        }
+    
+        // ✅ CORRECT: Using trainer-specific endpoint for behavior assessments
+        async function addBehaviorAssessment() {
+            const petId = document.getElementById('assessmentPetSelect').value;
+            
+            if (!petId) {
+                alert('Please select a pet');
+                return;
+            }
+    
+            showLoading();
+            try {
+                const behaviorProfile = {
+                    energyLevel: document.getElementById('energyLevel').value,
+                    socialBehavior: {
+                        withAdults: document.getElementById('socialAdults').value,
+                        withChildren: document.getElementById('socialChildren').value,
+                        withOtherPets: 'good',
+                        withStrangers: 'neutral'
+                    },
+                    trainability: {
+                        intelligence: document.getElementById('intelligence').value,
+                        obedience: 'selective',
+                        trainingProgress: 'beginner'
+                    },
+                    environmentNeeds: {
+                        spaceRequired: document.getElementById('spaceRequired').value,
+                        exerciseNeeds: 'moderate',
+                        climateTolerance: 'any'
+                    }
+                };
+    
+                const response = await fetch(`${TRAINER_API_URL}/pets/${petId}/behavior-assessments`, {
+                    method: 'POST',
+                    headers: {
+                        'x-auth-token': trainerToken,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        behaviorProfile: behaviorProfile,
+                        trainerNotes: document.getElementById('trainerNotes').value,
+                        followUpRequired: false
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('✅ Behavior assessment saved successfully!');
+                    document.getElementById('trainerNotes').value = '';
+                    loadRecentAssessments();
+                    await loadMyTrainees();
+                } else {
+                    throw new Error(data.msg || 'Failed to save assessment');
+                }
+            } catch (error) {
+                console.error('Error adding behavior assessment:', error);
+                alert('❌ Failed to save assessment: ' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+    
+        // ✅ CORRECT: Using trainer-specific endpoint for training sessions
+        async function loadUpcomingSessions() {
+            try {
+                const response = await fetch(`${TRAINER_API_URL}/upcoming-sessions`, {
+                    headers: { 'x-auth-token': trainerToken }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                const container = document.getElementById('upcomingSessions');
+                
+                if (data.success && data.upcomingSessions && data.upcomingSessions.length > 0) {
+                    container.innerHTML = data.upcomingSessions.map(session => `
+                        <div class="bg-white border rounded-lg p-4 shadow-sm">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h4 class="font-semibold text-indigo-700">${session.pet.name}</h4>
+                                    <p class="text-sm text-gray-600">${session.sessionDetails.sessionType}</p>
+                                    <p class="text-xs text-gray-500">
+                                        ${new Date(session.sessionDetails.sessionDate).toLocaleDateString()} 
+                                        • ${session.sessionDetails.duration} mins
+                                    </p>
+                                </div>
+                                <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                                    Scheduled
+                                </span>
+                            </div>
+                            ${session.trainerObservations?.sessionSummary ? 
+                                `<p class="text-sm text-gray-700 mt-2">${session.trainerObservations.sessionSummary}</p>` : 
+                                ''
+                            }
+                            <div class="mt-2 flex gap-2">
+                                <button onclick="startSession('${session._id}')" class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                                    Start
+                                </button>
+                                <button onclick="rescheduleSession('${session._id}')" class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                                    Reschedule
+                                </button>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<p class="text-gray-500 text-center py-4">No upcoming training sessions</p>';
+                }
+            } catch (error) {
+                console.error('Error loading upcoming sessions:', error);
+                document.getElementById('upcomingSessions').innerHTML = 
+                    '<p class="text-red-500 text-center py-4">Error loading sessions</p>';
+            }
+        }
+    
+        // ✅ CORRECT: Using trainer-specific endpoint for training sessions
+        async function addTrainingSession() {
+            const petId = document.getElementById('sessionPetSelect').value;
+            const sessionType = document.getElementById('sessionType').value;
+            const sessionDate = document.getElementById('sessionDate').value;
+            const sessionDuration = document.getElementById('sessionDuration').value;
+            const sessionSummary = document.getElementById('sessionSummary').value;
+            
+            if (!petId || !sessionType || !sessionDate || !sessionDuration) {
+                alert('Please fill in all required fields: Pet, Session Type, Date, and Duration');
+                return;
+            }
+    
+            showLoading();
+            try {
+                const focusAreaMap = {
+                    'obedience_basic': ['sit', 'stay', 'come'],
+                    'obedience_advanced': ['heel', 'down', 'leave_it'],
+                    'behavior_modification': ['impulse_control', 'fear_desensitization'],
+                    'socialization': ['social_skills'],
+                    'aggression_management': ['leave_it', 'drop_it', 'impulse_control']
+                };
+    
+                const sessionData = {
+                    sessionDetails: {
+                        sessionDate: sessionDate,
+                        duration: parseInt(sessionDuration),
+                        sessionType: sessionType,
+                        focusAreas: focusAreaMap[sessionType] || ['sit']
+                    },
+                    trainerObservations: {
+                        sessionSummary: sessionSummary,
+                        strengthsNoted: [],
+                        areasForImprovement: [],
+                        homework: [],
+                        nextSessionFocus: []
+                    }
+                };
+    
+                const response = await fetch(`${TRAINER_API_URL}/pets/${petId}/training-sessions`, {
+                    method: 'POST',
+                    headers: {
+                        'x-auth-token': trainerToken,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(sessionData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('✅ Training session recorded successfully!');
+                    // Clear form
+                    document.getElementById('sessionDate').value = '';
+                    document.getElementById('sessionDuration').value = '';
+                    document.getElementById('sessionSummary').value = '';
+                    // Reload data
+                    loadUpcomingSessions();
+                    loadUpcomingSessionsCount();
+                } else {
+                    throw new Error(data.msg || 'Failed to record training session');
+                }
+            } catch (error) {
+                console.error('Error adding training session:', error);
+                alert('❌ Failed to record training session: ' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+    
+        async function loadUpcomingSessionsCount() {
+            try {
+                const response = await fetch(`${TRAINER_API_URL}/upcoming-sessions`, {
+                    headers: { 'x-auth-token': trainerToken }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('sessionsCount').textContent = data.count;
+                }
+            } catch (error) {
+                console.error('Error loading sessions count:', error);
+            }
+        }
+    
+        async function loadFollowupCount() {
+            try {
+                const response = await fetch(`${TRAINER_API_URL}/needs-followup`, {
+                    headers: { 'x-auth-token': trainerToken }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('followupCount').textContent = data.count;
+                }
+            } catch (error) {
+                console.error('Error loading followup count:', error);
+            }
+        }
+    
+        function viewAssessments(petId) {
+            const pet = myTrainees.find(p => p._id === petId);
+            if (pet) {
+                alert(`Behavior assessments for ${pet.name}\n\nTraining Notes: ${pet.trainingNotes || 'No notes'}\nStatus: ${pet.status}`);
+                // Switch to assessments tab and load specific pet assessments
+                document.getElementById('tabAssessments').click();
+                // You could enhance this to auto-select the pet in the dropdown
+            }
+        }
+    
+        function refreshData() {
+            loadInitialData();
+        }
+    
+        function showLoading() {
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+            document.body.classList.add('loading');
+        }
+    
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.add('hidden');
+            document.body.classList.remove('loading');
+        }
+    
+        // Set default session date
+        function setDefaultSessionDate() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            
+            document.getElementById('sessionDate').value = `${year}-${month}-${day}T${hours}:${minutes}`;
+        }
+
+
+
+
+        // add missing functions
+        // Fix for training note update error
+async function quickTrainingNote(petId) {
+    const pet = myTrainees.find(p => p._id === petId);
+    if (!pet) return;
+
+    const note = prompt(`Quick training note for ${pet.name}:`, pet.trainingNotes || '');
+    if (note === null) return;
+
+    try {
+        const response = await fetch(`http://localhost:5001/api/pets/${petId}/training`, {
+            method: 'PATCH',
+            headers: {
+                'x-auth-token': trainerToken,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ trainingNotes: note })
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('✅ Training note updated successfully');
+            await loadMyTrainees(); // Refresh to show updated note
+        } else {
+            // FIX: Don't throw error if it's successful but returns a message
+            if (data.msg && data.msg.includes('updated')) {
+                alert('✅ Training note updated successfully');
+                await loadMyTrainees();
+            } else {
+                throw new Error(data.msg || 'Unknown error');
+            }
+        }
+    } catch (error) {
+        console.error('Error updating training note:', error);
+        alert('❌ Failed to update training note: ' + error.message);
+    }
+}
+
+// Assessment management functions
+async function editAssessment(assessmentId) {
+    const newNotes = prompt('Edit assessment notes:');
+    if (newNotes !== null) {
+        // You'll need to implement an edit endpoint in your backend
+        alert('Edit functionality coming soon!');
+    }
+}
+
+async function deleteAssessment(assessmentId) {
+    if (confirm('Are you sure you want to delete this assessment?')) {
+        // You'll need to implement a delete endpoint in your backend
+        alert('Delete functionality coming soon!');
+    }
+}
+
+// Session management functions
+function addTrainingSessionModal(petId) {
+    const pet = myTrainees.find(p => p._id === petId);
+    if (pet) {
+        // Auto-select the pet in the session form
+        document.getElementById('sessionPetSelect').value = petId;
+        // Switch to sessions tab
+        document.getElementById('tabSessions').click();
+        alert(`Ready to add session for ${pet.name}! Pet pre-selected in form.`);
+    }
+}
+
+async function startSession(sessionId) {
+    alert(`Starting session ${sessionId} - This would begin the training session tracking`);
+    // Implement session start logic
+}
+
+async function rescheduleSession(sessionId) {
+    const newDate = prompt('Enter new session date & time (YYYY-MM-DDTHH:MM):');
+    if (newDate) {
+        alert(`Session ${sessionId} rescheduled to ${newDate} - Implement backend call`);
+    }
+}
+
+// Fix for 404 errors - Add proper error handling for image loading
+function safeImageLoad() {
+    // Add error handling for broken images
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('img').forEach(img => {
+            img.onerror = function() {
+                this.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM5OTkiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg==';
+                this.alt = 'Image not available';
+            };
+        });
+    });
+}
+
+// Initialize image error handling
+safeImageLoad();
+
+// Enhanced error handling for API calls
+function handleApiError(error, context) {
+    console.error(`API Error in ${context}:`, error);
+    
+    if (error.message.includes('404')) {
+        alert(`❌ Server endpoint not found for ${context}. Please check backend routes.`);
+    } else if (error.message.includes('403')) {
+        alert('❌ Access forbidden. You may not have permission for this action.');
+    } else if (error.message.includes('500')) {
+        alert('❌ Server error. Please try again later.');
+    } else {
+        alert(`❌ Error in ${context}: ${error.message}`);
+    }
+}
+
+// Refresh data with better error handling
+async function refreshData() {
+    showLoading();
+    try {
+        await loadInitialData();
+        alert('✅ Data refreshed successfully!');
+    } catch (error) {
+        handleApiError(error, 'refreshing data');
+    } finally {
+        hideLoading();
+    }
+}
+
+// Enhanced load functions with error handling
+async function loadMyTrainees() {
+    try {
+        const response = await fetch(`${TRAINER_API_URL}/my-trainees`, {
+            headers: { 
+                'x-auth-token': trainerToken,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            myTrainees = data.pets || [];
+            document.getElementById('traineesCount').textContent = data.count || myTrainees.length;
+            renderTraineesList();
+            updatePetSelects();
+            
+            document.getElementById('traineesStatus').textContent = 
+                `Loaded ${myTrainees.length} assigned pets`;
+        } else {
+            throw new Error(data.msg || 'Failed to load trainees');
+        }
+    } catch (error) {
+        console.error('Error loading trainees:', error);
+        document.getElementById('traineesStatus').textContent = 'Error: ' + error.message;
+        document.getElementById('traineesList').innerHTML = 
+            '<p class="text-center text-red-500 py-4">Failed to load trainees: ' + error.message + '</p>';
+    }
+}
+    
+        // Initialize session date when page loads
+        setDefaultSessionDate();
+    </script>
+</body>
+</html>

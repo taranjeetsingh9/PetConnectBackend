@@ -11,17 +11,16 @@
 
   <div id="result" class="fixed top-0 inset-x-0 bg-opacity-90 py-3 text-center transition-all duration-300 transform -translate-y-full" style="z-index:100;"></div>
 
-  <div class="w-full max-w-4xl">
+  <div class="w-full max-w-6xl">
     <h1 class="text-4xl font-bold text-center text-indigo-700 mb-8">Staff Dashboard</h1>
 
     <div id="dashboardSection" class="space-y-8">
       <div class="flex justify-between items-center bg-white p-6 rounded-xl shadow-lg">
         <p id="userStatus" class="text-lg font-medium text-gray-700"></p>
-        <button id="logoutBtn" class="bg-red-500 text-white p-3 rounded-lg hover:bg-red-600">Sign Out</button>
-        <button onclick="window.location.href='user-profile.html'" 
-        class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
-    👤 My Profile
-</button>
+        <div class="flex gap-2">
+          <button onclick="window.location.href='user-profile.html'" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">👤 My Profile</button>
+          <button id="logoutBtn" class="bg-red-500 text-white p-2 rounded-lg hover:bg-red-600">Sign Out</button>
+        </div>
       </div>
 
       <div class="bg-white p-6 rounded-xl shadow-lg mb-6">
@@ -42,24 +41,191 @@
             <option value="high">High</option>
           </select>
           <input type="text" id="petTemperament" placeholder="Temperament" class="border rounded p-2 w-full">
-        <select id="petOrg" class="border rounded p-2 w-full" required>
-          <option value="">Select Organization</option>
-        </select>
+          <select id="petOrg" class="border rounded p-2 w-full" required>
+            <option value="">Select Organization</option>
+          </select>
 
-        <!-- Image Upload Field -->
-        <div class="col-span-1 sm:col-span-2">
-          <label class="block text-sm font-medium text-gray-700 mb-2">Pet Images (Multiple)</label>
-          <input type="file" id="petImages" multiple accept="image/*" class="border rounded p-2 w-full">
-          <p class="text-xs text-gray-500 mt-1">Select multiple images for the pet</p>
-          <div id="imagePreview" class="mt-2 flex flex-wrap gap-2"></div>
-        </div>
+          <!-- Image Upload Field -->
+          <div class="col-span-1 sm:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Pet Images (Multiple)</label>
+            <input type="file" id="petImages" multiple accept="image/*" class="border rounded p-2 w-full">
+            <p class="text-xs text-gray-500 mt-1">Select multiple images for the pet</p>
+            <div id="imagePreview" class="mt-2 flex flex-wrap gap-2"></div>
+          </div>
 
           <button type="submit" class="col-span-1 sm:col-span-2 bg-green-600 text-white p-3 rounded-lg hover:bg-green-700">Add Pet with Images</button>
         </form>
       </div>
 
-    <div id="dynamicDashboard" class="bg-white p-6 rounded-xl shadow-lg min-h-[400px]"></div>
-     
+      <!-- 🎯 Trainer Management Section -->
+      <div class="bg-white p-6 rounded-xl shadow-lg mb-6">
+        <h2 class="text-2xl font-bold mb-4">🎯 Trainer Management</h2>
+        
+        <!-- Trainer Assignment Form -->
+        <div class="bg-white p-6 rounded-xl shadow-lg mb-6">
+          <h2 class="text-2xl font-bold mb-4">🎯 Assign Trainer to Pet</h2>
+          
+          <!-- Simple Assignment Form -->
+          <div class="mb-6 p-4 bg-blue-50 rounded-lg">
+            <h3 class="text-lg font-semibold mb-3">Assign Trainer</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+              <div>
+                <label class="block text-sm font-medium mb-1">Select Pet</label>
+                <select id="trainerPetSelect" class="border rounded p-2 w-full">
+                  <option value="">Loading pets...</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1">Select Trainer</label>
+                <select id="trainerSelect" class="border rounded p-2 w-full">
+                  <option value="">Loading trainers...</option>
+                </select>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="block text-sm font-medium mb-1">Training Notes (Optional)</label>
+              <textarea id="trainingNotes" placeholder="Add training notes..." class="w-full p-2 border rounded" rows="2"></textarea>
+            </div>
+            <button onclick="assignTrainerToPet()" class="bg-green-600 text-white p-2 rounded hover:bg-green-700 w-full">
+             Assign Trainer to Pet
+            </button>
+          </div>
+        
+          <!-- Current Assignments -->
+          <div>
+            <h3 class="text-lg font-semibold mb-3">Current Trainer Assignments</h3>
+            <div id="trainerAssignments" class="space-y-3">
+              <p class="text-gray-500 text-center py-4">Loading current assignments...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Debug Info -->
+        <div class="mb-4 p-3 bg-yellow-50 rounded-lg">
+          <h4 class="font-semibold text-yellow-700">Debug Info</h4>
+          <p id="debugPetsCount" class="text-sm text-yellow-600">Pets available: Loading...</p>
+          <p id="debugTrainersCount" class="text-sm text-yellow-600">Trainers available: Loading...</p>
+        </div>
+
+        <!-- Current Trainer Assignments -->
+        <div>
+          <h3 class="text-lg font-semibold mb-3">Current Trainer Assignments</h3>
+          <div id="trainerAssignments" class="space-y-3">
+            <p class="text-gray-500 text-center py-4">Loading assignments...</p>
+          </div>
+        </div>
+      </div>
+
+      <div id="dynamicDashboard" class="bg-white p-6 rounded-xl shadow-lg min-h-[400px]"></div>
+
+      <!-- Replace your current trainer management section with this enhanced version -->
+
+<!-- 🎯 PROFESSIONAL TRAINING MANAGEMENT -->
+<div class="bg-white p-6 rounded-xl shadow-lg mb-6">
+  <h2 class="text-2xl font-bold mb-4">🎯 Professional Training Management</h2>
+  
+  <!-- Training Type Tabs -->
+  <div class="flex border-b mb-6">
+    <button id="tabShelterTraining" class="tab-button active py-2 px-4 font-medium border-b-2 border-blue-600 text-blue-600">
+      🏢 Shelter Training
+    </button>
+    <button id="tabPersonalTraining" class="tab-button py-2 px-4 font-medium text-gray-500 hover:text-gray-700">
+      👨‍💼 Personal Sessions
+    </button>
+  </div>
+
+  <!-- Shelter Training Tab Content -->
+  <div id="shelterTrainingContent" class="tab-content">
+    <!-- Professional Training Assignment -->
+    <div class="mb-6 p-4 bg-blue-50 rounded-lg">
+      <h3 class="text-lg font-semibold mb-3">Assign Professional Training Program</h3>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+        <div>
+          <label class="block text-sm font-medium mb-1">Select Pet</label>
+          <select id="shelterPetSelect" class="border rounded p-2 w-full">
+            <option value="">Available Shelter Pets</option>
+          </select>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium mb-1">Select Professional Trainer</label>
+          <select id="professionalTrainerSelect" class="border rounded p-2 w-full">
+            <option value="">Certified Trainers</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+        <div>
+          <label class="block text-sm font-medium mb-1">Training Program</label>
+          <select id="trainingProgram" class="border rounded p-2 w-full">
+            <option value="4_weeks">4 Weeks - Basic Obedience</option>
+            <option value="6_weeks">6 Weeks - Behavior Modification</option>
+            <option value="8_weeks">8 Weeks - Advanced Training</option>
+          </select>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium mb-1">Training Goals</label>
+          <select id="trainingGoals" multiple class="border rounded p-2 w-full h-20">
+            <option value="basic_obedience">Basic Obedience</option>
+            <option value="leash_training">Leash Training</option>
+            <option value="socialization">Socialization</option>
+            <option value="behavior_modification">Behavior Modification</option>
+            <option value="advanced_commands">Advanced Commands</option>
+          </select>
+          <p class="text-xs text-gray-500 mt-1">Hold Ctrl to select multiple goals</p>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="block text-sm font-medium mb-1">Training Notes & Special Instructions</label>
+        <textarea id="shelterTrainingNotes" placeholder="Behavior observations, special needs, or specific training focus areas..." class="w-full p-2 border rounded" rows="3"></textarea>
+      </div>
+
+      <button onclick="assignProfessionalTraining()" class="bg-green-600 text-white p-3 rounded hover:bg-green-700 w-full font-semibold">
+        🎯 Start Professional Training Program
+      </button>
+    </div>
+
+    <!-- Active Training Programs -->
+    <div>
+      <h3 class="text-lg font-semibold mb-3">Active Training Programs</h3>
+      <div id="activeTrainingPrograms" class="space-y-4">
+        <!-- Active programs will be loaded here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Personal Training Tab Content -->
+  <div id="personalTrainingContent" class="tab-content hidden">
+    <div class="mb-6 p-4 bg-green-50 rounded-lg">
+      <h3 class="text-lg font-semibold mb-3">Manage Personal Training Sessions</h3>
+      <p class="text-gray-600 mb-4">View and manage personal training sessions booked by adopters</p>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+        <select id="sessionStatusFilter" class="border rounded p-2 w-full">
+          <option value="all">All Sessions</option>
+          <option value="scheduled">Scheduled</option>
+          <option value="completed">Completed</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+        
+        <input type="date" id="sessionDateFilter" class="border rounded p-2 w-full" placeholder="Filter by date">
+        
+        <button onclick="loadPersonalSessions()" class="bg-blue-600 text-white p-2 rounded hover:bg-blue-700">
+          🔄 Refresh
+        </button>
+      </div>
+    </div>
+
+    <div id="personalSessionsList" class="space-y-4">
+      <!-- Personal sessions will be loaded here -->
+    </div>
+  </div>
+</div>
+       
       <p id="debugToken" class="text-xs text-gray-500">Token: <span id="tokenDisplay"></span></p>
       <div id="staffRequests" class="space-y-4"></div>
     </div>
@@ -98,6 +264,177 @@
       }
     };
 
+// 🎯 SIMPLE TRAINER MANAGEMENT FUNCTIONS
+
+async function loadTrainerManagementData() {
+    try {
+        // Load ALL pets
+        const petsRes = await fetchWithAuth(`${PETS_API_URL}/management/available-for-training`);
+        const petsData = await petsRes.json();
+        
+        // Load ALL trainers
+        const trainersRes = await fetchWithAuth(`${PETS_API_URL}/management/trainers`);
+        const trainersData = await trainersRes.json();
+        
+        // Load current assignments
+        const assignmentsRes = await fetchWithAuth(`${PETS_API_URL}/management/assigned-trainers`);
+        const assignmentsData = await assignmentsRes.json();
+
+        if (petsData.success && trainersData.success) {
+            populateTrainerDropdowns(petsData.pets, trainersData.trainers);
+        }
+        
+        if (assignmentsData.success) {
+            renderTrainerAssignments(assignmentsData.pets);
+        }
+    } catch (error) {
+        console.error('Error loading trainer data:', error);
+        displayMessage('Error loading trainer data', true);
+    }
+}
+
+// Populate dropdowns - SIMPLE
+// FIXED VERSION - Replace your current function
+function populateTrainerDropdowns(pets, trainers) {
+    console.log('🔄 Populating dropdowns with:', { pets, trainers });
+    
+    const petSelect = document.getElementById('shelterPetSelect');
+    const trainerSelect = document.getElementById('professionalTrainerSelect');
+    
+    if (!petSelect || !trainerSelect) {
+        console.error('❌ Dropdown elements not found');
+        return;
+    }
+    
+    // Populate pets dropdown - ONLY Available pets
+    petSelect.innerHTML = '<option value="">Available Shelter Pets</option>';
+    if (pets && pets.length > 0) {
+        const availablePets = pets.filter(pet => 
+            pet.status === 'Available' || pet.status === 'Ready for Adoption'
+        );
+        
+        console.log(`📊 Available pets for training: ${availablePets.length}`);
+        
+        availablePets.forEach(pet => {
+            const option = document.createElement('option');
+            option.value = pet._id;
+            option.textContent = `${pet.name} - ${pet.breed} (${pet.status})`;
+            petSelect.appendChild(option);
+        });
+    } else {
+        console.warn('⚠️ No pets available');
+    }
+    
+    // Populate trainers dropdown
+    trainerSelect.innerHTML = '<option value="">Certified Trainers</option>';
+    if (trainers && trainers.length > 0) {
+        console.log(`🎯 Available trainers: ${trainers.length}`);
+        
+        trainers.forEach(trainer => {
+            const option = document.createElement('option');
+            option.value = trainer._id;
+            option.textContent = `${trainer.name} - ${trainer.specialization || 'General Trainer'}`;
+            trainerSelect.appendChild(option);
+        });
+    } else {
+        console.warn('⚠️ No trainers available');
+    }
+    
+    console.log('✅ Dropdowns populated');
+}
+// Render current assignments - SIMPLE
+function renderTrainerAssignments(pets) {
+    const container = document.getElementById('trainerAssignments');
+    
+    if (!pets || pets.length === 0) {
+        container.innerHTML = '<p class="text-gray-500 text-center py-4">No pets currently assigned to trainers</p>';
+        return;
+    }
+    
+    container.innerHTML = pets.map(pet => `
+        <div class="bg-white border rounded-lg p-4 shadow-sm">
+            <div class="flex justify-between items-start">
+                <div class="flex-1">
+                    <h4 class="font-semibold text-indigo-700">${pet.name}</h4>
+                    <div class="text-sm text-gray-600">
+                        <p><strong>Breed:</strong> ${pet.breed} | <strong>Age:</strong> ${pet.age || 'Unknown'} | <strong>Status:</strong> ${pet.status}</p>
+                        <p><strong>Trainer:</strong> ${pet.trainer?.name || 'Unknown'}</p>
+                        ${pet.trainingNotes ? `
+                            <p class="mt-1"><strong>Notes:</strong> ${pet.trainingNotes}</p>
+                        ` : ''}
+                    </div>
+                </div>
+                <button onclick="removeTrainerAssignment('${pet._id}')" 
+                        class="ml-4 bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700">
+                    Remove
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Assign trainer to pet - SIMPLE
+async function assignTrainerToPet() {
+    const petId = document.getElementById('trainerPetSelect').value;
+    const trainerId = document.getElementById('trainerSelect').value;
+    const trainingNotes = document.getElementById('trainingNotes').value;
+    
+    if (!petId || !trainerId) {
+        alert('Please select both a pet and a trainer');
+        return;
+    }
+    
+    try {
+        const res = await fetchWithAuth(`${PETS_API_URL}/${petId}/assign-trainer`, {
+            method: 'PATCH',
+            body: JSON.stringify({
+                trainerId,
+                trainingNotes,
+                estimatedDuration: '2 weeks'
+            })
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+            displayMessage(`✅ ${data.message}`);
+            // Clear form
+            document.getElementById('trainingNotes').value = '';
+            // Reload data
+            await loadTrainerManagementData();
+            await loadUserAndDashboard();
+        } else {
+            throw new Error(data.msg);
+        }
+    } catch (error) {
+        console.error('Error assigning trainer:', error);
+        displayMessage(`❌ Failed to assign trainer: ${error.message}`, true);
+    }
+}
+
+// Remove trainer assignment - SIMPLE
+async function removeTrainerAssignment(petId) {
+    if (!confirm('Remove trainer assignment from this pet?')) return;
+    
+    try {
+        const res = await fetchWithAuth(`${PETS_API_URL}/${petId}/remove-trainer`, {
+            method: 'PATCH'
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+            displayMessage('✅ Trainer assignment removed');
+            await loadTrainerManagementData();
+            await loadUserAndDashboard();
+        } else {
+            throw new Error(data.msg);
+        }
+    } catch (error) {
+        console.error('Error removing trainer:', error);
+        displayMessage(`❌ Failed to remove trainer: ${error.message}`, true);
+    }
+}
     const loadUserAndDashboard = async () => {
       if(!token){ setViewState(false); return; }
       try {
@@ -133,9 +470,7 @@
       });
     });
 
-    // ------------------------
     // Dashboard rendering for Staff
-    // ------------------------
     const renderDashboard = async (user) => {
       const dash = document.getElementById("dynamicDashboard");
 
@@ -166,11 +501,10 @@
               <p class="text-sm text-gray-600">Breed: ${pet.breed || "Unknown"}</p>
               <p class="text-sm text-gray-600">Energy: ${pet.energyLevel || "N/A"}</p>
               <p class="text-sm text-gray-600">Status: ${pet.status}</p>
-              <p class="text-sm text-gray-600">Images: ${pet.images ? pet.images.length : 0}</p>
+              <p class="text-sm text-gray-600">Trainer: ${pet.trainer ? pet.trainer.name : "None"}</p>
               <p class="text-sm text-gray-600">Adopter: ${pet.adopter ? pet.adopter.name : "None"}</p>
               <p class="text-sm text-gray-600">Vet: ${pet.vet ? pet.vet.name : "None"}</p>
 
-              <!-- Add More Images Button -->
               <button onclick="addMoreImages('${pet._id}')" 
                       class="mt-2 px-3 py-1 bg-blue-600 text-white text-sm rounded w-full">
                 Add More Images
@@ -209,9 +543,7 @@
       }
     }; 
 
-    // ------------------------
     // Vet assignment
-    // ------------------------
     const loadVetsForAssignment = async (pets) => {
       try {
         const res = await fetchWithAuth(`${STAFF_API_URL}/vets`);
@@ -325,19 +657,6 @@
       } catch(err){
         console.error(err);
       }
-    };
-
-    // Open Edit form and prefill
-    const openEditPetForm = (pet) => {
-      document.getElementById('petName').value = pet.name;
-      document.getElementById('petBreed').value = pet.breed || '';
-      document.getElementById('petAge').value = pet.age || '';
-      document.getElementById('petGender').value = pet.gender || '';
-      document.getElementById('petEnergy').value = pet.energyLevel || '';
-      document.getElementById('petTemperament').value = pet.temperament || '';
-      document.getElementById('petOrg').value = pet.organization?._id || '';
-      
-      document.getElementById('addPetForm').dataset.editing = pet._id;
     };
 
     // Submit handler (for Add and Edit Pet)
@@ -548,33 +867,6 @@
       }
     }
 
-    function updateRequestStatus(requestId, status) {
-      fetch(`${ADOPTION_API_BASE_URL}/${requestId}/status`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-auth-token': token
-        },
-        body: JSON.stringify({ status })
-      })
-      .then(async res => {
-        const text = await res.text();
-        try {
-          return JSON.parse(text);
-        } catch {
-          throw new Error(text || `Server error: ${res.status}`);
-        }
-      })
-      .then(data => {
-        displayMessage(data.msg || "Updated");
-        loadStaffRequests();
-      })
-      .catch(err => {
-          console.error("Update error:", err);
-          displayMessage(`Update failed: ${err.message}`, true);
-      });
-    }
-
     // Request meeting handler
     async function requestMeeting(requestId) {
       const meetingDate = prompt("Enter meeting date & time (YYYY-MM-DDTHH:MM)\nExample: 2025-10-03T14:00");
@@ -660,7 +952,350 @@
       window.location.href="index.html";
     });
 
-    document.addEventListener("DOMContentLoaded", loadUserAndDashboard);
+// test training
+// Tab switching
+function setupTrainingTabs() {
+  const tabs = ['tabShelterTraining', 'tabPersonalTraining'];
+  const contents = ['shelterTrainingContent', 'personalTrainingContent'];
+
+  tabs.forEach(tabId => {
+    document.getElementById(tabId).addEventListener('click', function() {
+      // Update tab styles
+      tabs.forEach(t => {
+        const tab = document.getElementById(t);
+        tab.classList.remove('active', 'border-blue-600', 'text-blue-600');
+        tab.classList.add('text-gray-500');
+      });
+      this.classList.add('active', 'border-blue-600', 'text-blue-600');
+      this.classList.remove('text-gray-500');
+
+      // Show corresponding content
+      contents.forEach(contentId => {
+        document.getElementById(contentId).classList.add('hidden');
+      });
+      const contentId = contentId = tabId.replace('tab', '') + 'Content';
+      document.getElementById(contentId).classList.remove('hidden');
+
+      // Load data when tab is clicked
+      if (tabId === 'tabShelterTraining') {
+        loadActiveTrainingPrograms();
+      } else if (tabId === 'tabPersonalTraining') {
+        loadPersonalSessions();
+      }
+    });
+  });
+}
+
+// Assign professional training program
+async function assignProfessionalTraining() {
+  const petId = document.getElementById('shelterPetSelect').value;
+  const trainerId = document.getElementById('professionalTrainerSelect').value;
+  const trainingProgram = document.getElementById('trainingProgram').value;
+  const trainingGoals = Array.from(document.getElementById('trainingGoals').selectedOptions).map(opt => opt.value);
+  const trainingNotes = document.getElementById('shelterTrainingNotes').value;
+
+  if (!petId || !trainerId) {
+    alert('Please select both a pet and a trainer');
+    return;
+  }
+
+  // Map program to duration
+  const programDurations = {
+    '4_weeks': '4 weeks',
+    '6_weeks': '6 weeks', 
+    '8_weeks': '8 weeks'
+  };
+
+  try {
+    const response = await fetchWithAuth(`/api/training/shelter-training/${petId}/assign`, {
+      method: 'POST',
+      body: JSON.stringify({
+        trainerId,
+        trainingDuration: programDurations[trainingProgram],
+        trainingGoals,
+        trainingNotes
+      })
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      displayMessage(`✅ ${data.message}`);
+      // Clear form
+      document.getElementById('shelterTrainingNotes').value = '';
+      document.getElementById('trainingGoals').selectedIndex = -1;
+      // Reload data
+      loadActiveTrainingPrograms();
+      loadTrainerManagementData();
+    } else {
+      throw new Error(data.msg);
+    }
+  } catch (error) {
+    console.error('Error assigning professional training:', error);
+    displayMessage(`❌ Failed to assign training: ${error.message}`, true);
+  }
+}
+
+// Load active training programs
+async function loadActiveTrainingPrograms() {
+  try {
+    const response = await fetchWithAuth(`${PETS_API_URL}/management/assigned-trainers`);
+    const data = await response.json();
+
+    const container = document.getElementById('activeTrainingPrograms');
+    
+    if (data.success && data.pets && data.pets.length > 0) {
+      const activePrograms = data.pets.filter(pet => pet.status === 'In Training');
+      
+      if (activePrograms.length === 0) {
+        container.innerHTML = '<p class="text-gray-500 text-center py-4">No active training programs</p>';
+        return;
+      }
+
+      container.innerHTML = activePrograms.map(pet => `
+        <div class="bg-white border rounded-lg p-4 shadow-sm">
+          <div class="flex justify-between items-start">
+            <div class="flex-1">
+              <h4 class="font-semibold text-indigo-700">${pet.name}</h4>
+              <div class="grid grid-cols-2 gap-2 text-sm text-gray-600 mt-1">
+                <div><strong>Breed:</strong> ${pet.breed}</div>
+                <div><strong>Age:</strong> ${pet.age || 'Unknown'}</div>
+                <div><strong>Status:</strong> ${pet.status}</div>
+                <div><strong>Trainer:</strong> ${pet.trainer?.name || 'Unknown'}</div>
+                <div><strong>Duration:</strong> ${pet.trainingDuration || 'Not set'}</div>
+                <div><strong>Started:</strong> ${pet.trainingStartDate ? new Date(pet.trainingStartDate).toLocaleDateString() : 'Not set'}</div>
+              </div>
+              ${pet.trainingNotes ? `
+                <div class="mt-2">
+                  <strong>Training Notes:</strong>
+                  <p class="text-sm text-gray-700">${pet.trainingNotes}</p>
+                </div>
+              ` : ''}
+              ${pet.trainingGoals && pet.trainingGoals.length > 0 ? `
+                <div class="mt-2">
+                  <strong>Training Goals:</strong>
+                  <div class="flex flex-wrap gap-1 mt-1">
+                    ${pet.trainingGoals.map(goal => `
+                      <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">${goal}</span>
+                    `).join('')}
+                  </div>
+                </div>
+              ` : ''}
+            </div>
+            <div class="flex flex-col gap-2 ml-4">
+              <button onclick="viewTrainingProgress('${pet._id}')" 
+                      class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
+                View Progress
+              </button>
+              <button onclick="completeTrainingProgram('${pet._id}')" 
+                      class="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">
+                Complete Training
+              </button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    } else {
+      container.innerHTML = '<p class="text-gray-500 text-center py-4">No active training programs</p>';
+    }
+  } catch (error) {
+    console.error('Error loading active training programs:', error);
+    document.getElementById('activeTrainingPrograms').innerHTML = 
+      '<p class="text-red-500 text-center py-4">Error loading training programs</p>';
+  }
+}
+
+// Load personal training sessions
+async function loadPersonalSessions() {
+  try {
+    // For now, we'll load all pets and filter those with personal sessions
+    const response = await fetchWithAuth(PETS_API_URL);
+    const data = await response.json();
+
+    const container = document.getElementById('personalSessionsList');
+    
+    if (data.success && data.length > 0) {
+      const petsWithSessions = data.filter(pet => 
+        pet.personalTrainingSessions && pet.personalTrainingSessions.length > 0
+      );
+
+      if (petsWithSessions.length === 0) {
+        container.innerHTML = '<p class="text-gray-500 text-center py-4">No personal training sessions found</p>';
+        return;
+      }
+
+      let allSessions = [];
+      petsWithSessions.forEach(pet => {
+        pet.personalTrainingSessions.forEach(session => {
+          allSessions.push({
+            ...session,
+            petName: pet.name,
+            petId: pet._id
+          });
+        });
+      });
+
+      // Apply filters
+      const statusFilter = document.getElementById('sessionStatusFilter').value;
+      const dateFilter = document.getElementById('sessionDateFilter').value;
+
+      if (statusFilter !== 'all') {
+        allSessions = allSessions.filter(session => session.status === statusFilter);
+      }
+
+      if (dateFilter) {
+        const filterDate = new Date(dateFilter);
+        allSessions = allSessions.filter(session => {
+          const sessionDate = new Date(session.sessionDate);
+          return sessionDate.toDateString() === filterDate.toDateString();
+        });
+      }
+
+      if (allSessions.length === 0) {
+        container.innerHTML = '<p class="text-gray-500 text-center py-4">No sessions match the current filters</p>';
+        return;
+      }
+
+      container.innerHTML = allSessions.map(session => `
+        <div class="bg-white border rounded-lg p-4 shadow-sm">
+          <div class="flex justify-between items-start">
+            <div class="flex-1">
+              <h4 class="font-semibold text-indigo-700">${session.petName}</h4>
+              <div class="grid grid-cols-2 gap-2 text-sm text-gray-600 mt-1">
+                <div><strong>Session Type:</strong> ${session.sessionType}</div>
+                <div><strong>Duration:</strong> ${session.duration} minutes</div>
+                <div><strong>Date:</strong> ${new Date(session.sessionDate).toLocaleString()}</div>
+                <div><strong>Status:</strong> 
+                  <span class="px-2 py-1 rounded-full text-xs ${
+                    session.status === 'scheduled' ? 'bg-yellow-100 text-yellow-800' :
+                    session.status === 'completed' ? 'bg-green-100 text-green-800' :
+                    'bg-red-100 text-red-800'
+                  }">${session.status}</span>
+                </div>
+                <div><strong>Price:</strong> $${session.price || 50}</div>
+              </div>
+              ${session.notes ? `
+                <div class="mt-2">
+                  <strong>Notes:</strong>
+                  <p class="text-sm text-gray-700">${session.notes}</p>
+                </div>
+              ` : ''}
+            </div>
+            <div class="flex flex-col gap-2 ml-4">
+              <button onclick="viewSessionDetails('${session.petId}', '${session._id}')" 
+                      class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
+                Details
+              </button>
+              ${session.status === 'scheduled' ? `
+                <button onclick="cancelTrainingSession('${session.petId}', '${session._id}')" 
+                        class="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700">
+                  Cancel
+                </button>
+              ` : ''}
+            </div>
+          </div>
+        </div>
+      `).join('');
+    } else {
+      container.innerHTML = '<p class="text-gray-500 text-center py-4">No personal training sessions found</p>';
+    }
+  } catch (error) {
+    console.error('Error loading personal sessions:', error);
+    container.innerHTML = '<p class="text-red-500 text-center py-4">Error loading sessions</p>';
+  }
+}
+
+// View training progress
+async function viewTrainingProgress(petId) {
+  try {
+    const response = await fetchWithAuth(`/api/training/progress/${petId}`);
+    const data = await response.json();
+
+    if (data.success) {
+      const progress = data.progress;
+      alert(`Training Progress for ${progress.pet.name}:
+Status: ${progress.pet.status}
+Training Type: ${progress.pet.trainingType}
+Duration: ${progress.pet.trainingDuration}
+Goals: ${progress.pet.trainingGoals?.join(', ') || 'None'}
+Total Sessions: ${progress.stats.totalSessions}
+Completed: ${progress.stats.completedSessions}
+Success Rate: ${progress.stats.successRate}%`);
+    } else {
+      throw new Error(data.msg);
+    }
+  } catch (error) {
+    console.error('Error viewing training progress:', error);
+    alert('Error loading training progress');
+  }
+}
+
+// Complete training program
+async function completeTrainingProgram(petId) {
+  const finalNotes = prompt('Enter final training notes and achievements:');
+  if (!finalNotes) return;
+
+  try {
+    const response = await fetchWithAuth(`/api/training/shelter-training/${petId}/complete`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        finalNotes,
+        achievements: ['basic_obedience', 'socialization'] // Default achievements
+      })
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      displayMessage('✅ Training program completed successfully');
+      loadActiveTrainingPrograms();
+      loadTrainerManagementData();
+    } else {
+      throw new Error(data.msg);
+    }
+  } catch (error) {
+    console.error('Error completing training:', error);
+    displayMessage(`❌ Failed to complete training: ${error.message}`, true);
+  }
+}
+
+// Cancel training session
+async function cancelTrainingSession(petId, sessionId) {
+  if (!confirm('Are you sure you want to cancel this training session?')) return;
+
+  try {
+    const response = await fetchWithAuth(`/api/training/personal-training/${petId}/sessions/${sessionId}/cancel`, {
+      method: 'PATCH'
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      displayMessage('✅ Training session cancelled');
+      loadPersonalSessions();
+    } else {
+      throw new Error(data.msg);
+    }
+  } catch (error) {
+    console.error('Error cancelling session:', error);
+    displayMessage(`❌ Failed to cancel session: ${error.message}`, true);
+  }
+}
+
+// Initialize enhanced training management
+function initializeEnhancedTraining() {
+  setupTrainingTabs();
+  loadActiveTrainingPrograms();
+}
+// test end
+    // Initialize everything
+    document.addEventListener("DOMContentLoaded", function() {
+      loadUserAndDashboard();
+      initializeEnhancedTraining();
+      setTimeout(loadTrainerManagementData, 1000);
+
+    });
+
   </script>
 </body>
 </html>

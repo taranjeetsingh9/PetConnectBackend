@@ -33,5 +33,12 @@ router.get('/browse/all', auth, petController.browsePets);
 // Current user info
 router.get('/me', auth, petController.getCurrentUser);
 
+// Trainer Management Routes (Staff/Admin only)
+router.get('/management/available-for-training', auth, roleAuth(['staff', 'admin']), petController.getPetsAvailableForTraining);
+router.get('/management/trainers', auth, roleAuth(['staff', 'admin']), petController.getAllTrainers);
+router.get('/management/assigned-trainers', auth, roleAuth(['staff', 'admin']), petController.getPetsWithTrainers);
+router.patch('/:id/assign-trainer', auth, roleAuth(['staff', 'admin']), petController.assignTrainerToPet);
+router.patch('/:id/remove-trainer', auth, roleAuth(['staff', 'admin']), petController.removeTrainerFromPet);
+
 module.exports = router;
 

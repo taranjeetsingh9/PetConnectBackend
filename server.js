@@ -50,6 +50,8 @@ app.use('/api/foster-chats', require('./routes/fosterChatRoutes'));
 // trainer routes
 app.use('/api/trainer', require('./routes/trainer'));
 
+
+
 // admin route
 app.use('/api/admin', require('./routes/admin'));
 
@@ -58,8 +60,18 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'auth.html'));
 });
 
+
+// training
+app.use('/api/training', require('./routes/trainingRoutes'));
+
+
+// training route
+const trainingRequestRoutes = require('./routes/trainingRequestRoutes');
+
+// Later in the file, add to routes:
+app.use('/api/training-requests', trainingRequestRoutes);
+
 const PORT = process.env.PORT || 5001;
-// app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
 
 const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
