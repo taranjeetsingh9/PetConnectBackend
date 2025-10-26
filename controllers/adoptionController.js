@@ -41,6 +41,17 @@ exports.getMyRequests = async (req, res) => {
   }
 };
 
+
+exports.scheduleMeeting = async (req, res) => {
+  try {
+    const result = await adoptionService.scheduleMeeting(req.user, req.params.requestId, req.body.staffId, req.body.slot);
+    res.json(result);
+  } catch (err) {
+    console.error('Error in scheduleMeeting:', err);
+    res.status(err.status || 500).json({ msg: err.message || 'Server Error' });
+  }
+};
+
 exports.confirmMeeting = async (req, res) => {
   try {
     const result = await adoptionService.confirmMeeting(req.user, req.params.id, req.body.notes);
