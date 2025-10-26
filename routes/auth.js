@@ -1,89 +1,18 @@
 const express = require('express');
 const router = express.Router();
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const authController = require('../controllers/authController');
 const auth = require('../middleware/auth');
 
-// sign up
-router.post('/signup', async (req, res) => {
-  const { email, password } = req.body;
-  try {
-    let user = await User.findOne({ email });
-    if (user) return res.status(400).json({ msg: 'User already exists' });
+// Sign up
+router.post('/signup', authController.signup);
 
-    const salt = await bcrypt.genSalt(15);
-    const hashedPassword = await bcrypt.hash(password, salt);
+// Login
+router.post('/login', authController.login);
 
-    user = await User.create({ email, password: hashedPassword });
-    
-    const payload = { user: { id: user.id } };
-    jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' }, (err, token) => {
-      if (err) throw err;
-      res.json({ token, firstTime: true });
-    });
-  } catch (err) {
-    res.status(500).send('Server Error');
-  }
-});
+// Get current user
+router.get("/me", auth, authController.getCurrentUser);
 
-// GET /api/auth/me
-router.get("/me", auth, async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id).select("-password");
-    if (!user) return res.status(404).json({ msg: "User not found" });
-    res.json(user);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send("Server error");
-  }
-});
-
-router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
-  try {
-    const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ msg: 'Invalid credentials' });
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ msg: 'Invalid credentials' });
-
-    const payload = { user: { id: user.id,  role: user.role } };
-    // Only include organization if it exists (for staff/admin)
-if (user.organization) {
-  payload.user.organization = user.organization;
-}
-    jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' }, (err, token) => {
-      if (err) throw err;
-      const firstTime = !user.name || !user.location; // check if profile setup needed
-      res.json({ token, firstTime });
-    });
-  } catch (err) {
-    res.status(500).send('Server Error');
-  }
-
-
-});
-
-// edit profile 
-router.patch('/users/profile', auth, async (req, res) => {
-  try {
-    const { name, location, role, lifestyle } = req.body;
-    const user = await User.findById(req.user.id);
-
-    user.name = name || user.name;
-    user.location = location || user.location;
-    user.role = role || user.role;
-    user.lifestyle = lifestyle || user.lifestyle;
-    user.lastLogin = Date.now();
-
-    await user.save();
-    res.json(user);
-  } catch (err) {
-    res.status(500).send('Server Error');
-  }
-});
-
-
+// Update profile
+router.patch('/users/profile', auth, authController.updateProfile);
 
 module.exports = router;

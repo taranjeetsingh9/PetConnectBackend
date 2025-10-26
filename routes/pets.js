@@ -22,8 +22,8 @@ router.patch('/:id/training', auth, petController.updateTrainingNotes);
 router.patch('/:id/assign-vet', auth, roleAuth(['staff', 'admin']), petController.assignVet);
 
 // Adoption / Foster
-router.post('/:id/adopt', auth, roleAuth(['adopter']), petController.requestAdoption);
-router.post('/:id/foster', auth, roleAuth(['adopter']), petController.requestFoster);
+router.post('/:id/adopt', auth, roleAuth(['adopter','staff', 'admin']), petController.requestAdoption);
+router.post('/:id/foster', auth, roleAuth(['adopter', 'staff', 'admin']), petController.requestFoster);
 router.get('/:id/foster-requests', auth, petController.getFosterRequests);
 router.patch('/:id/foster-requests/:requestId', auth, petController.handleFosterRequest);
 
