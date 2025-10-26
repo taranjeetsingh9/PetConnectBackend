@@ -71,6 +71,9 @@ const trainingRequestRoutes = require('./routes/trainingRequestRoutes');
 // Later in the file, add to routes:
 app.use('/api/training-requests', trainingRequestRoutes);
 
+const availabilityRoutes = require('./routes/availabilityRoutes');
+app.use('/api/availability', availabilityRoutes);
+
 const PORT = process.env.PORT || 5001;
 
 const server = app.listen(PORT, () => {

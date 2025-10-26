@@ -2,7 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
-const { requestAdoption, getOrganizationRequests, updateRequestStatus, getMyRequests, confirmMeeting, sendMeetingReminder,getMyAdoptedPets } = require('../controllers/adoptionController');
+const { requestAdoption, getOrganizationRequests, updateRequestStatus, getMyRequests, confirmMeeting, sendMeetingReminder,getMyAdoptedPets, scheduleMeeting } = require('../controllers/adoptionController');
 const roleAuth = require('../middleware/roleAuth');
 
 // Routes
@@ -13,5 +13,6 @@ router.get('/my-requests', auth, roleAuth(['adopter']), getMyRequests);
 router.patch('/:id/confirm-meeting', auth, roleAuth(['adopter']), confirmMeeting);
 router.post('/:id/send-reminder', auth, roleAuth(['staff', 'admin']), sendMeetingReminder);
 router.get('/my-adopted-pets', auth, roleAuth(['adopter']), getMyAdoptedPets);
+router.post('/:requestId/schedule-meeting', auth, scheduleMeeting);
 
 module.exports = router;

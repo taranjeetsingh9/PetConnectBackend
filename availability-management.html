@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage Availability</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen p-6">
+  <div class="max-w-4xl mx-auto">
+    <h1 class="text-3xl font-bold text-indigo-700 mb-6">Manage Your Availability</h1>
+
+    <!-- Current Availability Display -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+      <h2 class="text-xl font-semibold mb-4">Current Availability Slots</h2>
+      <div id="currentSlots" class="space-y-3">
+        <!-- Slots will be loaded here -->
+      </div>
+    </div>
+
+    <!-- Single Slot Form -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+      <h2 class="text-xl font-semibold mb-4">Add Availability Slot</h2>
+      <form id="availabilityForm" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div>
+          <label class="block text-sm font-medium mb-1">Date</label>
+          <input type="date" id="date" class="w-full p-2 border rounded" required>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Start Time</label>
+          <input type="time" id="startTime" class="w-full p-2 border rounded" required>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">End Time</label>
+          <input type="time" id="endTime" class="w-full p-2 border rounded" required>
+        </div>
+        <div class="flex items-end">
+          <button type="submit" class="w-full bg-indigo-600 text-white py-2 px-4 rounded hover:bg-indigo-700">
+            Add Slot
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Bulk Date Creation -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+      <h2 class="text-xl font-semibold mb-4">Create Slots for Multiple Dates</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div>
+          <label class="block text-sm font-medium mb-1">Start Date</label>
+          <input type="date" id="startDate" class="w-full p-2 border rounded">
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">End Date</label>
+          <input type="date" id="endDate" class="w-full p-2 border rounded">
+        </div>
+        <div class="flex items-end">
+          <button onclick="generateDateRangeSlots()" class="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">
+            Generate Slots
+          </button>
+        </div>
+      </div>
+      
+      <div id="generatedSlots" class="space-y-3">
+        <!-- Generated slots will appear here -->
+      </div>
+    </div>
+
+    <!-- Weekly Availability (Legacy) -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+      <h2 class="text-xl font-semibold mb-4">Weekly Availability (Legacy)</h2>
+      <div id="weeklySlots" class="space-y-3 mb-4">
+        <!-- Weekly slots will be generated here -->
+      </div>
+      <button onclick="saveWeeklyAvailability()" class="bg-green-600 text-white py-2 px-6 rounded hover:bg-green-700">
+        Save Weekly Schedule
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = 'http://localhost:5001/api';
+    let token = localStorage.getItem('token');
+    let currentUserId = null;
+
+    const fetchWithAuth = (url, options = {}) => {
+      return fetch(url, {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token,
+          ...options.headers
+        }
+      });
+    };
+
+    // Load current user and availability
+    async function loadDashboard() {
+      try {
+        const userRes = await fetchWithAuth(`${API_BASE}/auth/me`);
+        const user = await userRes.json();
+        if (!userRes.ok) throw new Error('Not authenticated');
+
+        currentUserId = user._id;
+        document.title = `Availability - ${user.name} (${user.role})`;
+        await loadAvailability();
+        generateWeeklySlotsForm();
+      } catch (error) {
+        console.error('Error loading dashboard:', error);
+        window.location.href = 'auth.html';
+      }
+    }
+
+    // Load current availability
+    async function loadAvailability() {
+      try {
+        const res = await fetchWithAuth(`${API_BASE}/availability/${currentUserId}`);
+        const data = await res.json();
+        
+        const slotsContainer = document.getElementById('currentSlots');
+        
+        if (!data.slots || data.slots.length === 0) {
+          slotsContainer.innerHTML = '<p class="text-gray-500 text-center py-4">No availability slots set</p>';
+          return;
+        }
+
+        slotsContainer.innerHTML = data.slots.map(slot => `
+          <div class="flex justify-between items-center p-3 bg-blue-50 border border-blue-200 rounded">
+            <div>
+              <span class="font-medium">${slot.day}</span>: 
+              ${slot.startTime} - ${slot.endTime}
+              ${slot.date ? ` (${new Date(slot.date).toLocaleDateString()})` : ''}
+            </div>
+            <button onclick="deleteSlot('${slot.day}')" class="text-red-600 hover:text-red-800">
+              🗑️ Remove
+            </button>
+          </div>
+        `).join('');
+      } catch (error) {
+        console.error('Error loading availability:', error);
+      }
+    }
+
+    // Delete a slot
+    async function deleteSlot(day) {
+      if (!confirm('Are you sure you want to remove this slot?')) return;
+      
+      try {
+        const res = await fetchWithAuth(`${API_BASE}/availability/${currentUserId}?day=${day}`, {
+          method: 'DELETE'
+        });
+
+        if (res.ok) {
+          alert('Slot removed successfully!');
+          await loadAvailability();
+        } else {
+          throw new Error('Failed to remove slot');
+        }
+      } catch (error) {
+        console.error('Error deleting slot:', error);
+        alert('Failed to remove slot: ' + error.message);
+      }
+    }
+
+    // Generate weekly slots form
+    function generateWeeklySlotsForm() {
+      const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+      const container = document.getElementById('weeklySlots');
+      
+      container.innerHTML = days.map(day => `
+        <div class="flex items-center gap-4 p-3 border rounded">
+          <label class="w-24 font-medium">${day}</label>
+          <input type="time" id="${day}_start" class="p-2 border rounded" placeholder="Start time">
+          <span>to</span>
+          <input type="time" id="${day}_end" class="p-2 border rounded" placeholder="End time">
+          <button type="button" onclick="clearDay('${day}')" class="text-gray-500 hover:text-gray-700">
+            Clear
+          </button>
+        </div>
+      `).join('');
+    }
+
+    // Clear day slots
+    function clearDay(day) {
+      document.getElementById(`${day}_start`).value = '';
+      document.getElementById(`${day}_end`).value = '';
+    }
+
+    // Save weekly availability
+    async function saveWeeklyAvailability() {
+      const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+      const slots = [];
+
+      days.forEach(day => {
+        const startTime = document.getElementById(`${day}_start`).value;
+        const endTime = document.getElementById(`${day}_end`).value;
+        
+        if (startTime && endTime) {
+          slots.push({ day, startTime, endTime });
+        }
+      });
+
+      if (slots.length === 0) {
+        alert('Please set at least one time slot');
+        return;
+      }
+
+      try {
+        const userRes = await fetchWithAuth(`${API_BASE}/auth/me`);
+        const user = await userRes.json();
+
+        const res = await fetchWithAuth(`${API_BASE}/availability/${currentUserId}`, {
+          method: 'POST',
+          body: JSON.stringify({
+            role: user.role,
+            slots: slots
+          })
+        });
+
+        if (res.ok) {
+          alert('Weekly availability saved successfully!');
+          await loadAvailability();
+        } else {
+          throw new Error('Failed to save availability');
+        }
+      } catch (error) {
+        console.error('Error saving weekly availability:', error);
+        alert('Failed to save availability: ' + error.message);
+      }
+    }
+
+    // Generate slots for a date range
+    function generateDateRangeSlots() {
+      const startDate = document.getElementById('startDate').value;
+      const endDate = document.getElementById('endDate').value;
+      
+      if (!startDate || !endDate) {
+        alert('Please select both start and end dates');
+        return;
+      }
+      
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const container = document.getElementById('generatedSlots');
+      
+      let html = '';
+      const currentDate = new Date(start);
+      
+      while (currentDate <= end) {
+        const dateString = currentDate.toISOString().split('T')[0];
+        const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'long' });
+        
+        html += `
+          <div class="flex items-center justify-between p-3 bg-gray-50 border rounded">
+            <div>
+              <span class="font-medium">${dayName}</span>
+              <span class="text-sm text-gray-600 ml-2">${dateString}</span>
+            </div>
+            <div class="flex gap-2">
+              <input type="time" id="gen_${dateString}_start" class="p-1 border rounded" placeholder="Start">
+              <span>to</span>
+              <input type="time" id="gen_${dateString}_end" class="p-1 border rounded" placeholder="End">
+            </div>
+          </div>
+        `;
+        
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+      
+      container.innerHTML = html + `
+        <button onclick="saveGeneratedSlots()" class="w-full bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 mt-4">
+          Save All Generated Slots
+        </button>
+      `;
+    }
+
+    // Save all generated slots
+    async function saveGeneratedSlots() {
+      const startDate = document.getElementById('startDate').value;
+      const endDate = document.getElementById('endDate').value;
+      
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const slots = [];
+      const currentDate = new Date(start);
+      
+      while (currentDate <= end) {
+        const dateString = currentDate.toISOString().split('T')[0];
+        const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'long' });
+        
+        const startTime = document.getElementById(`gen_${dateString}_start`).value;
+        const endTime = document.getElementById(`gen_${dateString}_end`).value;
+        
+        if (startTime && endTime) {
+          slots.push({
+            day: dayName,
+            date: dateString,
+            startTime: startTime,
+            endTime: endTime
+          });
+        }
+        
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+      
+      if (slots.length === 0) {
+        alert('No slots filled out');
+        return;
+      }
+      
+      try {
+        const userRes = await fetchWithAuth(`${API_BASE}/auth/me`);
+        const user = await userRes.json();
+
+        const res = await fetchWithAuth(`${API_BASE}/availability/${currentUserId}`, {
+          method: 'POST',
+          body: JSON.stringify({
+            role: user.role,
+            slots: slots
+          })
+        });
+
+        if (res.ok) {
+          alert(`✅ ${slots.length} slots saved successfully!`);
+          document.getElementById('generatedSlots').innerHTML = '';
+          document.getElementById('startDate').value = '';
+          document.getElementById('endDate').value = '';
+          await loadAvailability();
+        } else {
+          throw new Error('Failed to save slots');
+        }
+      } catch (error) {
+        console.error('Error saving slots:', error);
+        alert('Failed to save slots: ' + error.message);
+      }
+    }
+
+    // Update the form submission to handle dates
+    document.getElementById('availabilityForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const date = document.getElementById('date').value;
+      const startTime = document.getElementById('startTime').value;
+      const endTime = document.getElementById('endTime').value;
+
+      if (!date || !startTime || !endTime) {
+        alert('Please fill all fields');
+        return;
+      }
+
+      const dayName = new Date(date).toLocaleDateString('en-US', { weekday: 'long' });
+
+      try {
+        // Get current availability
+        const currentRes = await fetchWithAuth(`${API_BASE}/availability/${currentUserId}`);
+        const currentData = await currentRes.json();
+        
+        const currentSlots = currentData.slots || [];
+        const newSlot = { 
+          day: dayName, 
+          date: date,
+          startTime: startTime, 
+          endTime: endTime 
+        };
+        
+        // Check if slot already exists for this date
+        const existingSlotIndex = currentSlots.findIndex(slot => slot.date === date);
+        if (existingSlotIndex !== -1) {
+          currentSlots[existingSlotIndex] = newSlot; // Replace existing
+        } else {
+          currentSlots.push(newSlot); // Add new
+        }
+        
+        // Get user role
+        const userRes = await fetchWithAuth(`${API_BASE}/auth/me`);
+        const user = await userRes.json();
+        
+        const saveRes = await fetchWithAuth(`${API_BASE}/availability/${currentUserId}`, {
+          method: 'POST',
+          body: JSON.stringify({
+            role: user.role,
+            slots: currentSlots
+          })
+        });
+
+        if (saveRes.ok) {
+          alert('Slot added successfully!');
+          document.getElementById('availabilityForm').reset();
+          await loadAvailability();
+        } else {
+          throw new Error('Failed to save slot');
+        }
+      } catch (error) {
+        console.error('Error adding slot:', error);
+        alert('Failed to add slot: ' + error.message);
+      }
+    });
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', loadDashboard);
+  </script>
+</body>
+</html>
