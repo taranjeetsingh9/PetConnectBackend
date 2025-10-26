@@ -2,94 +2,136 @@ const FosterChat = require('../models/FosterChat');
 const Message = require('../models/Message');
 const { MESSAGE_TYPES } = require('../constants/chatConstants');
 
+class FosterChatService {
+  /**
+   * Get all chats for a specific user
+   */
+  async getUserChats(userId) {
+    const chats = await FosterChat.find({
+      'participants.user': userId,
+      isActive: true
+    })
+      .populate('participants.user', 'name email avatar')
+      .populate('pet', 'name breed images status')
+      .sort({ lastMessageAt: -1 });
 
-exports.getUserChats = async (userId) => {
-  const chats = await FosterChat.find({
-    'participants.user': userId,
-    isActive: true
-  })
-  .populate('participants.user', 'name email avatar')
-  .populate('pet', 'name breed images status')
-  .sort({ lastMessageAt: -1 });
+    return { success: true, count: chats.length, chats };
+  }
 
-  return { success: true, count: chats.length, chats };
-};
+  /**
+   * Get a single chat by ID for a user
+   */
+  async getFosterChat(userId, chatId) {
+    const chat = await FosterChat.findOne({
+      _id: chatId,
+      'participants.user': userId
+    })
+      .populate('participants.user', 'name email avatar role')
+      .populate('pet', 'name breed images status location');
 
-exports.getFosterChat = async (userId, chatId) => {
-  const chat = await FosterChat.findOne({
-    _id: chatId,
-    'participants.user': userId
-  })
-  .populate('participants.user', 'name email avatar role')
-  .populate('pet', 'name breed images status location');
+    if (!chat) throw new Error('Foster chat not found or access denied');
 
-  if (!chat) throw new Error('Foster chat not found or access denied');
+    return { success: true, chat };
+  }
 
-  return { success: true, chat };
-};
+  /**
+   * Get messages for a chat
+   */
+  async getChatMessages(userId, chatId) {
+    const chat = await FosterChat.findOne({
+      _id: chatId,
+      'participants.user': userId
+    });
 
-exports.getChatMessages = async (userId, chatId) => {
-  const chat = await FosterChat.findOne({ _id: chatId, 'participants.user': userId });
-  if (!chat) throw new Error('Access denied to this chat');
+    if (!chat) throw new Error('Access denied to this chat');
 
-  const messages = await Message.find({ chat: chatId })
-    .populate('sender', 'name email avatar role')
-    .sort({ createdAt: 1 });
+    const messages = await Message.find({ chat: chatId })
+      .populate('sender', 'name email avatar role')
+      .sort({ createdAt: 1 });
 
-  return { success: true, count: messages.length, messages };
-};
+    return { success: true, count: messages.length, messages };
+  }
 
-exports.sendMessage = async (userId, chatId, content, messageType, attachments, metadata) => {
-  if (!content || !content.trim()) throw new Error('Message content is required');
+  /**
+   * Send a message in a foster chat
+   */
+  async sendMessage(userId, chatId, content, messageType, attachments, metadata) {
+    if (!content || !content.trim()) throw new Error('Message content is required');
 
-  const chat = await FosterChat.findOne({ _id: chatId, 'participants.user': userId });
-  if (!chat) throw new Error('Foster chat not found or access denied');
+    const chat = await FosterChat.findOne({
+      _id: chatId,
+      'participants.user': userId
+    });
 
-  const message = await Message.create({
-    chat: chatId,
-    sender: userId,
-    content: content.trim(),
-    messageType,
-    readBy: [{ user: userId, readAt: new Date() }],
-    attachments: Array.isArray(attachments) ? attachments : [],
-    metadata: metadata || {}
-  });
+    if (!chat) throw new Error('Foster chat not found or access denied');
 
-  chat.lastMessage = content.length > 100 ? content.substring(0, 100) + '...' : content;
-  chat.lastMessageAt = new Date();
+    const message = await Message.create({
+      chat: chatId,
+      sender: userId,
+      content: content.trim(),
+      messageType: messageType || MESSAGE_TYPES.TEXT,
+      readBy: [{ user: userId, readAt: new Date() }],
+      attachments: Array.isArray(attachments) ? attachments : [],
+      metadata: metadata || {}
+    });
 
-  chat.participants.forEach(participant => {
-    if (participant.user.toString() !== userId) {
-      const currentCount = chat.unreadCounts.get(participant.user.toString()) || 0;
-      chat.unreadCounts.set(participant.user.toString(), currentCount + 1);
-    }
-  });
+    // Update chat's last message info
+    chat.lastMessage = content.length > 100 ? content.substring(0, 100) + '...' : content;
+    chat.lastMessageAt = new Date();
 
-  await chat.save();
+    // Increment unread counts for other users
+    chat.participants.forEach(participant => {
+      if (participant.user.toString() !== userId) {
+        const currentCount = chat.unreadCounts.get(participant.user.toString()) || 0;
+        chat.unreadCounts.set(participant.user.toString(), currentCount + 1);
+      }
+    });
 
-  const populatedMessage = await Message.findById(message._id)
-    .populate('sender', 'name email avatar role');
+    await chat.save();
 
-  return {
-    success: true,
-    message: populatedMessage,
-    chatUpdate: {
-      lastMessage: chat.lastMessage,
-      lastMessageAt: chat.lastMessageAt
-    }
-  };
-};
+    const populatedMessage = await Message.findById(message._id)
+      .populate('sender', 'name email avatar role');
 
-exports.markAsRead = async (userId, chatId) => {
-  const chat = await FosterChat.findOne({
-    _id: chatId,
-    'participants.user': userId
-  });
+    return {
+      success: true,
+      message: populatedMessage,
+      chatUpdate: {
+        lastMessage: chat.lastMessage,
+        lastMessageAt: chat.lastMessageAt
+      }
+    };
+  }
 
-  if (!chat) throw new Error('Foster chat not found');
+  /**
+   * Mark chat messages as read for a user
+   */
+  async markAsRead(userId, chatId) {
+    const chat = await FosterChat.findOne({
+      _id: chatId,
+      'participants.user': userId
+    });
 
-  chat.unreadCounts.set(userId.toString(), 0);
-  await chat.save();
+    if (!chat) throw new Error('Foster chat not found');
 
-  return { success: true, msg: 'Messages marked as read' };
+    chat.unreadCounts.set(userId.toString(), 0);
+    await chat.save();
+
+    return { success: true, msg: 'Messages marked as read' };
+  }
+}
+
+// Create a singleton instance
+const fosterChatService = new FosterChatService();
+
+// Export both class and instance (for flexibility and backward compatibility)
+module.exports = {
+  FosterChatService,
+  fosterChatService,
+
+  // Legacy function bindings (backward-compatible)
+  getUserChats: fosterChatService.getUserChats.bind(fosterChatService),
+  getFosterChat: fosterChatService.getFosterChat.bind(fosterChatService),
+  getChatMessages: fosterChatService.getChatMessages.bind(fosterChatService),
+  sendMessage: fosterChatService.sendMessage.bind(fosterChatService),
+  markAsRead: fosterChatService.markAsRead.bind(fosterChatService),
 };

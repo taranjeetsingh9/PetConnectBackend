@@ -1,18 +1,40 @@
 // services/activityLogService.js
 const ActivityLog = require('../models/ActivityLog');
-
- // get all logs irrespective of nature user
-exports.fetchAllLogs = async () => {
-  return ActivityLog.find()
-    .populate('user', 'name email role')
-    .sort({ createdAt: -1 });
+const createError = (msg, status = 400) => {
+  const err = new Error(msg);
+  err.status = status;
+  return err;
 };
 
-/**
- * Fetch activity logs for a specific user
- * @param {String} userId
- */
-exports.fetchUserLogs = async (userId) => {
-  return ActivityLog.find({ user: userId })
-    .sort({ createdAt: -1 });
+class ActivityLogService {
+  /**
+   * Fetch all activity logs (irrespective of user)
+   */
+  async fetchAllLogs() {
+    return ActivityLog.find()
+      .populate('user', 'name email role')
+      .sort({ createdAt: -1 });
+  }
+
+  /**
+   * Fetch activity logs for a specific user
+   * @param {String} userId
+   */
+  async fetchUserLogs(userId) {
+    if (!userId) throw createError('User ID is required');
+    return ActivityLog.find({ user: userId })
+      .sort({ createdAt: -1 });
+  }
+}
+
+// Singleton instance for backward compatibility
+const activityLogService = new ActivityLogService();
+
+module.exports = {
+  ActivityLogService,
+  activityLogService,
+
+  // Legacy bindings for production
+  fetchAllLogs: activityLogService.fetchAllLogs.bind(activityLogService),
+  fetchUserLogs: activityLogService.fetchUserLogs.bind(activityLogService)
 };

@@ -24,6 +24,20 @@
       </div>
     </div>
 
+    <div class="flex gap-2">
+      <!-- Add Notifications Button -->
+      <button onclick="showNotificationsPanel()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 relative">
+        🔔 Notifications
+        <span id="notificationBadge" class="hidden absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center">0</span>
+      </button>
+      
+      <button onclick="window.location.href='user-profile.html'" 
+              class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
+        👤 My Profile
+      </button>
+      <button id="logoutBtn" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">Sign Out</button>
+    </div>
+
     <!-- Available Pets -->
     <h2 class="text-2xl font-semibold mb-3">Available Pets</h2>
     <div id="petsList" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8"></div>
@@ -132,9 +146,15 @@
 
         // fetch my requests
         loadMyAdoptionRequests();
+
         
         // Load training data
         loadTrainingData();
+            // Initialize real-time notifications
+    initializeNotifications();
+    
+    // Start polling for notifications
+    setInterval(pollForNotifications, 4000);
 
       } catch (err) {
         console.error(err);
@@ -702,6 +722,303 @@ async function debugAdoptedPets() {
     }
 }
 
+let socket;
+
+// Initialize Socket.io for real-time notifications
+function initializeNotifications() {
+  try {
+    socket = io('http://localhost:5001', {
+      transports: ['polling', 'websocket'],
+      timeout: 10000
+    });
+    
+    socket.on('connect', () => {
+      console.log('🔔 Connected to notification server');
+    });
+
+    socket.on('connect_error', (error) => {
+      console.log('🔌 Socket connection failed, using polling only:', error.message);
+      // Don't break the app - continue with polling
+    });
+
+    socket.on('notification', (data) => {
+      console.log('🔔 New notification received:', data);
+      showNotification(data);
+      refreshAdoptionRequests();
+    });
+
+  } catch (error) {
+    console.log('🔌 Socket initialization failed, using polling only');
+  }
+}
+
+// Show notification to user
+function showNotification(notification) {
+  // Create toast notification
+  const toast = document.createElement('div');
+  toast.className = 'fixed top-4 right-4 bg-green-500 text-white p-4 rounded-lg shadow-lg z-50';
+  toast.innerHTML = `
+    <div class="flex items-center">
+      <span class="text-lg mr-2">🔔</span>
+      <div>
+        <p class="font-semibold">${notification.message}</p>
+        <p class="text-sm opacity-90">${new Date().toLocaleTimeString()}</p>
+      </div>
+      <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+        ×
+      </button>
+    </div>
+  `;
+  
+  document.body.appendChild(toast);
+  
+  // Auto remove after 5 seconds
+  setTimeout(() => {
+    if (toast.parentElement) {
+      toast.remove();
+    }
+  }, 5000);
+}
+
+// Refresh adoption requests
+async function refreshAdoptionRequests() {
+  await loadMyAdoptionRequests();
+}
+
+// Poll for notifications (fallback if sockets fail)
+async function pollForNotifications() {
+  try {
+    const response = await fetchWithAuth('http://localhost:5001/api/notifications');
+    const data = await response.json();
+    
+    if (data.success && data.notifications) {
+      const unread = data.notifications.filter(n => !n.read);
+      if (unread.length > 0) {
+        updateNotificationBadge(unread.length);
+      }
+    }
+  } catch (error) {
+    console.log('Notification polling failed:', error);
+  }
+}
+
+// Update notification badge
+function updateNotificationBadge(count) {
+  let badge = document.getElementById('notificationBadge');
+  if (!badge) {
+    badge = document.createElement('span');
+    badge.id = 'notificationBadge';
+    badge.className = 'absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center';
+    
+    const notifyBtn = document.createElement('button');
+    notifyBtn.className = 'bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 relative';
+    notifyBtn.innerHTML = '🔔 Notifications';
+    notifyBtn.appendChild(badge);
+    notifyBtn.onclick = showNotificationsPanel;
+    
+    document.querySelector('.flex.gap-2').prepend(notifyBtn);
+  }
+  badge.textContent = count;
+}
+
+// Show notifications panel
+// function showNotificationsPanel() {
+//   // Implement notifications panel UI
+//   alert('Notifications panel would open here with all your notifications');
+// }
+// socket integration end
+
+
+// Replace this placeholder function:
+function showNotificationsPanel() {
+  // Implement notifications panel UI
+  alert('Notifications panel would open here with all your notifications');
+}
+
+// WITH THIS REAL IMPLEMENTATION:
+async function showNotificationsPanel() {
+  try {
+    const response = await fetchWithAuth('http://localhost:5001/api/notifications/');
+    const data = await response.json();
+    
+    if (!data.success) {
+      alert('Failed to load notifications');
+      return;
+    }
+
+    // Create modal overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center';
+    overlay.onclick = (e) => {
+      if (e.target === overlay) overlay.remove();
+    };
+
+    // Create notifications panel
+    const panel = document.createElement('div');
+    panel.className = 'bg-white rounded-lg shadow-xl w-full max-w-md max-h-96 overflow-hidden';
+    panel.onclick = (e) => e.stopPropagation();
+
+    const notifications = data.notifications || [];
+    
+    panel.innerHTML = `
+      <div class="bg-indigo-600 text-white p-4 flex justify-between items-center">
+        <h3 class="text-lg font-semibold">🔔 Notifications</h3>
+        <button onclick="this.closest('.fixed').remove()" class="text-white hover:text-gray-200 text-xl">×</button>
+      </div>
+      
+      <div class="max-h-80 overflow-y-auto">
+        ${notifications.length === 0 ? `
+          <div class="p-8 text-center text-gray-500">
+            <p class="text-lg">No notifications yet</p>
+            <p class="text-sm mt-2">You'll see updates about your adoption requests here</p>
+          </div>
+        ` : `
+          <div class="divide-y">
+            ${notifications.map(notif => `
+              <div class="p-4 hover:bg-gray-50 ${!notif.read ? 'bg-blue-50 border-l-4 border-blue-500' : ''}">
+                <div class="flex justify-between items-start">
+                  <div class="flex-1">
+                    <p class="font-medium text-gray-900">${notif.message}</p>
+                    <p class="text-sm text-gray-500 mt-1">
+                      ${new Date(notif.createdAt).toLocaleString()}
+                    </p>
+                    ${notif.meta?.action ? `
+                      <button onclick="handleNotificationAction('${notif.meta.action}', ${JSON.stringify(notif.meta).replace(/'/g, "\\'")})" 
+                              class="mt-2 text-sm bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700">
+                        ${getActionText(notif.meta.action)}
+                      </button>
+                    ` : ''}
+                  </div>
+                  ${!notif.read ? `
+                    <button onclick="markNotificationAsRead('${notif._id}', this)" 
+                            class="ml-2 text-blue-600 hover:text-blue-800 text-sm">
+                      Mark read
+                    </button>
+                  ` : ''}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `}
+      </div>
+      
+      ${notifications.length > 0 ? `
+        <div class="border-t p-3 bg-gray-50">
+          <button onclick="markAllNotificationsRead()" 
+                  class="w-full bg-gray-200 text-gray-700 py-2 rounded hover:bg-gray-300">
+            Mark all as read
+          </button>
+        </div>
+      ` : ''}
+    `;
+
+    overlay.appendChild(panel);
+    document.body.appendChild(overlay);
+
+  } catch (error) {
+    console.error('Error loading notifications:', error);
+    alert('Failed to load notifications');
+  }
+}
+
+// Helper function for action buttons
+function getActionText(action) {
+  const actions = {
+    'review_request': 'Review Request',
+    'open_chat': 'Open Chat',
+    'confirm_meeting': 'Confirm Meeting',
+    'view_meeting_details': 'View Details',
+    'browse_other_pets': 'Browse Pets',
+    'view_pet_profile': 'View Pet'
+  };
+  return actions[action] || 'View';
+}
+
+// Handle notification actions
+function handleNotificationAction(action, meta) {
+  switch(action) {
+    case 'open_chat':
+      if (meta.chatId) {
+        window.location.href = `chat.html?chatId=${meta.chatId}`;
+      }
+      break;
+    case 'confirm_meeting':
+      if (meta.requestId) {
+        confirmMeeting(meta.requestId);
+      }
+      break;
+    case 'view_meeting_details':
+      if (meta.requestId) {
+        viewMeetingDetails(meta.requestId);
+      }
+      break;
+    case 'view_pet_profile':
+      if (meta.petId) {
+        window.location.href = `pet-details.html?id=${meta.petId}`;
+      }
+      break;
+    default:
+      console.log('Action:', action, meta);
+  }
+}
+
+// Mark single notification as read
+async function markNotificationAsRead(notificationId, button) {
+  try {
+    const response = await fetchWithAuth(`http://localhost:5001/api/notifications/${notificationId}/read`, {
+      method: 'PATCH'
+    });
+    
+    if (response.ok) {
+      // Update UI
+      const notificationItem = button.closest('.hover\\:bg-gray-50');
+      notificationItem.classList.remove('bg-blue-50', 'border-l-4', 'border-blue-500');
+      button.remove();
+      
+      // Update badge
+      updateNotificationBadgeFromServer();
+    }
+  } catch (error) {
+    console.error('Error marking notification as read:', error);
+  }
+}
+
+// Mark all as read
+async function markAllNotificationsRead() {
+  try {
+    const response = await fetchWithAuth('http://localhost:5001/api/notifications/read-all', {
+      method: 'PATCH'
+    });
+    
+    if (response.ok) {
+      // Reload notifications panel
+      const overlay = document.querySelector('.fixed.inset-0');
+      if (overlay) overlay.remove();
+      showNotificationsPanel();
+      
+      // Update badge
+      updateNotificationBadge(0);
+    }
+  } catch (error) {
+    console.error('Error marking all as read:', error);
+  }
+}
+
+// Update badge count from server
+async function updateNotificationBadgeFromServer() {
+  try {
+    const response = await fetchWithAuth('http://localhost:5001/api/notifications/');
+    const data = await response.json();
+    
+    if (data.success) {
+      const unreadCount = data.notifications.filter(n => !n.read).length;
+      updateNotificationBadge(unreadCount);
+    }
+  } catch (error) {
+    console.error('Error updating badge:', error);
+  }
+}
+
 // Call this function to debug
 debugAdoptedPets();
 
@@ -739,6 +1056,14 @@ debugAdoptedPets();
     .transition-shadow {
       transition: box-shadow 0.2s ease;
     }
+    .notification-toast {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
   </style>
 
 </body>
