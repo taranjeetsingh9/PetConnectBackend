@@ -82,3 +82,23 @@ exports.getMyAdoptedPets = async (req, res) => {
     res.status(err.status || 500).json({ msg: err.message || 'Server Error' });
   }
 };
+
+exports.completeMeeting = async (req, res, next) => {
+  try {
+    const result = await adoptionService.completeMeeting(req.user, req.params.id, req.body.notes);
+    res.status(200).json(result);
+  } catch (err) {
+    console.error('Error in completeMeeting:', err);
+    next(err);
+  }
+};
+
+exports.submitMeetingFeedback = async (req, res) => {
+  try {
+    const result = await adoptionService.submitMeetingFeedback(req.user, req.params.id, req.body.feedback);
+    res.json(result);
+  } catch (err) {
+    console.error('Error in submitMeetingFeedback:', err);
+    res.status(err.status || 500).json({ msg: err.message || 'Server Error' });
+  }
+};

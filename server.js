@@ -6,6 +6,7 @@ const connectDB = require('./config/db');
 const { setupSocket } = require('./server/socket');
 const  chatRoutes = require('./routes/chatRoutes');
 const petFiles = require('./routes/petFiles');
+const reminderService = require('./services/reminderService');
 
 
 const app = express();
@@ -73,6 +74,17 @@ app.use('/api/training-requests', trainingRequestRoutes);
 
 const availabilityRoutes = require('./routes/availabilityRoutes');
 app.use('/api/availability', availabilityRoutes);
+
+
+// Run every hour to check for upcoming meetings
+setInterval(async () => {
+  try {
+    const result = await reminderService.sendMeetingReminders();
+    console.log(`⏰ Sent ${result.sent} meeting reminders`);
+  } catch (error) {
+    console.error('Error in reminder service:', error);
+  }
+}, 60 * 60 * 1000);
 
 const PORT = process.env.PORT || 5001;
 
