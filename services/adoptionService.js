@@ -314,31 +314,153 @@ class AdoptionService {
     return result;
   }
 
+  // async confirmMeeting(user, requestId, notes) {
+  //   const request = await AdoptionRequest.findById(requestId)
+  //     .populate('pet')
+  //     .populate('adopter')
+  //     .populate('organization');
+  //   if (!request) throw createError('Adoption request not found', 404);
+  //   if (request.adopter._id.toString() !== user.id) throw createError('Not authorized', 403);
+  //   if (request.status !== 'meeting' || !request.meeting?.date) throw createError('No meeting scheduled');
+
+  //   request.meeting.confirmed = true;
+  //   request.meeting.confirmedAt = new Date();
+  //   request.meeting.adopterNotes = notes;
+  //   await request.save();
+
+  //   const staffUsers = await getStaffUsers(request.organization._id);
+
+  //   await NotificationService.create({
+  //     users: staffUsers.map(s => s._id),
+  //     type: NOTIFICATION_TYPES.MEETING_CONFIRMED,
+  //     message: `${request.adopter.name} confirmed meeting for ${request.pet.name} on ${request.meeting.date.toLocaleString()}`,
+  //     meta: { meetingDate: request.meeting.date, petId: request.pet._id, requestId: request._id, action: 'view_meeting_details' }
+  //   }, { realTime: true });
+
+  //   return { msg: 'Meeting confirmed successfully', request };
+  // }
+  
   async confirmMeeting(user, requestId, notes) {
     const request = await AdoptionRequest.findById(requestId)
       .populate('pet')
       .populate('adopter')
-      .populate('organization');
+      .populate('organization')
+      .populate('meeting.staff');
+    
     if (!request) throw createError('Adoption request not found', 404);
     if (request.adopter._id.toString() !== user.id) throw createError('Not authorized', 403);
     if (request.status !== 'meeting' || !request.meeting?.date) throw createError('No meeting scheduled');
-
+  
+    // Generate meeting preparation guide based on type
+    const preparationGuide = this.generatePreparationGuide(request.meeting.type, request.pet);
+  
     request.meeting.confirmed = true;
     request.meeting.confirmedAt = new Date();
     request.meeting.adopterNotes = notes;
+    request.meeting.preparationGuide = preparationGuide; // Store preparation info
     await request.save();
-
+  
     const staffUsers = await getStaffUsers(request.organization._id);
-
+  
+    // Enhanced notification with preparation info
+    await NotificationService.create({
+      user: request.adopter._id,
+      type: NOTIFICATION_TYPES.MEETING_CONFIRMED,
+      message: `Your ${request.meeting.type} meeting for "${request.pet.name}" is confirmed!`,
+      meta: { 
+        meetingDate: request.meeting.date, 
+        petId: request.pet._id, 
+        requestId: request._id, 
+        meetingType: request.meeting.type,
+        meetingLink: request.meeting.meetingLink,
+        preparationGuide: preparationGuide,
+        action: 'view_meeting_preparation'
+      }
+    }, { realTime: true });
+  
+    // Notify staff with preparation info
     await NotificationService.create({
       users: staffUsers.map(s => s._id),
       type: NOTIFICATION_TYPES.MEETING_CONFIRMED,
-      message: `${request.adopter.name} confirmed meeting for ${request.pet.name} on ${request.meeting.date.toLocaleString()}`,
-      meta: { meetingDate: request.meeting.date, petId: request.pet._id, requestId: request._id, action: 'view_meeting_details' }
+      message: `${request.adopter.name} confirmed ${request.meeting.type} meeting for ${request.pet.name}`,
+      meta: { 
+        meetingDate: request.meeting.date, 
+        petId: request.pet._id, 
+        requestId: request._id,
+        meetingType: request.meeting.type,
+        adopterNotes: notes,
+        action: 'view_meeting_details'
+      }
     }, { realTime: true });
-
-    return { msg: 'Meeting confirmed successfully', request };
+  
+    return { 
+      msg: 'Meeting confirmed successfully', 
+      request,
+      preparationGuide: preparationGuide
+    };
   }
+  
+  // Helper function to generate preparation guides
+  generatePreparationGuide(meetingType, pet) {
+    const baseGuide = {
+      title: `Meeting Preparation for ${pet.name}`,
+      petInfo: {
+        name: pet.name,
+        breed: pet.breed,
+        age: pet.age,
+        specialNeeds: pet.specialNeeds || 'None noted'
+      }
+    };
+  
+    if (meetingType === 'virtual') {
+      return {
+        ...baseGuide,
+        type: 'virtual',
+        checklist: [
+          'Test your internet connection',
+          'Ensure camera and microphone work',
+          'Find a quiet, well-lit space',
+          'Have questions ready about pet care',
+          'Prepare to discuss your home environment'
+        ],
+        tips: [
+          'Join 5 minutes early to test audio/video',
+          'Have a notepad ready for important information',
+          'Be prepared to show your living space via camera if requested'
+        ],
+        whatToBring: [
+          'Valid ID (for verification)',
+          'List of questions about the pet',
+          'Information about your living situation'
+        ]
+      };
+    } else {
+      return {
+        ...baseGuide,
+        type: 'in-person',
+        checklist: [
+          'Arrive 10-15 minutes early',
+          'Bring valid government-issued ID',
+          'Wear comfortable, appropriate clothing',
+          'Leave young children at home (unless pre-approved)',
+          'Be prepared to spend 45-60 minutes at the shelter'
+        ],
+        tips: [
+          'The pet may be nervous - move slowly and speak softly',
+          'Ask about the pet\'s routine and preferences',
+          'Be honest about your experience and lifestyle',
+          'Take notes during the meeting'
+        ],
+        whatToBring: [
+          'Valid photo ID',
+          'Proof of address (if required)',
+          'List of questions for staff',
+          'Any family members involved in decision (if applicable)'
+        ]
+      };
+    }
+  }
+  
 
   async sendMeetingReminder(requestId) {
     const request = await AdoptionRequest.findById(requestId)
@@ -392,124 +514,97 @@ class AdoptionService {
 //  * @param {String} staffId - staff/vet/trainer id
 //  * @param {Object} slot - { day: 'Monday', startTime: '10:00', endTime: '11:00', date: '2025-10-27' }
 //  */
+
 // async scheduleMeeting(user, requestId, staffId, slot) {
-//   console.log('📅 Schedule meeting called:', { requestId, staffId, slot });
-  
-//   // 1. Fetch adoption request
-//   const request = await AdoptionRequest.findById(requestId)
-//     .populate('pet')
-//     .populate('adopter')
-//     .populate('organization');
-//   if (!request) throw createError('Adoption request not found', 404);
-//   if (request.adopter._id.toString() !== user.id) throw createError('Not authorized', 403);
+//   try {
+//     console.log('📅 Schedule meeting called:', { requestId, staffId, slot });
 
-//   // 2. Validate slot has required fields
-//   if (!slot.date || !slot.startTime || !slot.endTime) {
-//     throw createError('Slot must have date, startTime, and endTime');
-//   }
+//     // 1. Fetch adoption request
+//     const request = await AdoptionRequest.findById(requestId)
+//       .populate('pet')
+//       .populate('adopter')
+//       .populate('organization');
+//     if (!request) throw createError('Adoption request not found', 404);
+//     if (request.adopter._id.toString() !== user.id) throw createError('Not authorized', 403);
 
-//   // 3. Verify the staff actually has this availability slot
-//   const staffAvailability = await Availability.findOne({ 
-//     user: staffId,
-//     'slots.date': new Date(slot.date),
-//     'slots.startTime': slot.startTime,
-//     'slots.endTime': slot.endTime
-//   });
-
-//   if (!staffAvailability) {
-//     throw createError('Selected time slot is not available or has been booked by someone else');
-//   }
-
-//   // 4. Create meeting date by combining slot.date and slot.startTime
-//   const meetingDate = new Date(slot.date);
-//   const [hours, minutes] = slot.startTime.split(':').map(Number);
-//   meetingDate.setHours(hours, minutes, 0, 0);
-
-//   // Validate the date
-//   if (isNaN(meetingDate.getTime())) {
-//     throw createError('Invalid meeting date');
-//   }
-
-//   // 5. Check if meeting date is in the future
-//   if (meetingDate < new Date()) {
-//     throw createError('Cannot schedule meeting in the past');
-//   }
-
-//   // 6. Check for conflicts with other meetings for this staff member
-//   const conflict = await AdoptionRequest.findOne({
-//     'meeting.date': {
-//       $gte: new Date(meetingDate.getTime() - 30 * 60 * 1000), // 30 minutes before
-//       $lte: new Date(meetingDate.getTime() + 30 * 60 * 1000)  // 30 minutes after
-//     },
-//     _id: { $ne: requestId } // Exclude current request
-//   });
-
-//   if (conflict) {
-//     throw new Error('This time slot is already booked. Please choose another time.');
-//   }
-
-//   // 7. Remove the booked slot from staff's availability
-//   await Availability.findOneAndUpdate(
-//     { user: staffId },
-//     { 
-//       $pull: { 
-//         slots: {
-//           date: new Date(slot.date),
-//           startTime: slot.startTime,
-//           endTime: slot.endTime
-//         }
-//       } 
+//     // 2. Validate slot has required fields
+//     if (!slot.date || !slot.startTime || !slot.endTime) {
+//       throw createError('Slot must have date, startTime, and endTime');
 //     }
-//   );
 
-//   // 8. Save meeting details to adoption request
-//   request.status = 'meeting';
-//   request.meeting = {
-//     date: meetingDate,
-//     confirmed: false
-//   };
-  
-//   await request.save();
+//     // 3. Create meeting date by combining slot.date and slot.startTime
+//     const meetingDate = new Date(slot.date);
+//     const [hours, minutes] = slot.startTime.split(':').map(Number);
+//     meetingDate.setHours(hours, minutes, 0, 0);
 
-//   // 9. Notify adopter
-//   await NotificationService.create({
-//     user: request.adopter._id,
-//     type: NOTIFICATION_TYPES.MEETING_SCHEDULED,
-//     message: `Meeting scheduled for "${request.pet.name}" on ${meetingDate.toLocaleString()}`,
-//     meta: { 
-//       meetingDate: meetingDate, 
-//       petId: request.pet._id, 
-//       requestId: request._id, 
-//       action: 'confirm_meeting' 
+//     // Validate the date
+//     if (isNaN(meetingDate.getTime())) {
+//       throw createError('Invalid meeting date');
 //     }
-//   }, { realTime: true });
 
-//   // 10. Notify staff
-//   await NotificationService.create({
-//     user: staffId,
-//     type: NOTIFICATION_TYPES.MEETING_SCHEDULED,
-//     message: `You have a new meeting scheduled with "${request.adopter.name}" for pet "${request.pet.name}" on ${meetingDate.toLocaleString()}`,
-//     meta: { 
-//       meetingDate: meetingDate, 
-//       petId: request.pet._id, 
-//       requestId: request._id, 
-//       action: 'view_meeting' 
+//     // 4. Check if meeting date is in the future
+//     if (meetingDate < new Date()) {
+//       throw createError('Cannot schedule meeting in the past');
 //     }
-//   }, { realTime: true });
 
-//   console.log('✅ Meeting scheduled successfully');
-//   return { 
-//     success: true,
-//     msg: 'Meeting scheduled successfully', 
-//     request 
-//   };
+//     // 5. Update with meeting details
+//     request.status = ADOPTION_STATUS.MEETING;
+//     request.meeting = {
+//       date: meetingDate,
+//       staff: staffId, // Store staff ID
+//       startTime: slot.startTime,
+//       endTime: slot.endTime,
+//       confirmed: false,
+//       scheduledAt: new Date()
+//     };
+
+//     await request.save();
+
+//     // 6. Notify adopter
+//     await NotificationService.create({
+//       user: request.adopter._id,
+//       type: NOTIFICATION_TYPES.MEETING_SCHEDULED,
+//       message: `Meeting scheduled for "${request.pet.name}" on ${meetingDate.toLocaleString()}`,
+//       meta: { 
+//         meetingDate: meetingDate, 
+//         petId: request.pet._id, 
+//         requestId: request._id, 
+//         action: 'confirm_meeting' 
+//       }
+//     }, { realTime: true });
+
+//     // 7. Notify staff
+//     await NotificationService.create({
+//       user: staffId,
+//       type: NOTIFICATION_TYPES.MEETING_SCHEDULED,
+//       message: `You have a new meeting scheduled with "${request.adopter.name}" for pet "${request.pet.name}" on ${meetingDate.toLocaleString()}`,
+//       meta: { 
+//         meetingDate: meetingDate, 
+//         petId: request.pet._id, 
+//         requestId: request._id, 
+//         action: 'view_meeting' 
+//       }
+//     }, { realTime: true });
+
+//     console.log('✅ Meeting scheduled successfully');
+//     return { 
+//       success: true,
+//       msg: 'Meeting scheduled successfully', 
+//       request 
+//     };
+
+//   } catch (error) {
+//     console.error('❌ Error in scheduleMeeting:', error);
+//     throw error; // Re-throw the error
+//   }
 // }
+
 
 async scheduleMeeting(user, requestId, staffId, slot) {
   try {
     console.log('📅 Schedule meeting called:', { requestId, staffId, slot });
 
-    // 1. Fetch adoption request
+    // 1. Fetch adoption request (your existing code)
     const request = await AdoptionRequest.findById(requestId)
       .populate('pet')
       .populate('adopter')
@@ -517,75 +612,81 @@ async scheduleMeeting(user, requestId, staffId, slot) {
     if (!request) throw createError('Adoption request not found', 404);
     if (request.adopter._id.toString() !== user.id) throw createError('Not authorized', 403);
 
-    // 2. Validate slot has required fields
-    if (!slot.date || !slot.startTime || !slot.endTime) {
-      throw createError('Slot must have date, startTime, and endTime');
-    }
-
-    // 3. Create meeting date by combining slot.date and slot.startTime
+    // 2. Create meeting date (your existing code)
     const meetingDate = new Date(slot.date);
     const [hours, minutes] = slot.startTime.split(':').map(Number);
     meetingDate.setHours(hours, minutes, 0, 0);
 
-    // Validate the date
-    if (isNaN(meetingDate.getTime())) {
-      throw createError('Invalid meeting date');
+    // 3. Generate meeting link based on type
+    let meetingLink = '';
+    let meetingType = 'virtual'; // Default to virtual
+    
+    if (slot.location && slot.location !== 'virtual') {
+      meetingType = 'in-person';
+      meetingLink = ''; // No link for in-person
+    } else {
+      // Generate simple Google Meet link (no API needed)
+      const meetingId = `pet-adoption-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      meetingLink = `https://meet.google.com/new?hs=191&authuser=0`; // Simple meet link
     }
 
-    // 4. Check if meeting date is in the future
-    if (meetingDate < new Date()) {
-      throw createError('Cannot schedule meeting in the past');
-    }
-
-    // 5. Update with meeting details
+    // 4. Update with enhanced meeting details
     request.status = ADOPTION_STATUS.MEETING;
     request.meeting = {
       date: meetingDate,
-      staff: staffId, // Store staff ID
+      staff: staffId,
       startTime: slot.startTime,
       endTime: slot.endTime,
+      type: meetingType,
+      status: 'scheduled',
+      location: slot.location || 'Virtual Meeting',
+      meetingLink: meetingLink,
       confirmed: false,
-      scheduledAt: new Date()
+      scheduledAt: new Date(),
+      agenda: `Discuss ${request.pet.name}'s adoption process and compatibility`
     };
 
     await request.save();
 
-    // 6. Notify adopter
+    // 5. Enhanced notifications (your existing notification code)
     await NotificationService.create({
       user: request.adopter._id,
       type: NOTIFICATION_TYPES.MEETING_SCHEDULED,
-      message: `Meeting scheduled for "${request.pet.name}" on ${meetingDate.toLocaleString()}`,
+      message: `${
+        meetingType === 'virtual' ? 'Virtual meeting' : 'In-person visit'
+      } scheduled for "${request.pet.name}" on ${meetingDate.toLocaleString()}`,
       meta: { 
         meetingDate: meetingDate, 
         petId: request.pet._id, 
         requestId: request._id, 
+        meetingType: meetingType,
         action: 'confirm_meeting' 
       }
     }, { realTime: true });
 
-    // 7. Notify staff
+    // Notify staff
     await NotificationService.create({
       user: staffId,
       type: NOTIFICATION_TYPES.MEETING_SCHEDULED,
-      message: `You have a new meeting scheduled with "${request.adopter.name}" for pet "${request.pet.name}" on ${meetingDate.toLocaleString()}`,
+      message: `New ${meetingType} meeting scheduled with "${request.adopter.name}" for ${request.pet.name}`,
       meta: { 
         meetingDate: meetingDate, 
         petId: request.pet._id, 
-        requestId: request._id, 
-        action: 'view_meeting' 
+        requestId: request._id,
+        meetingType: meetingType
       }
     }, { realTime: true });
 
     console.log('✅ Meeting scheduled successfully');
     return { 
       success: true,
-      msg: 'Meeting scheduled successfully', 
+      msg: `${meetingType === 'virtual' ? 'Virtual meeting' : 'In-person visit'} scheduled successfully!`, 
       request 
     };
 
   } catch (error) {
     console.error('❌ Error in scheduleMeeting:', error);
-    throw error; // Re-throw the error
+    throw error;
   }
 }
 
