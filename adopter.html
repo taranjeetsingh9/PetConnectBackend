@@ -221,7 +221,7 @@
             💬 Chat with Staff
           </button>
         `;
-      } else if (status === 'meeting') {
+      }  else if (status === 'meeting') {
   const meetingDate = meeting?.date ? new Date(meeting.date) : null;
   const isConfirmed = meeting?.confirmed;
   const meetingType = meeting?.type || 'virtual';
@@ -307,6 +307,11 @@
               </p>
             </div>
           ` : ''}
+          
+          <button onclick="showMeetingPreparation('${req._id}')" 
+                  class="w-full bg-purple-600 text-white px-3 py-2 rounded hover:bg-purple-700 transition-colors">
+            📋 Meeting Preparation Guide
+          </button>
         `}
         
         <button onclick="startChat('${req._id}')" 
@@ -316,8 +321,7 @@
       </div>
     </div>
   `;
-}
-      else if (status === 'finalized') {
+} else if (status === 'finalized') {
         actionButtons = `
           <div class="mt-3 p-2 bg-green-100 border border-green-300 rounded">
             <p class="text-sm text-green-800 text-center">🎉 Adoption Finalized!</p>
@@ -1492,6 +1496,203 @@ async function markNotificationAsRead(notificationId, button) {
   }
 }
 
+// Add this function to show meeting preparation
+async function showMeetingPreparation(requestId) {
+  try {
+    // Fetch the latest meeting details from the server
+    const response = await fetchWithAuth('http://localhost:5001/api/adoptions/my-requests');
+    const requests = await response.json();
+    const request = requests.find(req => req._id === requestId);
+    
+    if (!request) {
+      alert('Adoption request not found');
+      return;
+    }
+
+    if (!request.meeting) {
+      alert('No meeting scheduled for this request');
+      return;
+    }
+
+    const meeting = request.meeting;
+    const meetingType = meeting.type || 'virtual';
+    
+    // Generate preparation guide if it doesn't exist
+    const preparation = meeting.preparationGuide || generateDefaultPreparation(meetingType);
+    
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center';
+    
+    modal.innerHTML = `
+      <div class="bg-white rounded-lg p-6 w-full max-w-2xl max-h-96 overflow-y-auto">
+        <h3 class="text-xl font-semibold mb-4">📋 Meeting Preparation Guide</h3>
+        <div class="space-y-4">
+          <!-- Pet Info -->
+          <div class="bg-blue-50 border border-blue-200 rounded p-4">
+            <h4 class="font-semibold text-blue-800 mb-2">Meeting for ${request.pet?.name || 'Pet Adoption'}</h4>
+            <div class="grid grid-cols-2 gap-2 text-sm">
+              <div><strong>Meeting Type:</strong> ${meetingType === 'virtual' ? 'Virtual Meeting' : 'In-Person Visit'}</div>
+              <div><strong>Date:</strong> ${meeting.date ? new Date(meeting.date).toLocaleDateString() : 'Not set'}</div>
+              ${request.pet?.breed ? `<div><strong>Breed:</strong> ${request.pet.breed}</div>` : ''}
+              ${request.pet?.age ? `<div><strong>Age:</strong> ${request.pet.age}</div>` : ''}
+            </div>
+          </div>
+
+          <!-- Checklist -->
+          <div>
+            <h4 class="font-semibold mb-2">✅ Preparation Checklist</h4>
+            <ul class="space-y-2 text-sm">
+              ${preparation.checklist.map(item => `
+                <li class="flex items-start">
+                  <span class="text-green-500 mr-2 mt-1">✓</span>
+                  <span>${item}</span>
+                </li>
+              `).join('')}
+            </ul>
+          </div>
+
+          <!-- Tips -->
+          <div>
+            <h4 class="font-semibold mb-2">💡 Helpful Tips</h4>
+            <ul class="space-y-1 text-sm text-gray-600">
+              ${preparation.tips.map(tip => `
+                <li class="flex items-start">
+                  <span class="text-blue-500 mr-2 mt-1">•</span>
+                  <span>${tip}</span>
+                </li>
+              `).join('')}
+            </ul>
+          </div>
+
+          <!-- What to Bring -->
+          <div>
+            <h4 class="font-semibold mb-2">🎒 What to Bring</h4>
+            <ul class="space-y-1 text-sm text-gray-600">
+              ${preparation.whatToBring.map(item => `
+                <li class="flex items-start">
+                  <span class="text-orange-500 mr-2 mt-1">•</span>
+                  <span>${item}</span>
+                </li>
+              `).join('')}
+            </ul>
+          </div>
+
+          ${meeting.meetingLink ? `
+            <div class="bg-green-50 border border-green-200 rounded p-3">
+              <p class="text-green-700 text-sm">
+                <strong>Meeting Link:</strong> 
+                <a href="${meeting.meetingLink}" target="_blank" class="underline ml-1 font-medium">
+                  Click here to join virtual meeting
+                </a>
+              </p>
+            </div>
+          ` : ''}
+
+          ${meetingType === 'in-person' && meeting.location ? `
+            <div class="bg-orange-50 border border-orange-200 rounded p-3">
+              <p class="text-orange-700 text-sm">
+                <strong>Location:</strong> ${meeting.location}
+              </p>
+            </div>
+          ` : ''}
+        </div>
+
+        <button onclick="this.closest('.fixed').remove()" 
+                class="mt-6 w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition-colors">
+          Got it, I'm prepared!
+        </button>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+  } catch (error) {
+    console.error('❌ Error loading preparation guide:', error);
+    alert('Failed to load preparation guide: ' + error.message);
+  }
+}
+
+// Default preparation guide generator
+function generateDefaultPreparation(meetingType) {
+  if (meetingType === 'virtual') {
+    return {
+      checklist: [
+        'Test your internet connection and speed',
+        'Ensure your camera and microphone are working',
+        'Find a quiet, well-lit space for the call',
+        'Close unnecessary applications and browser tabs',
+        'Have questions ready about the pet and adoption process',
+        'Prepare to discuss your home environment and experience'
+      ],
+      tips: [
+        'Join the meeting 5 minutes early to test audio/video',
+        'Have a notepad ready to take important notes',
+        'Be prepared to show your living space via camera if requested',
+        'Speak clearly and maintain eye contact with the camera',
+        'Have good lighting in front of you, not behind you'
+      ],
+      whatToBring: [
+        'Valid government-issued ID for verification',
+        'List of questions about the pet\'s behavior and needs',
+        'Information about your living situation and schedule',
+        'Details about other pets or family members in the home'
+      ]
+    };
+  } else {
+    return {
+      checklist: [
+        'Arrive 10-15 minutes before your scheduled time',
+        'Bring valid government-issued photo ID',
+        'Wear comfortable, appropriate clothing and closed-toe shoes',
+        'Leave young children at home (unless pre-approved)',
+        'Be prepared to spend 45-60 minutes at the shelter',
+        'Bring any family members involved in the decision'
+      ],
+      tips: [
+        'The pet may be nervous in the shelter environment - move slowly and speak softly',
+        'Ask about the pet\'s daily routine, favorite activities, and preferences',
+        'Be honest about your experience level and lifestyle',
+        'Take notes during the meeting to remember important details',
+        'Observe how the pet interacts with you and the environment',
+        'Ask about any known medical conditions or behavioral needs'
+      ],
+      whatToBring: [
+        'Valid photo ID (driver\'s license, passport, etc.)',
+        'Proof of address if required by the shelter',
+        'List of questions for the adoption counselor',
+        'Any documentation about your current living situation',
+        'Names and contact information of personal references'
+      ]
+    };
+  }
+}
+
+// Default preparation if none provided
+// function generateDefaultPreparation(meetingType) {
+//   return meetingType === 'virtual' ? {
+//     checklist: [
+//       'Test internet connection and equipment',
+//       'Find quiet, well-lit space',
+//       'Prepare questions about the pet'
+//     ],
+//     tips: [
+//       'Join a few minutes early to test everything',
+//       'Be ready to discuss your experience with pets'
+//     ],
+//     whatToBring: ['Valid ID', 'List of questions']
+//   } : {
+//     checklist: [
+//       'Arrive 10 minutes early',
+//       'Bring valid ID',
+//       'Wear appropriate clothing'
+//     ],
+//     tips: [
+//       'The pet may be shy at first',
+//       'Ask about the pet\'s routine and needs'
+//     ],
+//     whatToBring: ['Photo ID', 'Questions for staff']
+//   };
+// }
+
 // Mark all as read
 async function markAllNotificationsRead() {
   try {
@@ -1527,135 +1728,6 @@ async function updateNotificationBadgeFromServer() {
     console.error('Error updating badge:', error);
   }
 }
-
-// async function showMeetingBooking(requestId, petName) {
-//   try {
-//     console.log('📅 Loading available staff for meeting booking...');
-    
-//     const staffRes = await fetchWithAuth('http://localhost:5001/api/availability/available/staff');
-    
-//     if (!staffRes.ok) {
-//       throw new Error(`Server error: ${staffRes.status}`);
-//     }
-    
-//     const staffData = await staffRes.json();
-//     console.log('✅ Available staff data:', staffData);
-    
-//     if (!staffData.success || !staffData.staff || staffData.staff.length === 0) {
-//       alert('No staff members available for booking at the moment. Please try again later.');
-//       return;
-//     }
-
-//     // Create booking modal
-//     const modal = document.createElement('div');
-//     modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center';
-//     modal.innerHTML = `
-//       <div class="bg-white rounded-lg p-6 w-full max-w-2xl max-h-96 overflow-y-auto">
-//         <h3 class="text-xl font-semibold mb-4">📅 Book Meeting for ${petName}</h3>
-//         <p class="text-sm text-gray-600 mb-4">Select a staff member and available time slot:</p>
-        
-//         <div id="staffSlotsContainer" class="space-y-4">
-//           ${staffData.staff.map((staff, staffIndex) => `
-//             <div class="border rounded-lg p-4">
-//               <h4 class="font-semibold">${staff.name} (${staff.role})</h4>
-//               ${staff.availability && staff.availability.length > 0 ? `
-//                 <p class="text-sm text-gray-600 mb-2">Available Slots:</p>
-//                 <div class="space-y-2">
-//                   ${staff.availability.map((slot, slotIndex) => {
-//                     const slotDate = slot.date ? new Date(slot.date) : null;
-//                     const displayDate = slotDate ? slotDate.toLocaleDateString('en-US', { 
-//                       weekday: 'long', 
-//                       year: 'numeric', 
-//                       month: 'long', 
-//                       day: 'numeric' 
-//                     }) : 'Date not set';
-                    
-//                     return `
-//                     <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
-//                       <span class="text-sm">
-//                         <strong>${displayDate}</strong><br>
-//                         ${slot.startTime} - ${slot.endTime}
-//                       </span>
-//                       <button 
-//                         data-request="${requestId}"
-//                         data-staff="${staff._id}" 
-//                         data-slot-index="${slotIndex}"
-//                         class="book-slot-btn bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">
-//                         Book This Slot
-//                       </button>
-//                     </div>
-//                     `;
-//                   }).join('')}
-//                 </div>
-//               ` : `
-//                 <p class="text-sm text-yellow-600">No available slots</p>
-//               `}
-//             </div>
-//           `).join('')}
-//         </div>
-        
-//         <button id="closeBookingModal" class="mt-4 w-full bg-gray-500 text-white py-2 rounded hover:bg-gray-600">
-//           Cancel
-//         </button>
-//       </div>
-//     `;
-
-//     // Add event listeners after modal is created
-//     modal.addEventListener('click', (e) => {
-//       if (e.target.id === 'closeBookingModal') {
-//         modal.remove();
-//       }
-      
-//       if (e.target.classList.contains('book-slot-btn')) {
-//         const btn = e.target;
-//         const requestId = btn.getAttribute('data-request');
-//         const staffId = btn.getAttribute('data-staff');
-//         const slotIndex = btn.getAttribute('data-slot-index');
-        
-//         // Find the staff member
-//         const staff = staffData.staff.find(s => s._id === staffId);
-//         if (staff && staff.availability[slotIndex]) {
-//           const slot = staff.availability[slotIndex];
-          
-//           console.log('📅 Slot being booked:', slot);
-          
-//           // Validate the slot has a date
-//           if (!slot.date) {
-//             alert('Error: This slot does not have a date. Please contact support.');
-//             return;
-//           }
-          
-//           // Validate the date
-//           const slotDate = new Date(slot.date);
-//           if (isNaN(slotDate.getTime())) {
-//             alert('Error: Invalid date in this slot. Please choose another slot.');
-//             return;
-//           }
-          
-//           // Check if the slot is in the future
-//           if (slotDate < new Date()) {
-//             alert('Error: This time slot has already passed. Please choose a future date.');
-//             return;
-//           }
-          
-//           // Convert date to proper format for backend
-//           const formattedSlot = {
-//             ...slot,
-//             date: slot.date // Keep as ISO string
-//           };
-          
-//           bookMeetingSlot(requestId, staffId, formattedSlot);
-//           modal.remove(); // Close modal after booking
-//         }
-//       }
-//     });
-
-//     document.body.appendChild(modal);
-//   } catch (error) {
-//     console.error('❌ Error loading meeting booking:', error);
-//     alert('Failed to load available slots: ' + error.message);
-//   }
-// }
 
 // Call this function to debug
 debugAdoptedPets();
