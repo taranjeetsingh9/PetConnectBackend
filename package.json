@@ -14,7 +14,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@pdf-lib/fontkit": "^1.1.1",
     "bcryptjs": "^3.0.2",
+    "canvas": "^3.2.0",
     "cloudinary": "^1.41.3",
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
@@ -24,6 +26,9 @@
     "mongoose": "^8.18.1",
     "multer": "^2.0.2",
     "multer-storage-cloudinary": "^4.0.0",
-    "socket.io": "^4.8.1"
+    "pdf-lib": "^1.17.1",
+    "pdfkit": "^0.17.2",
+    "socket.io": "^4.8.1",
+    "supertest": "^7.1.4"
   }
 }
