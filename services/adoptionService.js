@@ -1581,6 +1581,130 @@ generateContentHash(content) {
   return crypto.createHash('sha256').update(content).digest('hex');
 }
 
+/**
+ * Finalize adoption after successful payment
+ */
+async finalizeAdoptionAfterPayment(requestId) {
+  try {
+    console.log('🎉 Finalizing adoption after payment for request:', requestId);
+    
+    const request = await AdoptionRequest.findById(requestId)
+      .populate('pet')
+      .populate('adopter')
+      .populate('organization');
+
+    if (!request) {
+      throw createError('Adoption request not found', 404);
+    }
+
+    // Update adoption status
+    request.status = ADOPTION_STATUS.FINALIZED;
+    request.finalizedAt = new Date();
+    await request.save();
+
+    // Update pet status to adopted
+    await Pet.findByIdAndUpdate(request.pet._id, {
+      status: 'Adopted',
+      adopter: request.adopter._id,
+      adoptionDate: new Date(),
+      available: false
+    });
+
+    // Generate adoption certificate
+    const certificate = await this.generateAdoptionCertificate(requestId);
+
+    // Notify adopter
+    await NotificationService.create({
+      user: request.adopter._id,
+      type: NOTIFICATION_TYPES.ADOPTION_FINALIZED,
+      message: `🎉 Congratulations! ${request.pet.name} is officially part of your family!`,
+      meta: {
+        petId: request.pet._id.toString(),
+        requestId: request._id.toString(),
+        certificateUrl: certificate.url,
+        action: 'view_certificate'
+      }
+    }, { realTime: true, sendEmail: true });
+
+    // Notify organization staff
+    const staffUsers = await getStaffUsers(request.organization._id);
+    await NotificationService.create({
+      users: staffUsers.map(s => s._id.toString()),
+      type: NOTIFICATION_TYPES.ADOPTION_FINALIZED,
+      message: `✅ Adoption finalized! ${request.adopter.name} officially adopted ${request.pet.name}`,
+      meta: {
+        petId: request.pet._id.toString(),
+        requestId: request._id.toString(),
+        adopterName: request.adopter.name,
+        action: 'view_adoption_details'
+      }
+    }, { realTime: true });
+
+    console.log('✅ Adoption finalized successfully for:', request.pet.name);
+    
+    return { 
+      success: true, 
+      request, 
+      certificate 
+    };
+
+  } catch (error) {
+    console.error('❌ Error finalizing adoption after payment:', error);
+    throw error;
+  }
+}
+
+/**
+ * Generate adoption certificate PDF
+ */
+async generateAdoptionCertificate(requestId) {
+  try {
+    const request = await AdoptionRequest.findById(requestId)
+      .populate('pet adopter organization');
+
+    const certificateData = {
+      certificateId: `PC-${Date.now()}-${request._id.toString().slice(-6)}`,
+      petName: request.pet.name,
+      petBreed: request.pet.breed,
+      petAge: request.pet.age,
+      adopterName: request.adopter.name,
+      organizationName: request.organization.name,
+      adoptionDate: new Date().toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      }),
+      issuedAt: new Date().toISOString()
+    };
+
+    // Generate PDF certificate
+    const eSignatureService = require('./eSignatureService');
+    const pdfBytes = await eSignatureService.generateCertificatePDF(certificateData);
+    
+    // Upload to Cloudinary
+    const cloudinaryDocService = require('./cloudinaryDocumentService');
+    const result = await cloudinaryDocService.uploadCertificatePDF(pdfBytes, requestId);
+
+    // Store in database
+    const certificate = await Document.create({
+      type: 'adoption_certificate',
+      adoptionRequest: requestId,
+      cloudinaryPublicId: result.public_id,
+      url: result.url,
+      metadata: certificateData
+    });
+
+    console.log('📜 Adoption certificate generated:', certificate._id);
+    
+    return certificate;
+
+  } catch (error) {
+    console.error('❌ Error generating adoption certificate:', error);
+    // Don't throw error - certificate is nice-to-have, not critical
+    return null;
+  }
+}
+
 }
 
 // Singleton instance for backward compatibility
@@ -1612,6 +1736,8 @@ module.exports = {
     getAgreementForSigning: adoptionService.getAgreementForSigning.bind(adoptionService),
     generateSignaturePage: adoptionService.generateSignaturePage.bind(adoptionService),
     processDigitalSignature: adoptionService.processDigitalSignature.bind(adoptionService),
-    initiatePayment: adoptionService.initiatePayment.bind(adoptionService)
+    initiatePayment: adoptionService.initiatePayment.bind(adoptionService),
+    finalizeAdoptionAfterPayment: adoptionService.finalizeAdoptionAfterPayment.bind(adoptionService),
+    generateAdoptionCertificate: adoptionService.generateAdoptionCertificate.bind(adoptionService)
 };
 

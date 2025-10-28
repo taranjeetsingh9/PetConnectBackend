@@ -35,5 +35,6 @@ module.exports = {
     PAYMENT_PENDING: 'payment_pending',
     PAYMENT_COMPLETED: 'payment_completed',
     PAYMENT_FAILED: 'payment_failed',
+    ADOPTION_FINALIZED: 'adoption_finalized',
   };
   

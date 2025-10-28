@@ -1,6 +1,7 @@
 // services/notificationService.js
 const Notification = require('../models/Notification');
 const { getIO } = require('../server/socket');
+const emailService = require('./emailService');
 
 class NotificationService {
   /**
@@ -33,13 +34,18 @@ class NotificationService {
           await this.emitRealTime(notification);
         }
 
-        // External integrations
-        if (options.sendEmail) {
-          await this.queueEmail(notification);
-        }
+        // // External integrations
+        // if (options.sendEmail) {
+        //   await this.queueEmail(notification);
+        // }
 
         if (options.sendSMS) {
           await this.queueSMS(notification);
+        }
+
+        //email 
+        if (options.sendEmail) {
+          await this.sendEmailNotification(notificationData, options);
         }
 
         return notification;
@@ -173,6 +179,130 @@ class NotificationService {
     console.log(`🧹 Cleaned up ${result.deletedCount} old notifications`);
     return result;
   }
+
+// email logic
+/**
+ * Send email notification based on type
+ */
+static async sendEmailNotification(notification, options) {
+  try {
+    const { type, user, message, meta } = notification;
+    
+    // Get user email and name (you'll need to implement this based on your User model)
+    const userInfo = await this.getUserEmailInfo(user);
+    
+    if (!userInfo || !userInfo.email) {
+      console.warn('No email found for user:', user);
+      return;
+    }
+
+    switch (type) {
+      case 'adoption_request_new':
+        await emailService.sendAdoptionRequestEmail(
+          userInfo.email,
+          userInfo.name,
+          meta.petName,
+          meta.requestId
+        );
+        break;
+        
+      case 'adoption_approved':
+        await emailService.sendAdoptionApprovedEmail(
+          userInfo.email,
+          userInfo.name,
+          meta.petName,
+          meta.chatId
+        );
+        break;
+        
+      case 'meeting_scheduled':
+        await emailService.sendMeetingScheduledEmail(
+          userInfo.email,
+          userInfo.name,
+          meta.petName,
+          meta.meetingDate,
+          meta.meetingType,
+          meta.meetingLink
+        );
+        break;
+        
+      case 'agreement_sent':
+        await emailService.sendAgreementEmail(
+          userInfo.email,
+          userInfo.name,
+          meta.petName,
+          meta.signUrl,
+          7 // 7 days expiry
+        );
+        break;
+        
+      case 'agreement_signed':
+        await emailService.sendAgreementSignedEmail(
+          userInfo.email,
+          userInfo.name,
+          meta.petName
+        );
+        break;
+        
+      case 'payment_completed':
+        await emailService.sendPaymentConfirmationEmail(
+          userInfo.email,
+          userInfo.name,
+          meta.petName,
+          meta.amount,
+          meta.receiptUrl
+        );
+        break;
+        
+      case 'adoption_finalized':
+        await emailService.sendAdoptionFinalizedEmail(
+          userInfo.email,
+          userInfo.name,
+          meta.petName,
+          meta.certificateUrl
+        );
+        break;
+        
+      default:
+        // Send generic notification email for unhandled types
+        await emailService.sendGenericNotificationEmail(
+          userInfo.email,
+          userInfo.name,
+          message,
+          type
+        );
+        break;
+    }
+    
+    console.log(`📧 Email sent for ${type} to ${userInfo.email}`);
+  } catch (error) {
+    console.error('❌ Email notification failed:', error);
+    // Don't throw - email failure shouldn't break the main flow
+  }
+}
+
+/**
+ * Get user email information
+ */
+static async getUserEmailInfo(userId) {
+  try {
+    // Replace with your actual User model and fields
+    const User = require('../models/User');
+    const user = await User.findById(userId).select('email name').lean();
+    
+    return {
+      email: user?.email,
+      name: user?.name || 'Pet Lover'
+    };
+  } catch (error) {
+    console.error('Error fetching user email info:', error);
+    return null;
+  }
+}
+
+
+
+
 }
 
 // Keep existing function exports for backward compatibility

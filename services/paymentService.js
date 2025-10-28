@@ -72,25 +72,91 @@ class PaymentService {
     }
   }
 
-  async handleWebhook(payload, signature) {
-    try {
-      // For now, just log the webhook and return success
-      // In production, you'll need to set up proper webhook verification
-      console.log(' Stripe webhook received (mock implementation)');
-      console.log('Signature:', signature ? 'Present' : 'Missing');
-      console.log('Payload length:', payload.length);
+  // async handleWebhook(payload, signature) {
+  //   try {
+  //     // For now, just log the webhook and return success
+  //     // In production, you'll need to set up proper webhook verification
+  //     console.log(' Stripe webhook received (mock implementation)');
+  //     console.log('Signature:', signature ? 'Present' : 'Missing');
+  //     console.log('Payload length:', payload.length);
       
-      // Mock successful handling for now
-      return { 
-        success: true, 
-        message: 'Webhook received successfully (mock)' 
-      };
+  //     // Mock successful handling for now
+  //     return { 
+  //       success: true, 
+  //       message: 'Webhook received successfully (mock)' 
+  //     };
       
-    } catch (error) {
-      console.error(' Webhook error:', error);
-      throw new Error(`Webhook error: ${error.message}`);
+  //   } catch (error) {
+  //     console.error(' Webhook error:', error);
+  //     throw new Error(`Webhook error: ${error.message}`);
+  //   }
+  // }
+
+
+  // services/paymentService.js - ADD THIS
+
+// services/paymentService.js - REPLACE THE handleWebhook method
+async handleWebhook(payload, signature) {
+  try {
+    // Verify webhook signature
+    const event = stripe.webhooks.constructEvent(
+      payload, 
+      signature, 
+      process.env.STRIPE_WEBHOOK_SECRET
+    );
+
+    console.log('🔔 Stripe webhook received:', event.type);
+
+    if (event.type === 'payment_intent.succeeded') {
+      await this.handleSuccessfulPayment(event.data.object);
     }
+    
+    if (event.type === 'payment_intent.payment_failed') {
+      await this.handleFailedPayment(event.data.object);
+    }
+
+    return { success: true, processed: event.type };
+    
+  } catch (error) {
+    console.error('❌ Webhook error:', error);
+    throw error;
   }
+}
+
+// ADD THESE METHODS TO paymentService.js
+async handleSuccessfulPayment(paymentIntent) {
+  const { adoptionRequest } = paymentIntent.metadata;
+  
+  console.log('💰 Payment successful for adoption:', adoptionRequest);
+
+  // Update payment record
+  await Payment.findOneAndUpdate(
+    { paymentIntentId: paymentIntent.id },
+    { 
+      status: 'completed',
+      paidAt: new Date(),
+      receiptUrl: paymentIntent.charges.data[0]?.receipt_url 
+    }
+  );
+
+  // Finalize adoption
+  const { adoptionService } = require('./adoptionService');
+  await adoptionService.finalizeAdoptionAfterPayment(adoptionRequest);
+}
+
+async handleFailedPayment(paymentIntent) {
+  console.log('❌ Payment failed for:', paymentIntent.metadata.adoptionRequest);
+  
+  await Payment.findOneAndUpdate(
+    { paymentIntentId: paymentIntent.id },
+    { status: 'failed', failedAt: new Date() }
+  );
+  
+  await AdoptionRequest.findByIdAndUpdate(
+    paymentIntent.metadata.adoptionRequest,
+    { status: 'payment_failed' }
+  );
+}
 }
 
 // Create singleton instance
