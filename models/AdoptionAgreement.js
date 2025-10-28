@@ -38,7 +38,7 @@ const adoptionAgreementSchema = new mongoose.Schema({
   // Status & Timeline
   status: { 
     type: String, 
-    enum: ['draft', 'sent', 'signed', 'expired', 'cancelled'],
+    enum: ['draft', 'sent', 'signed', 'expired',  'cancelled'],
     default: 'draft'
   },
   sentAt: Date,

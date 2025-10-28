@@ -8,6 +8,11 @@ const ADOPTION_STATUS = {
     FINALIZED: 'finalized',     // Adoption completed
     CANCELLED: 'cancelled',     // Optional: adopter withdraws
     CHAT: 'chat',
+    AGREEMENT_SENT: 'agreement_sent',
+    AGREEMENT_SIGNED: 'agreement_signed',
+    PAYMENT_PENDING: 'payment_pending',
+    PAYMENT_COMPLETED: 'payment_completed',
+    PAYMENT_FAILED: 'payment_failed'
   };
   
   module.exports = ADOPTION_STATUS;

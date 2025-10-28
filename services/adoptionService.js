@@ -72,7 +72,12 @@ class AdoptionService {
       ADOPTION_STATUS.ON_HOLD,
       ADOPTION_STATUS.FINALIZED,
       ADOPTION_STATUS.MEETING,
-      ADOPTION_STATUS.CHAT
+      ADOPTION_STATUS.CHAT,
+      ADOPTION_STATUS.AGREEMENT_SENT,
+      ADOPTION_STATUS.AGREEMENT_SIGNED,
+      ADOPTION_STATUS.PAYMENT_PENDING,
+      ADOPTION_STATUS.PAYMENT_COMPLETED,
+      ADOPTION_STATUS.PAYMENT_FAILED
     ];
     if (!ALLOWED.includes(status)) throw createError('Invalid status value');
   
@@ -782,7 +787,7 @@ async sendAdoptionAgreement(staffUser, requestId, customClauses = []) {
 
   // Generate professional PDF agreement
   const eSignatureService = require('./eSignatureService');
-  const cloudinaryDocService = require('./services/cloudinaryDocumentService');
+  const cloudinaryDocService = require('./cloudinaryDocumentService');
   
   const pdfBytes = await eSignatureService.generateAgreementPDF(request, customClauses);
   
@@ -866,42 +871,58 @@ async sendAdoptionAgreement(staffUser, requestId, customClauses = []) {
   };
 }
 
-  // Sign agreement (adopter)
   async signAgreement(adopterUser, agreementId, signature) {
+    // 1. Find the agreement and populate the adoption request reference
     const agreement = await AdoptionAgreement.findById(agreementId)
       .populate('adoptionRequest');
-
+  
     if (!agreement) throw createError('Agreement not found', 404);
     
+    // 2. Get the actual adoption request document
     const request = await AdoptionRequest.findById(agreement.adoptionRequest._id)
       .populate('adopter')
-      .populate('organization');
-
+      .populate('organization')
+      .populate('pet');
+  
+    // 3. Authorization check - only the adopter can sign their own agreement
     if (request.adopter._id.toString() !== adopterUser.id) {
       throw createError('Not authorized to sign this agreement', 403);
     }
-
+  
+    // 4. Validate agreement is in the right state to be signed
     if (agreement.status !== 'sent') {
       throw createError('Agreement cannot be signed', 400);
     }
-
+  
+    // 5. Check if agreement has expired
     if (new Date() > agreement.expiresAt) {
-      agreement.status = 'expired';
+      agreement.status = ADOPTION_STATUS.EXPIRED;
       await agreement.save();
       throw createError('Agreement has expired', 400);
     }
-
-    // Update agreement with signature
+  
+    // 🔧 FIX: Update BOTH documents - but save them TOGETHER or use transaction
+  
+    // 6. Update the agreement with signature details
     agreement.signedDocument = {
       url: await this.uploadSignedDocument(agreement, signature),
       signedAt: new Date(),
       signature: signature,
-      ipAddress: adopterUser.ipAddress // From request
+      ipAddress: adopterUser.ipAddress
     };
     agreement.status = 'signed';
-    await agreement.save();
-
-    // Notify staff
+  
+    // 7. Update the adoption request status
+    // FIX: Use string literal to avoid enum issues
+    request.status = ADOPTION_STATUS.AGREEMENT_SIGNED; 
+  
+    // 🔧 FIX: Save BOTH documents
+    await agreement.save(); // UNCOMMENT THIS
+    await request.save();
+  
+    console.log(' Agreement signed and request status updated');
+  
+    // 8. Notify staff about the signed agreement
     const staffUsers = await getStaffUsers(request.organization._id);
     await NotificationService.create({
       users: staffUsers.map(s => s._id.toString()),
@@ -911,11 +932,34 @@ async sendAdoptionAgreement(staffUser, requestId, customClauses = []) {
         petId: request.pet._id.toString(),
         requestId: request._id.toString(),
         agreementId: agreement._id.toString(),
-        action: 'review_signed_agreement'
+        action: 'review_signed_agreement',
+        nextStep: 'payment',
+        paymentEligible: true
       }
     }, { realTime: true });
-
-    return { msg: 'Agreement signed successfully', agreement };
+  
+    // 9. Notify adopter about next steps
+    await NotificationService.create({
+      user: request.adopter._id.toString(),
+      type: NOTIFICATION_TYPES.AGREEMENT_SIGNED,
+      message: `Agreement signed! You can now proceed with payment for ${request.pet.name}'s adoption.`,
+      meta: {
+        petId: request.pet._id.toString(),
+        requestId: request._id.toString(),
+        agreementId: agreement._id.toString(),
+        action: 'proceed_to_payment',
+        redirectTo: `/adoptions/${request._id}/payment`
+      }
+    }, { realTime: true });
+  
+    // 10. Return success response with next steps
+    return { 
+      msg: 'Agreement signed successfully', 
+      agreement,
+      nextStep: 'payment',
+      redirectTo: `/api/adoptions/${request._id}/payment`,
+      requestId: request._id
+    };
   }
 
   // Process payment after agreement signed
@@ -990,6 +1034,68 @@ async sendAdoptionAgreement(staffUser, requestId, customClauses = []) {
     };
   }
 
+// Add this method to adoptionService.js
+async validatePaymentEligibility(requestId, userId) {
+  console.log('🔍 Validating payment eligibility for request:', requestId);
+  
+  const request = await AdoptionRequest.findById(requestId)
+    .populate('adopter')
+    .populate('pet')
+    .populate('organization');
+
+  if (!request) {
+    throw createError('Adoption request not found', 404);
+  }
+
+  // 1. Verify user authorization
+  if (request.adopter._id.toString() !== userId) {
+    throw createError('Not authorized to make payment for this adoption', 403);
+  }
+
+  // 2. Check if agreement is signed
+  const agreement = await AdoptionAgreement.findOne({
+    adoptionRequest: requestId,
+    status: 'signed'
+  });
+  
+  if (!agreement) {
+    throw createError('Adoption agreement must be signed before payment', 400);
+  }
+
+  // 3. Check if adoption is already finalized
+  if (request.status === ADOPTION_STATUS.FINALIZED) {
+    throw createError('Adoption is already finalized', 400);
+  }
+
+  // 4. Check if payment already completed
+  const existingPayment = await Payment.findOne({
+    adoptionRequest: requestId,
+    status: 'completed'
+  });
+  
+  if (existingPayment) {
+    throw createError('Payment already completed for this adoption', 400);
+  }
+
+  // 5. Check if agreement is expired
+  if (new Date() > agreement.expiresAt) {
+    throw createError('Adoption agreement has expired', 400);
+  }
+
+  // 6. Calculate adoption fee
+  const amount = await this.calculateAdoptionFee(request.pet._id);
+
+  console.log('✅ Payment eligibility validated successfully');
+  
+  return {
+    isValid: true,
+    request,
+    agreement,
+    amount,
+    currency: 'USD'
+  };
+}
+
   //  Helper methods
   generateAgreementTemplate(request) {
     return `
@@ -1036,16 +1142,48 @@ async sendAdoptionAgreement(staffUser, requestId, customClauses = []) {
     return agreement;
   }
 
-  async calculateAdoptionFee(petId) {
-    const pet = await Pet.findById(petId);
-    // Base fee + adjustments for age, breed, etc.
-    let fee = 150; // Base adoption fee
-    
-    if (pet.age < 1) fee += 50; // Puppy/kitten fee
-    if (pet.specialNeeds) fee -= 25; // Discount for special needs
-    
-    return fee;
+
+async calculateAdoptionFee(petId) {
+  const pet = await Pet.findById(petId);
+  if (!pet) throw createError('Pet not found', 404);
+
+  // Base adoption fees
+  const feeStructure = {
+    puppy: 300,    // Young animals
+    kitten: 250,
+    adult_dog: 200,
+    adult_cat: 150,
+    senior: 100,   // Senior animals discount
+    default: 175
+  };
+
+  let baseFee;
+  
+  // Determine base fee based on pet type and age
+  if (pet.species === 'dog') {
+    if (pet.age < 1) baseFee = feeStructure.puppy;
+    else if (pet.age >= 7) baseFee = feeStructure.senior;
+    else baseFee = feeStructure.adult_dog;
+  } else if (pet.species === 'cat') {
+    if (pet.age < 1) baseFee = feeStructure.kitten;
+    else if (pet.age >= 7) baseFee = feeStructure.senior;
+    else baseFee = feeStructure.adult_cat;
+  } else {
+    baseFee = feeStructure.default;
   }
+
+  // Apply discounts for special needs
+  if (pet.specialNeeds) {
+    baseFee *= 0.7; // 30% discount for special needs pets
+  }
+
+  // Ensure minimum fee
+  const finalFee = Math.max(baseFee, 50);
+  
+  console.log(`💰 Calculated adoption fee: $${finalFee} for ${pet.name}`);
+  
+  return finalFee;
+}
 
   //  ADD THIS MISSING HELPER METHOD
   async uploadSignedDocument(agreement, signature) {
@@ -1367,6 +1505,82 @@ async processDigitalSignature(user, agreementId, signatureData, req) {
   }
 }
 
+
+
+// Add to adoptionService.js
+async initiatePayment(adopterUser, requestId) {
+  try {
+    console.log(' Initiating payment process for request:', requestId);
+    
+    // 1. Validate payment eligibility
+    const eligibility = await this.validatePaymentEligibility(requestId, adopterUser.id);
+    
+    // 2. Load payment service
+    const paymentService = require('./paymentService');
+    
+    // 3. Create Stripe payment intent
+    const paymentIntent = await paymentService.createPaymentIntent(
+      eligibility.amount,
+      'usd',
+      {
+        adoptionRequest: requestId,
+        agreementId: eligibility.agreement._id.toString(),
+        adopterId: adopterUser.id,
+        adopterName: eligibility.request.adopter.name,
+        petId: eligibility.request.pet._id.toString(),
+        petName: eligibility.request.pet.name,
+        organizationId: eligibility.request.organization._id.toString()
+      }
+    );
+
+    // 4. Create payment record in database
+    const payment = await Payment.create({
+      adoptionRequest: requestId,
+      amount: eligibility.amount,
+      currency: 'USD',
+      status: 'requires_action', // Waiting for payment confirmation
+      paymentIntentId: paymentIntent.paymentIntentId,
+      clientSecret: paymentIntent.clientSecret,
+      paymentMethod: 'stripe'
+    });
+
+    // 5. Update adoption request status
+    eligibility.request.status = ADOPTION_STATUS.PAYMENT_PENDING;
+    await eligibility.request.save();
+
+    console.log(' Payment initiated successfully. Payment ID:', payment._id);
+
+    return {
+      success: true,
+      paymentId: payment._id,
+      clientSecret: paymentIntent.clientSecret,
+      amount: eligibility.amount,
+      currency: 'USD',
+      status: 'requires_payment_method',
+      nextStep: 'confirm_payment'
+    };
+
+  } catch (error) {
+    console.error(' Payment initiation failed:', error);
+    
+    // Update status to payment failed if something went wrong
+    try {
+      await AdoptionRequest.findByIdAndUpdate(requestId, {
+        status: ADOPTION_STATUS.PAYMENT_FAILED
+      });
+    } catch (updateError) {
+      console.error('Failed to update payment status:', updateError);
+    }
+    
+    throw error;
+  }
+}
+
+generateContentHash(content) {
+  const crypto = require('crypto');
+  return crypto.createHash('sha256').update(content).digest('hex');
+}
+
 }
 
 // Singleton instance for backward compatibility
@@ -1397,5 +1611,7 @@ module.exports = {
     getAgreementDetails: adoptionService.getAgreementDetails.bind(adoptionService),
     getAgreementForSigning: adoptionService.getAgreementForSigning.bind(adoptionService),
     generateSignaturePage: adoptionService.generateSignaturePage.bind(adoptionService),
-    processDigitalSignature: adoptionService.processDigitalSignature.bind(adoptionService)
+    processDigitalSignature: adoptionService.processDigitalSignature.bind(adoptionService),
+    initiatePayment: adoptionService.initiatePayment.bind(adoptionService)
 };
+

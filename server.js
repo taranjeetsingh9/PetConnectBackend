@@ -79,6 +79,10 @@ app.use('/api/availability', availabilityRoutes);
 const agreementRoutes = require('./routes/agreements');
 app.use('/api/agreements', agreementRoutes);
 
+const paymentRoutes = require('./routes/paymentRoutes');
+app.use('/api/payments', paymentRoutes);
+
+
 // Run every hour to check for upcoming meetings
 setInterval(async () => {
   try {

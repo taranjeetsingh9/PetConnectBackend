@@ -6,7 +6,9 @@ const AdoptionRequestSchema = new mongoose.Schema({
   organization: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization' },
   status: { 
     type: String,
-    enum: ['pending','approved','ignored','rejected','on-hold','finalized', 'meeting', 'chat'],
+    enum: ['pending','approved','ignored','rejected','agreement_signed','on-hold','finalized', 'meeting', 'chat',
+   'agreement_sent',
+    'payment_pending', 'payment_completed', 'payment_failed'],
     default: 'pending'
   },
   requestedAt: { type: Date, default: Date.now },

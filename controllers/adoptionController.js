@@ -177,11 +177,66 @@ exports.processPayment = async (req, res) => {
   }
 };
 
+exports.getPaymentDetails = async (req, res) => {
+  try {
+    const result = await adoptionService.validatePaymentEligibility(
+      req.params.requestId, 
+      req.user.id
+    );
+    
+    res.json({
+      success: true,
+      eligible: true,
+      amount: result.amount,
+      currency: result.currency,
+      pet: {
+        id: result.request.pet._id,
+        name: result.request.pet.name,
+        breed: result.request.pet.breed
+      },
+      agreement: {
+        id: result.agreement._id,
+        signedAt: result.agreement.signedDocument.signedAt
+      },
+      nextStep: 'create_payment'
+    });
+  } catch (err) {
+    console.error('Error in getPaymentDetails:', err);
+    res.status(err.status || 500).json({ 
+      success: false,
+      eligible: false,
+      error: err.message 
+    });
+  }
+};
+
 exports.getAgreementDetails = async (req, res) => {
   try {
     const result = await adoptionService.getAgreementDetails(req.user, req.params.agreementId);
     res.json(result);
   } catch (err) {
     res.status(err.status || 500).json({ msg: err.message });
+  }
+};
+
+exports.initiatePayment = async (req, res) => {
+  try {
+    const result = await adoptionService.initiatePayment(
+      req.user, 
+      req.params.requestId
+    );
+    
+    res.json({
+      success: true,
+      message: 'Payment initiated successfully',
+      data: result
+    });
+    
+  } catch (err) {
+    console.error('Error in initiatePayment:', err);
+    res.status(err.status || 500).json({ 
+      success: false,
+      error: err.message 
+    });
   }
 };
