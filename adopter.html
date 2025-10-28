@@ -221,36 +221,107 @@
             💬 Chat with Staff
           </button>
         `;
-      } else if (status === 'meeting') {
-        const meetingDate = meeting?.date ? new Date(meeting.date).toLocaleString() : 'Not scheduled';
-        const isConfirmed = meeting?.confirmed;
+      }  else if (status === 'meeting') {
+  const meetingDate = meeting?.date ? new Date(meeting.date) : null;
+  const isConfirmed = meeting?.confirmed;
+  const meetingType = meeting?.type || 'virtual';
+  const meetingLink = meeting?.meetingLink;
+  const location = meeting?.location;
+  
+  const displayDate = meetingDate ? meetingDate.toLocaleString('en-US', { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  }) : 'Date not set';
+
+  actionButtons = `
+    <div class="mt-3 space-y-3">
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div class="flex items-center justify-between mb-2">
+          <h4 class="font-semibold text-blue-800">
+            ${meetingType === 'virtual' ? '🎥 Virtual Meeting' : '🏠 In-Person Visit'}
+          </h4>
+          <span class="px-2 py-1 rounded-full text-xs ${
+            isConfirmed ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+          }">
+            ${isConfirmed ? 'Confirmed' : 'Pending Confirmation'}
+          </span>
+        </div>
         
-        actionButtons = `
-          <div class="mt-3 space-y-2">
-            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <p class="text-sm font-medium text-blue-800">📅 Scheduled Meeting</p>
-              <p class="text-xs text-blue-600 mt-1"><strong>When:</strong> ${meetingDate}</p>
-              <p class="text-xs text-blue-600"><strong>Status:</strong> 
-                <span class="${isConfirmed ? 'text-green-600' : 'text-yellow-600'}">
-                  ${isConfirmed ? 'Confirmed' : 'Pending Your Confirmation'}
-                </span>
+        <div class="space-y-2 text-sm">
+          <div class="flex justify-between">
+            <span class="text-blue-600 font-medium">When:</span>
+            <span>${displayDate}</span>
+          </div>
+          
+          <div class="flex justify-between">
+            <span class="text-blue-600 font-medium">Type:</span>
+            <span>${meetingType === 'virtual' ? 'Video Call' : 'Shelter Visit'}</span>
+          </div>
+          
+          ${location ? `
+            <div class="flex justify-between">
+              <span class="text-blue-600 font-medium">Location:</span>
+              <span>${location}</span>
+            </div>
+          ` : ''}
+          
+          ${meetingType === 'virtual' && meetingLink ? `
+            <div class="flex justify-between items-center mt-3">
+              <span class="text-blue-600 font-medium">Meeting Link:</span>
+              <a href="${meetingLink}" target="_blank" 
+                 class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition-colors">
+                Join Meeting
+              </a>
+            </div>
+          ` : ''}
+        </div>
+      </div>
+
+      <div class="space-y-2">
+        ${!isConfirmed ? `
+          <button onclick="confirmMeeting('${req._id}')" 
+                  class="w-full bg-green-600 text-white px-3 py-2 rounded hover:bg-green-700 transition-colors">
+            ✅ Confirm Meeting
+          </button>
+          <button onclick="rescheduleMeeting('${req._id}')" 
+                  class="w-full bg-yellow-500 text-white px-3 py-2 rounded hover:bg-yellow-600 transition-colors">
+            📅 Reschedule Meeting
+          </button>
+        ` : `
+          <div class="bg-green-50 border border-green-200 rounded p-3 text-center">
+            <p class="text-green-700 text-sm">✅ Meeting confirmed on ${meeting?.confirmedAt ? new Date(meeting.confirmedAt).toLocaleDateString() : 'N/A'}</p>
+          </div>
+          ${meetingType === 'virtual' && meetingLink ? `
+            <a href="${meetingLink}" target="_blank" 
+               class="block w-full bg-blue-600 text-white px-3 py-2 rounded text-center hover:bg-blue-700 transition-colors">
+              🎥 Join Virtual Meeting
+            </a>
+          ` : meetingType === 'in-person' ? `
+            <div class="bg-orange-50 border border-orange-200 rounded p-3">
+              <p class="text-orange-700 text-sm text-center">
+                🏠 Please arrive at the shelter 10 minutes before your scheduled time
               </p>
             </div>
-            ${!isConfirmed ? `
-              <button onclick="confirmMeeting('${req._id}')" class="w-full bg-green-600 text-white px-3 py-2 rounded hover:bg-green-700">
-                ✅ Confirm Meeting
-              </button>
-              <button onclick="rescheduleMeeting('${req._id}')" class="w-full bg-yellow-500 text-white px-3 py-2 rounded hover:bg-yellow-600">
-                📅 Request Reschedule
-              </button>
-            ` : `
-              <button onclick="viewMeetingDetails('${req._id}')" class="w-full bg-gray-500 text-white px-3 py-2 rounded">
-                📋 View Meeting Details
-              </button>
-            `}
-          </div>
-        `;
-      } else if (status === 'finalized') {
+          ` : ''}
+          
+          <button onclick="showMeetingPreparation('${req._id}')" 
+                  class="w-full bg-purple-600 text-white px-3 py-2 rounded hover:bg-purple-700 transition-colors">
+            📋 Meeting Preparation Guide
+          </button>
+        `}
+        
+        <button onclick="startChat('${req._id}')" 
+                class="w-full bg-indigo-600 text-white px-3 py-2 rounded hover:bg-indigo-700 transition-colors">
+          💬 Chat with Staff
+        </button>
+      </div>
+    </div>
+  `;
+} else if (status === 'finalized') {
         actionButtons = `
           <div class="mt-3 p-2 bg-green-100 border border-green-300 rounded">
             <p class="text-sm text-green-800 text-center">🎉 Adoption Finalized!</p>
@@ -301,14 +372,104 @@
     });
 
     // Meeting functions
-    function confirmMeeting(requestId) {
-      window.location.href = `meeting-confirmation.html?requestId=${requestId}`;
+    // function confirmMeeting(requestId) {
+    //   window.location.href = `meeting-confirmation.html?requestId=${requestId}`;
+    // }
+
+    async function confirmMeeting(requestId) {
+  try {
+    // Ask for confirmation notes based on meeting type
+    const meeting = await getMeetingDetails(requestId); // You'll need to implement this
+    const meetingType = meeting?.type || 'virtual';
+    
+    let notes = '';
+    
+    if (meetingType === 'virtual') {
+      notes = prompt(`Please confirm your virtual meeting:\n\n• Ensure you have a stable internet connection\n• Test your camera and microphone\n• Find a quiet, well-lit space\n\nAdd any notes or questions:`);
+    } else {
+      notes = prompt(`Please confirm your in-person visit:\n\n• Please arrive 10 minutes early\n• Bring valid ID\n• Wear comfortable clothing\n• No young children without prior arrangement\n\nAdd any notes or questions:`);
+    }
+    
+    if (notes === null) return; // User cancelled
+    
+    const response = await fetchWithAuth(`http://localhost:5001/api/adoptions/${requestId}/confirm-meeting`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        notes: notes || 'Meeting confirmed by adopter'
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.msg || 'Failed to confirm meeting');
     }
 
-    function rescheduleMeeting(requestId) {
-      alert('To reschedule, please contact the shelter directly via chat or email.');
-    }
+    const result = await response.json();
+    
+    // Show appropriate confirmation message
+    const meetingTypeText = meetingType === 'virtual' ? 'virtual meeting' : 'in-person visit';
+    alert(`✅ ${meetingTypeText} confirmed successfully! ${meetingType === 'virtual' ? 'Check your email for the meeting link.' : 'See you at the shelter!'}`);
+    
+    // Refresh requests
+    await loadMyAdoptionRequests();
+    
+  } catch (error) {
+    console.error('❌ Error confirming meeting:', error);
+    alert('Failed to confirm meeting: ' + error.message);
+  }
+}
 
+// Helper function to get meeting details
+async function getMeetingDetails(requestId) {
+  try {
+    const response = await fetchWithAuth(`http://localhost:5001/api/adoptions/my-requests`);
+    const requests = await response.json();
+    const request = requests.find(req => req._id === requestId);
+    return request?.meeting;
+  } catch (error) {
+    console.error('Error getting meeting details:', error);
+    return null;
+  }
+}
+
+
+
+    // function rescheduleMeeting(requestId) {
+    //   alert('To reschedule, please contact the shelter directly via chat or email.');
+    // }
+    async function rescheduleMeeting(requestId) {
+  if (!confirm('Are you sure you want to reschedule this meeting? The current meeting will be cancelled and you can book a new time.')) {
+    return;
+  }
+  
+  try {
+    // First, get the current meeting details to preserve the type
+    const meeting = await getMeetingDetails(requestId);
+    const currentMeetingType = meeting?.type || 'virtual';
+    
+    // Show booking modal again with preserved meeting type
+    const request = await getAdoptionRequest(requestId); // You'll need to implement this
+    if (request && request.pet) {
+      showMeetingBooking(requestId, request.pet.name);
+    }
+    
+  } catch (error) {
+    console.error('❌ Error rescheduling meeting:', error);
+    alert('Failed to reschedule meeting: ' + error.message);
+  }
+}
+
+// Helper function to get adoption request details
+async function getAdoptionRequest(requestId) {
+  try {
+    const response = await fetchWithAuth(`http://localhost:5001/api/adoptions/my-requests`);
+    const requests = await response.json();
+    return requests.find(req => req._id === requestId);
+  } catch (error) {
+    console.error('Error getting adoption request:', error);
+    return null;
+  }
+}
     function viewMeetingDetails(requestId) {
       window.location.href = `meeting-confirmation.html?requestId=${requestId}`;
     }
@@ -804,6 +965,73 @@ async function refreshAdoptionRequests() {
 
 // Function to show meeting booking modal
 // Function to show meeting booking modal
+// async function showMeetingBooking(requestId, petName) {
+//   try {
+//     console.log('📅 Loading available staff for meeting booking...');
+    
+//     const staffRes = await fetchWithAuth('http://localhost:5001/api/availability/available/staff');
+    
+//     if (!staffRes.ok) {
+//       throw new Error(`Server error: ${staffRes.status}`);
+//     }
+    
+//     const staffData = await staffRes.json();
+//     console.log('✅ Available staff data:', staffData);
+    
+//     if (!staffData.success || !staffData.staff || staffData.staff.length === 0) {
+//       alert('No staff members available for booking at the moment. Please try again later.');
+//       return;
+//     }
+
+//     // Create booking modal
+//     const modal = document.createElement('div');
+//     modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center';
+//     modal.innerHTML = `
+//       <div class="bg-white rounded-lg p-6 w-full max-w-2xl max-h-96 overflow-y-auto">
+//         <h3 class="text-xl font-semibold mb-4">📅 Book Meeting for ${petName}</h3>
+//         <p class="text-sm text-gray-600 mb-4">Select a staff member and available time slot:</p>
+        
+//         <div class="space-y-4">
+//           ${staffData.staff.map(staff => `
+//             <div class="border rounded-lg p-4">
+//               <h4 class="font-semibold">${staff.name} (${staff.role})</h4>
+//               ${staff.availability && staff.availability.length > 0 ? `
+//                 <p class="text-sm text-gray-600 mb-2">Available Slots:</p>
+//                 <div class="space-y-2">
+//                   ${staff.availability.map(slot => `
+//                     <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+//                       <span class="text-sm">
+//                         <strong>${slot.day}</strong>: ${slot.startTime} - ${slot.endTime}
+//                         ${slot.date ? `<br><small>${new Date(slot.date).toLocaleDateString()}</small>` : ''}
+//                       </span>
+//                     <button onclick="bookMeetingSlot('${requestId}', '${staff._id}', '${JSON.stringify(slot).replace(/'/g, "\\'")}')" 
+//         class="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">
+//   Book This Slot
+// </button>
+//                     </div>
+//                   `).join('')}
+//                 </div>
+//               ` : `
+//                 <p class="text-sm text-yellow-600">No available slots</p>
+//               `}
+//             </div>
+//           `).join('')}
+//         </div>
+        
+//         <button onclick="this.closest('.fixed').remove()" 
+//                 class="mt-4 w-full bg-gray-500 text-white py-2 rounded hover:bg-gray-600">
+//           Cancel
+//         </button>
+//       </div>
+//     `;
+
+//     document.body.appendChild(modal);
+//   } catch (error) {
+//     console.error('❌ Error loading meeting booking:', error);
+//     alert('Failed to load available slots: ' + error.message);
+//   }
+// }
+
 async function showMeetingBooking(requestId, petName) {
   try {
     console.log('📅 Loading available staff for meeting booking...');
@@ -828,27 +1056,58 @@ async function showMeetingBooking(requestId, petName) {
     modal.innerHTML = `
       <div class="bg-white rounded-lg p-6 w-full max-w-2xl max-h-96 overflow-y-auto">
         <h3 class="text-xl font-semibold mb-4">📅 Book Meeting for ${petName}</h3>
+        
+        <!-- Meeting Type Selection -->
+        <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+          <label class="block text-sm font-medium mb-3">Choose Meeting Type</label>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <button class="meeting-type-btn border-2 rounded-lg p-4 text-center transition-all duration-200 bg-white border-blue-300 hover:border-blue-500 hover:bg-blue-50" data-type="virtual">
+              <div class="font-medium text-blue-700">🎥 Virtual Meet & Greet</div>
+              <div class="text-xs text-gray-600 mt-1">Video call introduction with staff</div>
+            </button>
+            <button class="meeting-type-btn border-2 rounded-lg p-4 text-center transition-all duration-200 bg-white border-green-300 hover:border-green-500 hover:bg-green-50" data-type="in-person">
+              <div class="font-medium text-green-700">🏠 In-Person Visit</div>
+              <div class="text-xs text-gray-600 mt-1">Visit shelter & meet pet in person</div>
+            </button>
+          </div>
+          <p class="text-xs text-gray-500 mt-2 text-center">Selected: <span id="selectedMeetingType" class="font-medium text-blue-600">Virtual Meet & Greet</span></p>
+        </div>
+
         <p class="text-sm text-gray-600 mb-4">Select a staff member and available time slot:</p>
         
-        <div class="space-y-4">
-          ${staffData.staff.map(staff => `
+        <div id="staffSlotsContainer" class="space-y-4">
+          ${staffData.staff.map((staff, staffIndex) => `
             <div class="border rounded-lg p-4">
               <h4 class="font-semibold">${staff.name} (${staff.role})</h4>
               ${staff.availability && staff.availability.length > 0 ? `
                 <p class="text-sm text-gray-600 mb-2">Available Slots:</p>
                 <div class="space-y-2">
-                  ${staff.availability.map(slot => `
-                    <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
-                      <span class="text-sm">
-                        <strong>${slot.day}</strong>: ${slot.startTime} - ${slot.endTime}
-                        ${slot.date ? `<br><small>${new Date(slot.date).toLocaleDateString()}</small>` : ''}
-                      </span>
-                    <button onclick="bookMeetingSlot('${requestId}', '${staff._id}', '${JSON.stringify(slot).replace(/'/g, "\\'")}')" 
-        class="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">
-  Book This Slot
-</button>
+                  ${staff.availability.map((slot, slotIndex) => {
+                    const slotDate = slot.date ? new Date(slot.date) : null;
+                    const displayDate = slotDate ? slotDate.toLocaleDateString('en-US', { 
+                      weekday: 'long', 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    }) : `${slot.day} (Recurring)`;
+                    
+                    return `
+                    <div class="flex justify-between items-center p-3 bg-gray-50 rounded border">
+                      <div class="text-sm flex-1">
+                        <div class="font-medium">${displayDate}</div>
+                        <div class="text-gray-600">${slot.startTime} - ${slot.endTime}</div>
+                      </div>
+                      <button 
+                        data-request="${requestId}"
+                        data-staff="${staff._id}" 
+                        data-staff-index="${staffIndex}"
+                        data-slot-index="${slotIndex}"
+                        class="book-slot-btn bg-green-600 text-white px-4 py-2 rounded text-sm hover:bg-green-700 transition-colors">
+                        Book This Slot
+                      </button>
                     </div>
-                  `).join('')}
+                    `;
+                  }).join('')}
                 </div>
               ` : `
                 <p class="text-sm text-yellow-600">No available slots</p>
@@ -857,12 +1116,99 @@ async function showMeetingBooking(requestId, petName) {
           `).join('')}
         </div>
         
-        <button onclick="this.closest('.fixed').remove()" 
-                class="mt-4 w-full bg-gray-500 text-white py-2 rounded hover:bg-gray-600">
+        <button id="closeBookingModal" class="mt-4 w-full bg-gray-500 text-white py-2 rounded hover:bg-gray-600 transition-colors">
           Cancel
         </button>
       </div>
     `;
+
+    // Set default selected meeting type
+    let selectedMeetingType = 'virtual';
+    const selectedTypeSpan = modal.querySelector('#selectedMeetingType');
+
+    // Add meeting type selection logic
+    modal.querySelectorAll('.meeting-type-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        selectedMeetingType = this.getAttribute('data-type');
+        
+        // Update UI to show selected type
+        modal.querySelectorAll('.meeting-type-btn').forEach(b => {
+          b.classList.remove('border-blue-500', 'bg-blue-100', 'border-green-500', 'bg-green-100');
+          b.classList.add('border-blue-300', 'bg-white', 'border-green-300');
+        });
+        
+        if (selectedMeetingType === 'virtual') {
+          this.classList.remove('border-blue-300', 'bg-white');
+          this.classList.add('border-blue-500', 'bg-blue-100');
+          selectedTypeSpan.textContent = 'Virtual Meet & Greet';
+          selectedTypeSpan.className = 'font-medium text-blue-600';
+        } else {
+          this.classList.remove('border-green-300', 'bg-white');
+          this.classList.add('border-green-500', 'bg-green-100');
+          selectedTypeSpan.textContent = 'In-Person Visit';
+          selectedTypeSpan.className = 'font-medium text-green-600';
+        }
+      });
+    });
+
+    // Set initial selection
+    modal.querySelector('.meeting-type-btn[data-type="virtual"]').click();
+
+    // Add event listeners for booking slots
+    modal.addEventListener('click', (e) => {
+      // Close modal
+      if (e.target.id === 'closeBookingModal') {
+        modal.remove();
+        return;
+      }
+      
+      // Book slot
+      if (e.target.classList.contains('book-slot-btn')) {
+        const btn = e.target;
+        const requestId = btn.getAttribute('data-request');
+        const staffId = btn.getAttribute('data-staff');
+        const staffIndex = btn.getAttribute('data-staff-index');
+        const slotIndex = btn.getAttribute('data-slot-index');
+        
+        // Find the staff member
+        const staff = staffData.staff.find(s => s._id === staffId);
+        if (staff && staff.availability[slotIndex]) {
+          const slot = staff.availability[slotIndex];
+          
+          console.log('📅 Slot being booked:', slot);
+          
+          // Validate the slot has a date
+          if (!slot.date) {
+            alert('Error: This slot does not have a date. Please contact support.');
+            return;
+          }
+          
+          // Validate the date
+          const slotDate = new Date(slot.date);
+          if (isNaN(slotDate.getTime())) {
+            alert('Error: Invalid date in this slot. Please choose another slot.');
+            return;
+          }
+          
+          // Check if the slot is in the future
+          if (slotDate < new Date()) {
+            alert('Error: This time slot has already passed. Please choose a future date.');
+            return;
+          }
+          
+          // Enhanced slot with meeting type
+          const enhancedSlot = {
+            ...slot,
+            type: selectedMeetingType,
+            location: selectedMeetingType === 'in-person' ? 'Shelter Facility' : 'virtual'
+          };
+          
+          console.log('🚀 Enhanced slot data:', enhancedSlot);
+          bookMeetingSlot(requestId, staffId, enhancedSlot);
+          modal.remove(); // Close modal after booking
+        }
+      }
+    });
 
     document.body.appendChild(modal);
   } catch (error) {
@@ -870,6 +1216,36 @@ async function showMeetingBooking(requestId, petName) {
     alert('Failed to load available slots: ' + error.message);
   }
 }
+
+
+// Function to book a meeting slot
+
+// async function bookMeetingSlot(requestId, staffId, slot) {
+//   try {
+//     const response = await fetchWithAuth(`http://localhost:5001/api/adoptions/${requestId}/schedule-meeting`, {
+//       method: 'POST',
+//       body: JSON.stringify({
+//         staffId: staffId,
+//         slot: slot
+//       })
+//     });
+
+//     if (!response.ok) {
+//       const errorData = await response.json();
+//       throw new Error(errorData.message || 'Failed to book meeting');
+//     }
+
+//     const result = await response.json();
+//     alert('✅ Meeting booked successfully!');
+    
+//     // Close modal and refresh requests
+//     document.querySelector('.fixed.inset-0')?.remove();
+//     await loadMyAdoptionRequests();
+//   } catch (error) {
+//     console.error('Error booking meeting:', error);
+//     alert('❌ Failed to book meeting: ' + error.message);
+//   }
+// }
 // Function to book a meeting slot
 async function bookMeetingSlot(requestId, staffId, slot) {
   try {
@@ -883,50 +1259,26 @@ async function bookMeetingSlot(requestId, staffId, slot) {
       })
     });
 
-    const result = await response.json();
-    
     if (!response.ok) {
-      throw new Error(result.msg || 'Failed to book meeting');
+      const errorData = await response.json();
+      throw new Error(errorData.msg || 'Failed to book meeting');
     }
 
-    alert('✅ Meeting booked successfully!');
+    const result = await response.json();
     
-    // Close modal and refresh requests
-    document.querySelector('.fixed.inset-0')?.remove();
- 
+    // Show appropriate success message based on meeting type
+    const meetingType = slot.type === 'virtual' ? 'Virtual meeting' : 'In-person visit';
+    alert(`✅ ${meetingType} booked successfully!`);
+    
+    // Refresh requests to show updated status
     await loadMyAdoptionRequests();
   } catch (error) {
     console.error('❌ Error booking meeting:', error);
     alert('Failed to book meeting: ' + error.message);
   }
 }
-// Function to book a meeting slot
-async function bookMeetingSlot(requestId, staffId, slot) {
-  try {
-    const response = await fetchWithAuth(`http://localhost:5001/api/adoptions/${requestId}/schedule-meeting`, {
-      method: 'POST',
-      body: JSON.stringify({
-        staffId: staffId,
-        slot: slot
-      })
-    });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to book meeting');
-    }
 
-    const result = await response.json();
-    alert('✅ Meeting booked successfully!');
-    
-    // Close modal and refresh requests
-    document.querySelector('.fixed.inset-0')?.remove();
-    await loadMyAdoptionRequests();
-  } catch (error) {
-    console.error('Error booking meeting:', error);
-    alert('❌ Failed to book meeting: ' + error.message);
-  }
-}
 
 // Update the adoption request card to include booking button
 // In your loadMyAdoptionRequests function, add this to the approved status:
@@ -1144,6 +1496,203 @@ async function markNotificationAsRead(notificationId, button) {
   }
 }
 
+// Add this function to show meeting preparation
+async function showMeetingPreparation(requestId) {
+  try {
+    // Fetch the latest meeting details from the server
+    const response = await fetchWithAuth('http://localhost:5001/api/adoptions/my-requests');
+    const requests = await response.json();
+    const request = requests.find(req => req._id === requestId);
+    
+    if (!request) {
+      alert('Adoption request not found');
+      return;
+    }
+
+    if (!request.meeting) {
+      alert('No meeting scheduled for this request');
+      return;
+    }
+
+    const meeting = request.meeting;
+    const meetingType = meeting.type || 'virtual';
+    
+    // Generate preparation guide if it doesn't exist
+    const preparation = meeting.preparationGuide || generateDefaultPreparation(meetingType);
+    
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center';
+    
+    modal.innerHTML = `
+      <div class="bg-white rounded-lg p-6 w-full max-w-2xl max-h-96 overflow-y-auto">
+        <h3 class="text-xl font-semibold mb-4">📋 Meeting Preparation Guide</h3>
+        <div class="space-y-4">
+          <!-- Pet Info -->
+          <div class="bg-blue-50 border border-blue-200 rounded p-4">
+            <h4 class="font-semibold text-blue-800 mb-2">Meeting for ${request.pet?.name || 'Pet Adoption'}</h4>
+            <div class="grid grid-cols-2 gap-2 text-sm">
+              <div><strong>Meeting Type:</strong> ${meetingType === 'virtual' ? 'Virtual Meeting' : 'In-Person Visit'}</div>
+              <div><strong>Date:</strong> ${meeting.date ? new Date(meeting.date).toLocaleDateString() : 'Not set'}</div>
+              ${request.pet?.breed ? `<div><strong>Breed:</strong> ${request.pet.breed}</div>` : ''}
+              ${request.pet?.age ? `<div><strong>Age:</strong> ${request.pet.age}</div>` : ''}
+            </div>
+          </div>
+
+          <!-- Checklist -->
+          <div>
+            <h4 class="font-semibold mb-2">✅ Preparation Checklist</h4>
+            <ul class="space-y-2 text-sm">
+              ${preparation.checklist.map(item => `
+                <li class="flex items-start">
+                  <span class="text-green-500 mr-2 mt-1">✓</span>
+                  <span>${item}</span>
+                </li>
+              `).join('')}
+            </ul>
+          </div>
+
+          <!-- Tips -->
+          <div>
+            <h4 class="font-semibold mb-2">💡 Helpful Tips</h4>
+            <ul class="space-y-1 text-sm text-gray-600">
+              ${preparation.tips.map(tip => `
+                <li class="flex items-start">
+                  <span class="text-blue-500 mr-2 mt-1">•</span>
+                  <span>${tip}</span>
+                </li>
+              `).join('')}
+            </ul>
+          </div>
+
+          <!-- What to Bring -->
+          <div>
+            <h4 class="font-semibold mb-2">🎒 What to Bring</h4>
+            <ul class="space-y-1 text-sm text-gray-600">
+              ${preparation.whatToBring.map(item => `
+                <li class="flex items-start">
+                  <span class="text-orange-500 mr-2 mt-1">•</span>
+                  <span>${item}</span>
+                </li>
+              `).join('')}
+            </ul>
+          </div>
+
+          ${meeting.meetingLink ? `
+            <div class="bg-green-50 border border-green-200 rounded p-3">
+              <p class="text-green-700 text-sm">
+                <strong>Meeting Link:</strong> 
+                <a href="${meeting.meetingLink}" target="_blank" class="underline ml-1 font-medium">
+                  Click here to join virtual meeting
+                </a>
+              </p>
+            </div>
+          ` : ''}
+
+          ${meetingType === 'in-person' && meeting.location ? `
+            <div class="bg-orange-50 border border-orange-200 rounded p-3">
+              <p class="text-orange-700 text-sm">
+                <strong>Location:</strong> ${meeting.location}
+              </p>
+            </div>
+          ` : ''}
+        </div>
+
+        <button onclick="this.closest('.fixed').remove()" 
+                class="mt-6 w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition-colors">
+          Got it, I'm prepared!
+        </button>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+  } catch (error) {
+    console.error('❌ Error loading preparation guide:', error);
+    alert('Failed to load preparation guide: ' + error.message);
+  }
+}
+
+// Default preparation guide generator
+function generateDefaultPreparation(meetingType) {
+  if (meetingType === 'virtual') {
+    return {
+      checklist: [
+        'Test your internet connection and speed',
+        'Ensure your camera and microphone are working',
+        'Find a quiet, well-lit space for the call',
+        'Close unnecessary applications and browser tabs',
+        'Have questions ready about the pet and adoption process',
+        'Prepare to discuss your home environment and experience'
+      ],
+      tips: [
+        'Join the meeting 5 minutes early to test audio/video',
+        'Have a notepad ready to take important notes',
+        'Be prepared to show your living space via camera if requested',
+        'Speak clearly and maintain eye contact with the camera',
+        'Have good lighting in front of you, not behind you'
+      ],
+      whatToBring: [
+        'Valid government-issued ID for verification',
+        'List of questions about the pet\'s behavior and needs',
+        'Information about your living situation and schedule',
+        'Details about other pets or family members in the home'
+      ]
+    };
+  } else {
+    return {
+      checklist: [
+        'Arrive 10-15 minutes before your scheduled time',
+        'Bring valid government-issued photo ID',
+        'Wear comfortable, appropriate clothing and closed-toe shoes',
+        'Leave young children at home (unless pre-approved)',
+        'Be prepared to spend 45-60 minutes at the shelter',
+        'Bring any family members involved in the decision'
+      ],
+      tips: [
+        'The pet may be nervous in the shelter environment - move slowly and speak softly',
+        'Ask about the pet\'s daily routine, favorite activities, and preferences',
+        'Be honest about your experience level and lifestyle',
+        'Take notes during the meeting to remember important details',
+        'Observe how the pet interacts with you and the environment',
+        'Ask about any known medical conditions or behavioral needs'
+      ],
+      whatToBring: [
+        'Valid photo ID (driver\'s license, passport, etc.)',
+        'Proof of address if required by the shelter',
+        'List of questions for the adoption counselor',
+        'Any documentation about your current living situation',
+        'Names and contact information of personal references'
+      ]
+    };
+  }
+}
+
+// Default preparation if none provided
+// function generateDefaultPreparation(meetingType) {
+//   return meetingType === 'virtual' ? {
+//     checklist: [
+//       'Test internet connection and equipment',
+//       'Find quiet, well-lit space',
+//       'Prepare questions about the pet'
+//     ],
+//     tips: [
+//       'Join a few minutes early to test everything',
+//       'Be ready to discuss your experience with pets'
+//     ],
+//     whatToBring: ['Valid ID', 'List of questions']
+//   } : {
+//     checklist: [
+//       'Arrive 10 minutes early',
+//       'Bring valid ID',
+//       'Wear appropriate clothing'
+//     ],
+//     tips: [
+//       'The pet may be shy at first',
+//       'Ask about the pet\'s routine and needs'
+//     ],
+//     whatToBring: ['Photo ID', 'Questions for staff']
+//   };
+// }
+
 // Mark all as read
 async function markAllNotificationsRead() {
   try {
@@ -1177,135 +1726,6 @@ async function updateNotificationBadgeFromServer() {
     }
   } catch (error) {
     console.error('Error updating badge:', error);
-  }
-}
-
-async function showMeetingBooking(requestId, petName) {
-  try {
-    console.log('📅 Loading available staff for meeting booking...');
-    
-    const staffRes = await fetchWithAuth('http://localhost:5001/api/availability/available/staff');
-    
-    if (!staffRes.ok) {
-      throw new Error(`Server error: ${staffRes.status}`);
-    }
-    
-    const staffData = await staffRes.json();
-    console.log('✅ Available staff data:', staffData);
-    
-    if (!staffData.success || !staffData.staff || staffData.staff.length === 0) {
-      alert('No staff members available for booking at the moment. Please try again later.');
-      return;
-    }
-
-    // Create booking modal
-    const modal = document.createElement('div');
-    modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center';
-    modal.innerHTML = `
-      <div class="bg-white rounded-lg p-6 w-full max-w-2xl max-h-96 overflow-y-auto">
-        <h3 class="text-xl font-semibold mb-4">📅 Book Meeting for ${petName}</h3>
-        <p class="text-sm text-gray-600 mb-4">Select a staff member and available time slot:</p>
-        
-        <div id="staffSlotsContainer" class="space-y-4">
-          ${staffData.staff.map((staff, staffIndex) => `
-            <div class="border rounded-lg p-4">
-              <h4 class="font-semibold">${staff.name} (${staff.role})</h4>
-              ${staff.availability && staff.availability.length > 0 ? `
-                <p class="text-sm text-gray-600 mb-2">Available Slots:</p>
-                <div class="space-y-2">
-                  ${staff.availability.map((slot, slotIndex) => {
-                    const slotDate = slot.date ? new Date(slot.date) : null;
-                    const displayDate = slotDate ? slotDate.toLocaleDateString('en-US', { 
-                      weekday: 'long', 
-                      year: 'numeric', 
-                      month: 'long', 
-                      day: 'numeric' 
-                    }) : 'Date not set';
-                    
-                    return `
-                    <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
-                      <span class="text-sm">
-                        <strong>${displayDate}</strong><br>
-                        ${slot.startTime} - ${slot.endTime}
-                      </span>
-                      <button 
-                        data-request="${requestId}"
-                        data-staff="${staff._id}" 
-                        data-slot-index="${slotIndex}"
-                        class="book-slot-btn bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">
-                        Book This Slot
-                      </button>
-                    </div>
-                    `;
-                  }).join('')}
-                </div>
-              ` : `
-                <p class="text-sm text-yellow-600">No available slots</p>
-              `}
-            </div>
-          `).join('')}
-        </div>
-        
-        <button id="closeBookingModal" class="mt-4 w-full bg-gray-500 text-white py-2 rounded hover:bg-gray-600">
-          Cancel
-        </button>
-      </div>
-    `;
-
-    // Add event listeners after modal is created
-    modal.addEventListener('click', (e) => {
-      if (e.target.id === 'closeBookingModal') {
-        modal.remove();
-      }
-      
-      if (e.target.classList.contains('book-slot-btn')) {
-        const btn = e.target;
-        const requestId = btn.getAttribute('data-request');
-        const staffId = btn.getAttribute('data-staff');
-        const slotIndex = btn.getAttribute('data-slot-index');
-        
-        // Find the staff member
-        const staff = staffData.staff.find(s => s._id === staffId);
-        if (staff && staff.availability[slotIndex]) {
-          const slot = staff.availability[slotIndex];
-          
-          console.log('📅 Slot being booked:', slot);
-          
-          // Validate the slot has a date
-          if (!slot.date) {
-            alert('Error: This slot does not have a date. Please contact support.');
-            return;
-          }
-          
-          // Validate the date
-          const slotDate = new Date(slot.date);
-          if (isNaN(slotDate.getTime())) {
-            alert('Error: Invalid date in this slot. Please choose another slot.');
-            return;
-          }
-          
-          // Check if the slot is in the future
-          if (slotDate < new Date()) {
-            alert('Error: This time slot has already passed. Please choose a future date.');
-            return;
-          }
-          
-          // Convert date to proper format for backend
-          const formattedSlot = {
-            ...slot,
-            date: slot.date // Keep as ISO string
-          };
-          
-          bookMeetingSlot(requestId, staffId, formattedSlot);
-          modal.remove(); // Close modal after booking
-        }
-      }
-    });
-
-    document.body.appendChild(modal);
-  } catch (error) {
-    console.error('❌ Error loading meeting booking:', error);
-    alert('Failed to load available slots: ' + error.message);
   }
 }
 

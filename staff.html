@@ -835,27 +835,45 @@ async function removeTrainerAssignment(petId) {
                   `;
                   break;
 
-                case 'meeting':
-                  const meetingDate = req.meeting?.date ? new Date(req.meeting.date).toLocaleString() : 'Not set';
-                  const isConfirmed = req.meeting?.confirmed;
-                  
-                  actionButtons = `
-                    <div class="bg-blue-50 border border-blue-200 rounded p-2 mb-2">
-                      <p class="text-xs text-blue-700"><strong>Meeting:</strong> ${meetingDate}</p>
-                      <p class="text-xs text-blue-700"><strong>Confirmed:</strong> 
-                        <span class="${isConfirmed ? 'text-green-600' : 'text-yellow-600'}">
-                          ${isConfirmed ? 'Yes' : 'No'}
-                        </span>
-                      </p>
-                    </div>
-                    <button onclick="handleRequest('${req._id}','finalized')" class="px-3 py-1 bg-green-700 text-white rounded mt-1">Finalize Adoption</button>
-                    <button onclick="rescheduleStaffMeeting('${req._id}')" class="px-3 py-1 bg-purple-600 text-white rounded mt-1">Reschedule</button>
-                    ${!isConfirmed ? `
-                      <button onclick="sendMeetingReminder('${req._id}')" class="px-3 py-1 bg-orange-500 text-white rounded mt-1">Send Reminder</button>
-                    ` : ''}
-                  `;
-                  break;
-
+               // In your loadStaffRequests function, update the meeting case:
+case 'meeting':
+  const meetingDate = req.meeting?.date ? new Date(req.meeting.date).toLocaleString() : 'Not set';
+  const isConfirmed = req.meeting?.confirmed;
+  const meetingType = req.meeting?.type || 'virtual';
+  const meetingStatus = req.meeting?.status || 'scheduled';
+  
+  actionButtons = `
+    <div class="bg-blue-50 border border-blue-200 rounded p-2 mb-2">
+      <p class="text-xs text-blue-700">
+        <strong>${meetingType === 'virtual' ? '🎥 Virtual' : '🏠 In-Person'}:</strong> ${meetingDate}
+      </p>
+      <p class="text-xs text-blue-700">
+        <strong>Status:</strong> 
+        <span class="${meetingStatus === 'completed' ? 'text-green-600' : isConfirmed ? 'text-yellow-600' : 'text-red-600'}">
+          ${meetingStatus === 'completed' ? 'Completed' : isConfirmed ? 'Confirmed' : 'Pending'}
+        </span>
+      </p>
+    </div>
+    
+    <div class="flex flex-wrap gap-1">
+      <button onclick="viewMeetingDetails('${req._id}')" 
+              class="px-3 py-1 bg-blue-600 text-white rounded text-sm">Details</button>
+      
+      ${meetingStatus !== 'completed' ? `
+        <button onclick="completeMeeting('${req._id}')" 
+                class="px-3 py-1 bg-green-600 text-white rounded text-sm">Complete</button>
+      ` : ''}
+      
+      ${!isConfirmed ? `
+        <button onclick="sendMeetingReminder('${req._id}')" 
+                class="px-3 py-1 bg-orange-500 text-white rounded text-sm">Remind</button>
+      ` : ''}
+      
+      <button onclick="handleRequest('${req._id}','finalized')" 
+              class="px-3 py-1 bg-purple-600 text-white rounded text-sm">Finalize</button>
+    </div>
+  `;
+  break;
                 default:
                   actionButtons = `<span class="text-gray-500 italic">${req.status}</span>`;
               }
@@ -1350,6 +1368,124 @@ document.getElementById('availabilityForm').addEventListener('submit', async (e)
 });
 
 
+// =====================
+// STAFF MEETING MANAGEMENT
+// =====================
+
+// For staff to mark meeting as completed
+async function completeMeeting(requestId) {
+  try {
+    const notes = prompt('Enter meeting notes and next steps:');
+    if (notes === null) return;
+
+    const response = await fetchWithAuth(`http://localhost:5001/api/adoptions/${requestId}/complete-meeting`, {
+      method: 'POST',
+      body: JSON.stringify({ notes })
+    });
+
+    if (!response.ok) throw new Error('Failed to complete meeting');
+    
+    alert('✅ Meeting marked as completed!');
+    await loadStaffRequests(); // Refresh staff requests
+  } catch (error) {
+    console.error('Error completing meeting:', error);
+    alert('Failed to complete meeting: ' + error.message);
+  }
+}
+
+// For staff to view meeting details
+async function viewMeetingDetails(requestId) {
+  try {
+    const response = await fetchWithAuth('http://localhost:5001/api/adoptions/requests');
+    const requests = await response.json();
+    const request = requests.find(req => req._id === requestId);
+    
+    if (!request || !request.meeting) {
+      alert('No meeting details found');
+      return;
+    }
+
+    const meeting = request.meeting;
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center';
+    
+    modal.innerHTML = `
+      <div class="bg-white rounded-lg p-6 w-full max-w-2xl max-h-96 overflow-y-auto">
+        <h3 class="text-xl font-semibold mb-4">📋 Meeting Details</h3>
+        
+        <div class="space-y-4">
+          <!-- Meeting Info -->
+          <div class="bg-blue-50 border border-blue-200 rounded p-4">
+            <h4 class="font-semibold text-blue-800 mb-2">Meeting with ${request.adopter?.name || 'Adopter'}</h4>
+            <div class="grid grid-cols-2 gap-2 text-sm">
+              <div><strong>Pet:</strong> ${request.pet?.name || 'Unknown'}</div>
+              <div><strong>Type:</strong> ${meeting.type === 'virtual' ? 'Virtual Meeting' : 'In-Person Visit'}</div>
+              <div><strong>Date:</strong> ${meeting.date ? new Date(meeting.date).toLocaleString() : 'Not set'}</div>
+              <div><strong>Status:</strong> ${meeting.status || 'scheduled'}</div>
+              ${meeting.location ? `<div><strong>Location:</strong> ${meeting.location}</div>` : ''}
+              ${meeting.confirmed ? `<div><strong>Confirmed:</strong> ✅ Yes</div>` : '<div><strong>Confirmed:</strong> ❌ No</div>'}
+            </div>
+          </div>
+
+          ${meeting.adopterNotes ? `
+            <div>
+              <h4 class="font-semibold mb-2">Adopter Notes</h4>
+              <p class="text-sm text-gray-600 bg-yellow-50 p-3 rounded">${meeting.adopterNotes}</p>
+            </div>
+          ` : ''}
+
+          ${meeting.staffNotes ? `
+            <div>
+              <h4 class="font-semibold mb-2">Your Notes</h4>
+              <p class="text-sm text-gray-600 bg-green-50 p-3 rounded">${meeting.staffNotes}</p>
+            </div>
+          ` : ''}
+
+          ${meeting.adopterFeedback ? `
+            <div>
+              <h4 class="font-semibold mb-2">Adopter Feedback</h4>
+              <p class="text-sm text-gray-600 bg-purple-50 p-3 rounded">${meeting.adopterFeedback}</p>
+            </div>
+          ` : ''}
+        </div>
+
+        <div class="flex gap-2 mt-6">
+          ${meeting.status !== 'completed' ? `
+            <button onclick="completeMeeting('${requestId}')" 
+                    class="flex-1 bg-green-600 text-white py-2 rounded hover:bg-green-700">
+              ✅ Mark Completed
+            </button>
+          ` : ''}
+          <button onclick="this.closest('.fixed').remove()" 
+                  class="flex-1 bg-gray-500 text-white py-2 rounded hover:bg-gray-600">
+            Close
+          </button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+  } catch (error) {
+    console.error('Error loading meeting details:', error);
+    alert('Failed to load meeting details: ' + error.message);
+  }
+}
+
+// For staff to send meeting reminders
+async function sendMeetingReminder(requestId) {
+  try {
+    const response = await fetchWithAuth(`http://localhost:5001/api/adoptions/${requestId}/send-reminder`, {
+      method: 'POST'
+    });
+
+    if (!response.ok) throw new Error('Failed to send reminder');
+    
+    alert('✅ Meeting reminder sent to adopter!');
+  } catch (error) {
+    console.error('Error sending reminder:', error);
+    alert('Failed to send reminder: ' + error.message);
+  }
+}
 
 // Initialize enhanced training management
 function initializeEnhancedTraining() {

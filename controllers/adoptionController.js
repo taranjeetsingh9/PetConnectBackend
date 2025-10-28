@@ -82,3 +82,161 @@ exports.getMyAdoptedPets = async (req, res) => {
     res.status(err.status || 500).json({ msg: err.message || 'Server Error' });
   }
 };
+
+exports.completeMeeting = async (req, res, next) => {
+  try {
+    const result = await adoptionService.completeMeeting(req.user, req.params.id, req.body.notes);
+    res.status(200).json(result);
+  } catch (err) {
+    console.error('Error in completeMeeting:', err);
+    next(err);
+  }
+};
+
+exports.submitMeetingFeedback = async (req, res) => {
+  try {
+    const result = await adoptionService.submitMeetingFeedback(req.user, req.params.id, req.body.feedback);
+    res.json(result);
+  } catch (err) {
+    console.error('Error in submitMeetingFeedback:', err);
+    res.status(err.status || 500).json({ msg: err.message || 'Server Error' });
+  }
+};
+
+
+exports.getRequestDetails = async (req, res) => {
+  try {
+    const result = await adoptionService.getRequestDetails(req.params.id, req.user.id);
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ msg: err.message });
+  }
+};
+
+exports.cancelRequest = async (req, res) => {
+  try {
+    const result = await adoptionService.cancelRequest(req.user.id, req.params.id);
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ msg: err.message });
+  }
+};
+
+exports.rescheduleMeeting = async (req, res) => {
+  try {
+    const result = await adoptionService.rescheduleMeeting(req.user, req.params.id, req.body);
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ msg: err.message });
+  }
+};
+
+exports.getAdoptionStats = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    const result = await adoptionService.getAdoptionStats(user.organization);
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ msg: err.message });
+  }
+};
+
+exports.bulkUpdateStatus = async (req, res) => {
+  try {
+    const result = await adoptionService.bulkUpdateStatus(req.user, req.body.requestIds, req.body.status);
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ msg: err.message });
+  }
+};
+
+exports.sendAdoptionAgreement = async (req, res) => {
+  try {
+    const result = await adoptionService.sendAdoptionAgreement(req.user, req.params.id, req.body.customClauses || []);
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ msg: err.message });
+  }
+};
+
+exports.signAgreement = async (req, res) => {
+  try {
+    const result = await adoptionService.signAgreement(req.user, req.params.agreementId, req.body.signature);
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ msg: err.message });
+  }
+};
+
+exports.processPayment = async (req, res) => {
+  try {
+    const result = await adoptionService.processPayment(req.user, req.params.id, req.body.paymentMethod, req.body.paymentDetails);
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ msg: err.message });
+  }
+};
+
+exports.getPaymentDetails = async (req, res) => {
+  try {
+    const result = await adoptionService.validatePaymentEligibility(
+      req.params.requestId, 
+      req.user.id
+    );
+    
+    res.json({
+      success: true,
+      eligible: true,
+      amount: result.amount,
+      currency: result.currency,
+      pet: {
+        id: result.request.pet._id,
+        name: result.request.pet.name,
+        breed: result.request.pet.breed
+      },
+      agreement: {
+        id: result.agreement._id,
+        signedAt: result.agreement.signedDocument.signedAt
+      },
+      nextStep: 'create_payment'
+    });
+  } catch (err) {
+    console.error('Error in getPaymentDetails:', err);
+    res.status(err.status || 500).json({ 
+      success: false,
+      eligible: false,
+      error: err.message 
+    });
+  }
+};
+
+exports.getAgreementDetails = async (req, res) => {
+  try {
+    const result = await adoptionService.getAgreementDetails(req.user, req.params.agreementId);
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ msg: err.message });
+  }
+};
+
+exports.initiatePayment = async (req, res) => {
+  try {
+    const result = await adoptionService.initiatePayment(
+      req.user, 
+      req.params.requestId
+    );
+    
+    res.json({
+      success: true,
+      message: 'Payment initiated successfully',
+      data: result
+    });
+    
+  } catch (err) {
+    console.error('Error in initiatePayment:', err);
+    res.status(err.status || 500).json({ 
+      success: false,
+      error: err.message 
+    });
+  }
+};
