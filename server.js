@@ -85,6 +85,9 @@ app.use('/api/payments', paymentRoutes);
 const blockchainRoutes = require('./routes/blockchainRoutes');
 app.use('/api/blockchain', blockchainRoutes);
 
+const blockchainViewRoutes = require('./routes/blockchainViewRoutes');
+app.use('/api/blockchain', blockchainViewRoutes);
+
 
 // Run every hour to check for upcoming meetings
 setInterval(async () => {
