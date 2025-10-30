@@ -1,7 +1,7 @@
 {
   "name": "petconnectbackend",
   "version": "1.0.0",
-  "description": "",
+  "description": "## Quick start",
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -36,5 +36,11 @@
     "stripe": "^19.1.0",
     "supertest": "^7.1.4",
     "web3": "^4.16.0"
+  },
+  "directories": {
+    "test": "test"
+  },
+  "devDependencies": {
+    "hardhat": "^3.0.9"
   }
 }

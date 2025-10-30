@@ -2,6 +2,7 @@ const Pet = require('../models/Pet');
 const MedicalRecord = require('../models/MedicalRecord');
 const Vaccination = require('../models/Vaccination');
 const logActivity = require('../utils/logActivity');
+const blockchainService = require('./blockchainService');
 
 class VetPetService {
   static async getMyPatients(vetId) {
@@ -42,6 +43,38 @@ class VetPetService {
 
     await medicalRecord.save();
 
+
+    try {
+      const blockchainResult = await blockchainService.recordMedicalHistory({
+        pet: pet,
+        vet: { _id: vetId }, // You'd need to get vet details
+        medicalRecord: medicalRecord,
+        diagnosis: data.diagnosis,
+        treatment: data.treatment,
+        medications: data.medications,
+        urgency: data.urgency
+      });
+
+      // Store blockchain reference
+      medicalRecord.blockchain = {
+        transactionHash: blockchainResult.transactionHash,
+        blockchainId: blockchainResult.blockchainId,
+        recordedAt: new Date(),
+        simulated: blockchainResult.simulated
+      };
+
+      await medicalRecord.save();
+      
+      console.log('🔗 Medical record recorded on blockchain:', {
+        pet: pet.name,
+        diagnosis: data.diagnosis,
+        txHash: blockchainResult.transactionHash
+      });
+
+    } catch (blockchainError) {
+      console.error(' Blockchain recording failed, but medical record saved:', blockchainError);
+    }
+
     pet.healthHistory.push({ notes: `Medical record: ${data.diagnosis}`, updatedBy: vetId, updatedAt: new Date() });
     await pet.save();
 
@@ -51,7 +84,7 @@ class VetPetService {
       action: 'Added Medical Record',
       target: petId,
       targetModel: 'Pet',
-      details: `Added medical record for ${pet.name}: ${data.diagnosis}`
+      details: `Added medical record for ${pet.name}: ${data.diagnosis} ${medicalRecord.blockchain ? '(Recorded on blockchain)' : ''}`
     });
 
     return medicalRecord;
@@ -75,6 +108,34 @@ class VetPetService {
 
     await vaccination.save();
 
+    try {
+      const blockchainResult = await blockchainService.recordVaccination({
+        pet: pet,
+        vet: { _id: vetId },
+        vaccination: vaccination,
+        vaccineName: data.vaccineName,
+        dateAdministered: data.dateAdministered
+      });
+
+      vaccination.blockchain = {
+        transactionHash: blockchainResult.transactionHash,
+        blockchainId: blockchainResult.blockchainId,
+        recordedAt: new Date(),
+        simulated: blockchainResult.simulated
+      };
+
+      await vaccination.save();
+
+      console.log(' Vaccination recorded on blockchain:', {
+        pet: pet.name,
+        vaccine: data.vaccineName,
+        txHash: blockchainResult.transactionHash
+      });
+
+    } catch (blockchainError) {
+      console.error(' Blockchain recording failed, but vaccination saved:', blockchainError);
+    }
+
     pet.vaccinations.push({ name: data.vaccineName, date: new Date(data.dateAdministered) });
     await pet.save();
 
@@ -84,22 +145,11 @@ class VetPetService {
       action: 'Added Vaccination',
       target: petId,
       targetModel: 'Pet',
-      details: `Added vaccination for ${pet.name}: ${data.vaccineName}`
+      details: `Added vaccination for ${pet.name}: ${data.vaccineName} ${vaccination.blockchain ? '(Recorded on blockchain)' : ''}`
     });
 
     return vaccination;
   }
-
-  // static async getOverdueVaccinations(vetId) {
-  //   const today = new Date();
-  //   return Vaccination.find({
-  //       vet: vetId,
-  //       nextDueDate: { $lt: today },
-  //       completed: true
-  //   })
-  //   .populate('pet', 'name breed age gender')
-  //   .where('pet').ne(null); //only include vaccinations with a valid pet
-  // }
   
   static async getOverdueVaccinations(vetId) {
     const today = new Date();

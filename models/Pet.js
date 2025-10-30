@@ -99,7 +99,7 @@ healthHistory: [
   trainingNotes: { type: String, default: "" }, 
 
 
-  // 🎯 ADD TRAINING MANAGEMENT FIELDS (Step 2)
+  //  ADD TRAINING MANAGEMENT FIELDS (Step 2)
   trainingType: {
     type: String,
     enum: ['none', 'shelter_training', 'personal_training'],
