@@ -45,7 +45,7 @@ class NotificationService {
 
         //email 
         if (options.sendEmail) {
-          await this.sendEmailNotification(notificationData, options);
+          await this.sendEmailNotification(notification, options);
         }
 
         return notification;

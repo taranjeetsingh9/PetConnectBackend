@@ -53,8 +53,10 @@ class PetService {
   async createPet(data, files, user) {
     const images =
       files?.map((file, index) => ({
-        url: file.path,
-        public_id: file.filename,
+        // url: file.path,
+        // public_id: file.filename,
+        url: file.secure_url || file.path || file.url,  
+        public_id: file.public_id || file.filename,  // fix image issue
         caption: `Photo of ${data.name}`,
         isPrimary: index === 0,
         uploadedBy: user.id,

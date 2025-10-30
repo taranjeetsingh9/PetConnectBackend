@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Blockchain Debug Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .btn { padding: 10px 20px; margin: 10px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        .btn:hover { background: #0056b3; }
+        .result { margin: 20px 0; padding: 15px; border-radius: 5px; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .info { background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔗 Blockchain Debug Test</h1>
+        
+        <button class="btn" onclick="testBlockchainStatus()">1. Test Blockchain Status</button>
+        <button class="btn" onclick="testContractConnection()">2. Test Contract Connection</button>
+        <button class="btn" onclick="testAdoptionRecording()">3. Test Adoption Recording</button>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        function addResult(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = `<strong>${type.toUpperCase()}:</strong> ${message}`;
+            results.appendChild(div);
+        }
+
+        async function testBlockchainStatus() {
+            try {
+                addResult('Testing blockchain status...', 'info');
+                
+                const response = await fetch('/api/blockchain/status', {
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token') || 'test'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                addResult(JSON.stringify(data, null, 2), 'success');
+                
+            } catch (error) {
+                addResult(`Failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testContractConnection() {
+            try {
+                addResult('Testing direct contract connection...', 'info');
+                
+                const response = await fetch('/api/blockchain/test-contract', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('token') || 'test'
+                    },
+                    body: JSON.stringify({ test: true })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                addResult(JSON.stringify(data, null, 2), 'success');
+                
+            } catch (error) {
+                addResult(`Failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAdoptionRecording() {
+            try {
+                addResult('Testing adoption recording...', 'info');
+                
+                const response = await fetch('/api/blockchain/test-adoption', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('token') || 'test'
+                    },
+                    body: JSON.stringify({
+                        petId: 'test_pet_123',
+                        petName: 'Test Blockchain Pet',
+                        breed: 'Blockchain Breed'
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                addResult(JSON.stringify(data, null, 2), 'success');
+                
+            } catch (error) {
+                addResult(`Failed: ${error.message}`, 'error');
+            }
+        }
+        async function testBlockchainStatus() {
+    try {
+        addResult('Testing blockchain status (public route)...', 'info');
+        
+        const response = await fetch('/api/blockchain/public-status');
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        addResult(JSON.stringify(data, null, 2), 'success');
+        
+    } catch (error) {
+        addResult(`Failed: ${error.message}`, 'error');
+    }
+}
+
+async function testContractConnection() {
+    try {
+        addResult('Testing direct contract connection (public route)...', 'info');
+        
+        const response = await fetch('/api/blockchain/public-test-contract', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ test: true })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        addResult(JSON.stringify(data, null, 2), 'success');
+        
+    } catch (error) {
+        addResult(`Failed: ${error.message}`, 'error');
+    }
+}
+    </script>
+</body>
+</html>

@@ -2,7 +2,7 @@ require('dotenv').config();
 const nodemailer = require('nodemailer');
 
 async function testGmail() {
-  console.log('🧪 Testing Gmail Configuration...\n');
+  console.log(' Testing Gmail Configuration...\n');
   
   const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -15,7 +15,7 @@ async function testGmail() {
   try {
     // Test connection
     await transporter.verify();
-    console.log('✅ Gmail connection successful!');
+    console.log(' Gmail connection successful!');
     
     // Try to send test email
     const info = await transporter.sendMail({
@@ -25,12 +25,12 @@ async function testGmail() {
       text: 'If you receive this, your email configuration is working!'
     });
     
-    console.log('✅ Test email sent successfully!');
+    console.log('Test email sent successfully!');
     console.log('Message ID:', info.messageId);
     
   } catch (error) {
-    console.log('❌ Email test failed:', error.message);
-    console.log('\n🔧 Common Solutions:');
+    console.log(' Email test failed:', error.message);
+    console.log('\n Common Solutions:');
     console.log('1. Enable 2FA and use App Passwords');
     console.log('2. Or enable "Less secure app access"');
     console.log('3. Check if password has special characters');

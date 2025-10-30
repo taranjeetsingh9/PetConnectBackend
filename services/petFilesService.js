@@ -23,8 +23,10 @@ class PetListingService {
     if (!files || files.length === 0) throw createError('At least one image is required');
 
     const images = files.map((file, index) => ({
-      url: file.path,
-      public_id: file.filename,
+      // url: file.path,
+      // public_id: file.filename,
+      url: file.secure_url || file.path || file.url,  
+      public_id: file.public_id || file.filename,  // fix image issue
       uploadedBy: user.id,
       caption: `Photo of ${name}`,
       isPrimary: index === 0
@@ -70,8 +72,10 @@ class PetListingService {
     if (!files || files.length === 0) throw createError('No images uploaded', 400);
 
     const newImages = files.map(file => ({
-      url: file.path,
-      public_id: file.filename,
+      // url: file.path,
+      // public_id: file.filename,
+      url: file.secure_url || file.path || file.url,  
+      public_id: file.public_id || file.filename,  // fix image issue
       uploadedBy: user.id,
       caption: `Additional photo of ${pet.name}`
     }));

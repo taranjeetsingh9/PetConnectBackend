@@ -1,5 +1,6 @@
 // controllers/adoptionController.js
 const adoptionService = require('../services/adoptionService');
+const User = require('../models/User');
 
 exports.requestAdoption = async (req, res) => {
   try {

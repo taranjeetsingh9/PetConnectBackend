@@ -11,6 +11,7 @@ const Availability = require('../models/Availability');
 const AdoptionAgreement = require('../models/AdoptionAgreement');
 const Payment = require('../models/Payment'); 
 const Document = require('../models/Document');
+const blockchainService = require('./blockchainService');
 
 
 const createError = (msg, status = 400) => {
@@ -556,7 +557,7 @@ async submitMeetingFeedback(user, requestId, feedback) {
 
 
   //  Get single request details
-  async getRequestDetails(requestId, userId) {
+async getRequestDetails(requestId, userId) {
     const request = await AdoptionRequest.findById(requestId)
       .populate('pet', 'name breed age gender status images medicalHistory specialNeeds')
       .populate('adopter', 'name email phone location')
@@ -574,7 +575,7 @@ async submitMeetingFeedback(user, requestId, feedback) {
   }
 
   // Cancel adoption request (adopter)
-  async cancelRequest(userId, requestId) {
+async cancelRequest(userId, requestId) {
     const request = await AdoptionRequest.findOne({ 
       _id: requestId, 
       adopter: userId 
@@ -607,7 +608,7 @@ async submitMeetingFeedback(user, requestId, feedback) {
   }
 
   //  Reschedule meeting
-  async rescheduleMeeting(user, requestId, newSlot) {
+async rescheduleMeeting(user, requestId, newSlot) {
     const request = await AdoptionRequest.findById(requestId)
       .populate('pet')
       .populate('adopter')
@@ -682,13 +683,13 @@ async submitMeetingFeedback(user, requestId, feedback) {
   }
 
   // Helper method to check staff authorization
-  async isStaffOfOrganization(userId, organizationId) {
+async isStaffOfOrganization(userId, organizationId) {
     const user = await User.findById(userId).select('organization role');
     return user && user.role === 'staff' && user.organization.toString() === organizationId.toString();
   }
 
   //  Get adoption statistics for organization
-  async getAdoptionStats(organizationId) {
+async getAdoptionStats(organizationId) {
     const stats = await AdoptionRequest.aggregate([
       { 
         $match: { 
@@ -727,7 +728,7 @@ async submitMeetingFeedback(user, requestId, feedback) {
   }
 
   // Bulk status update for staff
-  async bulkUpdateStatus(user, requestIds, status) {
+async bulkUpdateStatus(user, requestIds, status) {
     const staff = await User.findById(user.id).select('organization');
     if (!staff?.organization) throw createError('Staff organization not found', 403);
     
@@ -871,7 +872,7 @@ async sendAdoptionAgreement(staffUser, requestId, customClauses = []) {
   };
 }
 
-  async signAgreement(adopterUser, agreementId, signature) {
+async signAgreement(adopterUser, agreementId, signature) {
     // 1. Find the agreement and populate the adoption request reference
     const agreement = await AdoptionAgreement.findById(agreementId)
       .populate('adoptionRequest');
@@ -963,7 +964,7 @@ async sendAdoptionAgreement(staffUser, requestId, customClauses = []) {
   }
 
   // Process payment after agreement signed
-  async processPayment(adopterUser, requestId, paymentMethod, paymentDetails) {
+async processPayment(adopterUser, requestId, paymentMethod, paymentDetails) {
     const request = await AdoptionRequest.findById(requestId)
       .populate('pet')
       .populate('adopter')
@@ -1097,7 +1098,7 @@ async validatePaymentEligibility(requestId, userId) {
 }
 
   //  Helper methods
-  generateAgreementTemplate(request) {
+generateAgreementTemplate(request) {
     return `
       ADOPTION AGREEMENT
       
@@ -1120,7 +1121,7 @@ async validatePaymentEligibility(requestId, userId) {
 
 
   // Get agreement details
-  async getAgreementDetails(user, agreementId) {
+async getAgreementDetails(user, agreementId) {
     const agreement = await AdoptionAgreement.findById(agreementId)
       .populate({
         path: 'adoptionRequest',
@@ -1186,14 +1187,14 @@ async calculateAdoptionFee(petId) {
 }
 
   //  ADD THIS MISSING HELPER METHOD
-  async uploadSignedDocument(agreement, signature) {
+async uploadSignedDocument(agreement, signature) {
     // In a real app, you'd generate and upload a PDF
     // For now, return a placeholder URL
     return `https://your-app.com/agreements/${agreement._id}/signed.pdf`;
   }
 
   // ADD THIS MISSING HELPER METHOD  
-  async processPaymentWithGateway(amount, paymentMethod, paymentDetails) {
+async processPaymentWithGateway(amount, paymentMethod, paymentDetails) {
     // Simplified - integrate with Stripe/PayPal in real app
     console.log(`Processing payment: $${amount} via ${paymentMethod}`);
     
@@ -1208,7 +1209,7 @@ async calculateAdoptionFee(petId) {
   }
 
 
-  async processDigitalSignature(adopterUser, agreementId, signatureData, req) {
+async processDigitalSignature(adopterUser, agreementId, signatureData, req) {
     try {
       console.log('🖊️ Processing digital signature...');
       
@@ -1586,7 +1587,7 @@ generateContentHash(content) {
  */
 async finalizeAdoptionAfterPayment(requestId) {
   try {
-    console.log('🎉 Finalizing adoption after payment for request:', requestId);
+    console.log(' Finalizing adoption after payment for request:', requestId);
     
     const request = await AdoptionRequest.findById(requestId)
       .populate('pet')
@@ -1597,9 +1598,38 @@ async finalizeAdoptionAfterPayment(requestId) {
       throw createError('Adoption request not found', 404);
     }
 
+    console.log(' Recording adoption on blockchain...');
+    
+    // Add detailed debug info
+    console.log(' DEBUG: Blockchain service status:', {
+      isConnected: blockchainService.isConnected,
+      hasGas: blockchainService.hasGas,
+      contract: !!blockchainService.contract,
+      contractAddress: blockchainService.contractAddress
+    });
+
+    const blockchainResult = await blockchainService.recordAdoptionOnChain({
+      request: request,
+      pet: request.pet,
+      adopter: request.adopter, 
+      organization: request.organization
+    });
+
+    console.log(' DEBUG: Blockchain result:', blockchainResult);
+    
     // Update adoption status
     request.status = ADOPTION_STATUS.FINALIZED;
     request.finalizedAt = new Date();
+
+  // Store blockchain reference
+  request.blockchain = {
+    transactionHash: blockchainResult.transactionHash,
+    blockchainId: blockchainResult.blockchainId,
+    recordedAt: new Date(),
+    simulated: blockchainResult.simulated,
+    contractAddress: process.env.CONTRACT_ADDRESS
+  };
+
     await request.save();
 
     // Update pet status to adopted
@@ -1607,7 +1637,8 @@ async finalizeAdoptionAfterPayment(requestId) {
       status: 'Adopted',
       adopter: request.adopter._id,
       adoptionDate: new Date(),
-      available: false
+      available: false,
+      blockchainId: blockchainResult.blockchainId
     });
 
     // Generate adoption certificate
@@ -1617,11 +1648,13 @@ async finalizeAdoptionAfterPayment(requestId) {
     await NotificationService.create({
       user: request.adopter._id,
       type: NOTIFICATION_TYPES.ADOPTION_FINALIZED,
-      message: `🎉 Congratulations! ${request.pet.name} is officially part of your family!`,
+      message: ` Congratulations! ${request.pet.name} is officially part of your family! ${blockchainResult.simulated ? '' : '✓ Permanently recorded on blockchain'}`,
       meta: {
         petId: request.pet._id.toString(),
         requestId: request._id.toString(),
         certificateUrl: certificate.url,
+        blockchainTx: blockchainResult.transactionHash,
+        blockchainVerified: !blockchainResult.simulated,
         action: 'view_certificate'
       }
     }, { realTime: true, sendEmail: true });
@@ -1631,16 +1664,22 @@ async finalizeAdoptionAfterPayment(requestId) {
     await NotificationService.create({
       users: staffUsers.map(s => s._id.toString()),
       type: NOTIFICATION_TYPES.ADOPTION_FINALIZED,
-      message: `✅ Adoption finalized! ${request.adopter.name} officially adopted ${request.pet.name}`,
+      message: ` Adoption finalized for ${request.pet.name} ${blockchainResult.simulated ? '(Blockchain ready)' : '(✓ Recorded on blockchain)'}`,
       meta: {
         petId: request.pet._id.toString(),
         requestId: request._id.toString(),
+        blockchainTx: blockchainResult.transactionHash,
         adopterName: request.adopter.name,
         action: 'view_adoption_details'
       }
     }, { realTime: true });
 
-    console.log('✅ Adoption finalized successfully for:', request.pet.name);
+    console.log(' Adoption finalized with blockchain:', {
+      pet: request.pet.name,
+      blockchainId: blockchainResult.blockchainId,
+      transactionHash: blockchainResult.transactionHash,
+      simulated: blockchainResult.simulated
+    });
     
     return { 
       success: true, 
@@ -1649,7 +1688,7 @@ async finalizeAdoptionAfterPayment(requestId) {
     };
 
   } catch (error) {
-    console.error('❌ Error finalizing adoption after payment:', error);
+    console.error(' Error finalizing adoption after payment:', error);
     throw error;
   }
 }
@@ -1694,12 +1733,12 @@ async generateAdoptionCertificate(requestId) {
       metadata: certificateData
     });
 
-    console.log('📜 Adoption certificate generated:', certificate._id);
+    console.log('Adoption certificate generated:', certificate._id);
     
     return certificate;
 
   } catch (error) {
-    console.error('❌ Error generating adoption certificate:', error);
+    console.error(' Error generating adoption certificate:', error);
     // Don't throw error - certificate is nice-to-have, not critical
     return null;
   }
