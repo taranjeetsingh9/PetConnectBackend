@@ -6,111 +6,231 @@
   <title>Adopter Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Custom Color Theme -->
+  <style>
+    :root {
+      --primary: #c6e4ec;
+      --primary-dark: #6bb7cc;
+      --secondary: #f8b679;
+      --secondary-dark: #C2410C;
+    }
+  </style>
 </head>
-<body class="bg-gray-50 min-h-screen flex flex-col items-center p-4 sm:p-8">
-
-  <div class="w-full max-w-5xl">
-    <h1 class="text-3xl font-bold text-center text-indigo-700 mb-6">Adopter Dashboard</h1>
-
-    <!-- Top Bar -->
-    <div class="flex justify-between items-center bg-white p-4 rounded-xl shadow-md mb-6">
-      <p id="userStatus" class="text-lg font-medium text-gray-700"></p>
-      <div class="flex gap-2">
-        <button onclick="window.location.href='user-profile.html'" 
-                class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
-          👤 My Profile
-        </button>
-        <button id="logoutBtn" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">Sign Out</button>
-      </div>
-    </div>
-
-    <div class="flex gap-2">
-      <!-- Add Notifications Button -->
-      <button onclick="showNotificationsPanel()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 relative">
-        🔔 Notifications
-        <span id="notificationBadge" class="hidden absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center">0</span>
-      </button>
-      
-      <button onclick="window.location.href='user-profile.html'" 
-              class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
-        👤 My Profile
-      </button>
-      <button id="logoutBtn" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">Sign Out</button>
-    </div>
-
-    <!-- Available Pets -->
-    <h2 class="text-2xl font-semibold mb-3">Available Pets</h2>
-    <div id="petsList" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8"></div>
-
-    <!-- My Requests -->
-    <h2 class="text-2xl font-semibold mb-3">My Adoption Requests</h2>
-    <div id="my-requests" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8"></div>
-
-    <!-- Training Services Section -->
-    <div class="bg-white p-6 rounded-xl shadow-lg mb-6">
-      <h2 class="text-2xl font-bold mb-4">🎯 Professional Training Services</h2>
-      
-      <!-- My Training Requests -->
-      <div class="mb-6">
-        <h3 class="text-xl font-semibold mb-3">My Training Requests</h3>
-        <div id="my-training-requests" class="space-y-4">
-          <!-- Training requests will be loaded here -->
-        </div>
-      </div>
-
-      <!-- Available Trainers -->
-      <div>
-        <h3 class="text-xl font-semibold mb-3">Available Professional Trainers</h3>
-        <div id="available-trainers" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-          <!-- Trainers will be loaded here -->
+<body class="bg-gradient-to-br from-[#c6e4ec] to-[#e8f4f8] min-h-screen">
+  <!-- Header -->
+  <header class="bg-white shadow-sm border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center py-4">
+        <div class="flex items-center space-x-3">
+          <div class="bg-[#6bb7cc] text-white p-2 rounded-lg">
+            <i class="fas fa-paw text-xl"></i>
+          </div>
+          <div>
+            <h1 class="text-2xl font-bold text-gray-900">Adopter Dashboard</h1>
+            <p id="userStatus" class="text-sm text-gray-600"></p>
+          </div>
         </div>
         
-        <!-- Training Request Form (Hidden by default) -->
-        <div id="training-request-form" class="hidden bg-blue-50 p-4 rounded-lg mt-4">
-          <h4 class="text-lg font-semibold mb-3">Request Training Session</h4>
-          <form id="requestTrainingForm">
-            <input type="hidden" id="selectedPetId">
-            <input type="hidden" id="selectedTrainerId">
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
-              <div>
-                <label class="block text-sm font-medium mb-1">Session Type</label>
-                <select id="sessionType" class="w-full p-2 border rounded" required>
-                  <option value="">Select session type</option>
-                  <option value="basic_obedience">Basic Obedience - $50</option>
-                  <option value="leash_training">Leash Training - $45</option>
-                  <option value="socialization">Socialization - $60</option>
-                  <option value="advanced_obedience">Advanced Obedience - $75</option>
-                  <option value="behavior_modification">Behavior Modification - $100</option>
-                  <option value="therapy_prep">Therapy Preparation - $120</option>
-                </select>
-              </div>
-              
-              <div>
-                <label class="block text-sm font-medium mb-1">Preferred Date</label>
-                <input type="date" id="preferredDate" class="w-full p-2 border rounded">
-              </div>
-            </div>
-            
-            <div class="mb-3">
-              <label class="block text-sm font-medium mb-1">Notes & Special Instructions</label>
-              <textarea id="trainingNotes" placeholder="Tell the trainer about your pet's needs, behavior issues, or specific goals..." 
-                        class="w-full p-2 border rounded h-20"></textarea>
-            </div>
-            
-            <div class="flex gap-2">
-              <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-                Submit Request
-              </button>
-              <button type="button" onclick="hideTrainingForm()" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
-                Cancel
-              </button>
-            </div>
-          </form>
+        <div class="flex items-center space-x-3">
+          <button onclick="showNotificationsPanel()" 
+                  class="relative bg-white border border-gray-300 rounded-lg p-2 text-gray-700 hover:bg-gray-50 transition-colors">
+            <i class="fas fa-bell"></i>
+            <span id="notificationBadge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center">0</span>
+          </button>
+          
+          <button onclick="window.location.href='user-profile.html'" 
+                  class="bg-white border border-gray-300 rounded-lg px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors flex items-center space-x-2">
+            <i class="fas fa-user-circle"></i>
+            <span>My Profile</span>
+          </button>
+          
+          <button id="logoutBtn" 
+                  class="bg-red-500 text-white rounded-lg px-4 py-2 hover:bg-red-600 transition-colors flex items-center space-x-2">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Sign Out</span>
+          </button>
         </div>
       </div>
     </div>
-  </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Welcome Card -->
+    <div class="bg-gradient-to-r from-[#6bb7cc] to-[#8ac9dc] rounded-2xl shadow-lg p-6 mb-8 text-white">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
+        <div>
+          <h2 class="text-2xl font-bold mb-2">Welcome to Your Dashboard</h2>
+          <p class="opacity-90">Manage your adoption requests, training sessions, and pet connections all in one place.</p>
+        </div>
+        <div class="mt-4 md:mt-0 flex space-x-3">
+          <button onclick="window.location.href='blockchain.html'" 
+          class="bg-white text-[#6bb7cc] px-4 py-2 rounded-lg font-medium hover:bg-[#e8f4f8] transition-colors">
+    <i class="fas fa-search mr-2"></i>BlockChain Pet Dev
+  </button>
+          <button onclick="window.location.href='pet-browser.html'" 
+                  class="bg-white text-[#6bb7cc] px-4 py-2 rounded-lg font-medium hover:bg-[#e8f4f8] transition-colors">
+            <i class="fas fa-search mr-2"></i>Browse Pets
+          </button>
+          <button onclick="showNotificationsPanel()" 
+                  class="bg-[#6bb7cc] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#5aa5b9] transition-colors">
+            <i class="fas fa-bell mr-2"></i>Notifications
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <!-- Left Column -->
+      <div class="lg:col-span-2 space-y-8">
+        <!-- Available Pets Section -->
+        <section class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+          <div class="bg-gradient-to-r from-[#c6e4ec] to-[#d9edf2] px-6 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-bold text-gray-800 flex items-center">
+              <i class="fas fa-paw text-[#6bb7cc] mr-3"></i>
+              Available Pets
+            </h2>
+          </div>
+          <div id="petsList" class="p-6 grid sm:grid-cols-2 gap-6">
+            <!-- Pets will be loaded here -->
+          </div>
+        </section>
+
+        <!-- My Adoption Requests Section -->
+        <section class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+          <div class="bg-gradient-to-r from-[#c6e4ec] to-[#d9edf2] px-6 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-bold text-gray-800 flex items-center">
+              <i class="fas fa-heart text-[#C2410C] mr-3"></i>
+              My Adoption Requests
+            </h2>
+          </div>
+          <div id="my-requests" class="p-6 space-y-6">
+            <!-- Adoption requests will be loaded here -->
+          </div>
+        </section>
+      </div>
+
+      <!-- Right Column -->
+      <div class="space-y-8">
+        <!-- Training Services Section -->
+        <section class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+          <div class="bg-gradient-to-r from-[#c6e4ec] to-[#d9edf2] px-6 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-bold text-gray-800 flex items-center">
+              <i class="fas fa-graduation-cap text-[#6bb7cc] mr-3"></i>
+              Training Services
+            </h2>
+          </div>
+          <div class="p-6">
+            <!-- My Training Requests -->
+            <div class="mb-6">
+              <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                <i class="fas fa-list text-[#6bb7cc] mr-2"></i>
+                My Training Requests
+              </h3>
+              <div id="my-training-requests" class="space-y-4">
+                <!-- Training requests will be loaded here -->
+              </div>
+            </div>
+
+            <!-- Available Trainers -->
+            <div>
+              <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                <i class="fas fa-users text-[#6bb7cc] mr-2"></i>
+                Available Trainers
+              </h3>
+              <div id="available-trainers" class="space-y-4 mb-4">
+                <!-- Trainers will be loaded here -->
+              </div>
+              
+              <!-- Training Request Form (Hidden by default) -->
+              <div id="training-request-form" class="hidden bg-[#e8f4f8] border border-[#6bb7cc] rounded-xl p-4 mt-4">
+                <h4 class="text-lg font-semibold mb-3 text-[#6bb7cc]">Request Training Session</h4>
+                <form id="requestTrainingForm">
+                  <input type="hidden" id="selectedTrainerId">
+                  
+                  <div class="mb-4">
+                    <label class="block text-sm font-medium mb-1 text-gray-700">Select Pet</label>
+                    <select id="selectedPetId" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6bb7cc] focus:border-[#6bb7cc]" required>
+                      <option value="">Select your pet</option>
+                    </select>
+                  </div>
+                  
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label class="block text-sm font-medium mb-1 text-gray-700">Session Type</label>
+                      <select id="sessionType" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6bb7cc] focus:border-[#6bb7cc]" required>
+                        <option value="">Select session type</option>
+                        <option value="basic_obedience">Basic Obedience - $50</option>
+                        <option value="leash_training">Leash Training - $45</option>
+                        <option value="socialization">Socialization - $60</option>
+                        <option value="advanced_obedience">Advanced Obedience - $75</option>
+                        <option value="behavior_modification">Behavior Modification - $100</option>
+                        <option value="therapy_prep">Therapy Preparation - $120</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label class="block text-sm font-medium mb-1 text-gray-700">Preferred Date</label>
+                      <input type="date" id="preferredDate" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6bb7cc] focus:border-[#6bb7cc]">
+                    </div>
+                  </div>
+                  
+                  <div class="mb-4">
+                    <label class="block text-sm font-medium mb-1 text-gray-700">Notes & Special Instructions</label>
+                    <textarea id="trainingNotes" placeholder="Tell the trainer about your pet's needs, behavior issues, or specific goals..." 
+                              class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6bb7cc] focus:border-[#6bb7cc] h-20"></textarea>
+                  </div>
+                  
+                  <div class="flex gap-3">
+                    <button type="submit" class="bg-[#6bb7cc] text-white px-4 py-2 rounded-lg hover:bg-[#5aa5b9] transition-colors flex-1 flex items-center justify-center">
+                      <i class="fas fa-paper-plane mr-2"></i>Submit Request
+                    </button>
+                    <button type="button" onclick="hideTrainingForm()" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors">
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Quick Actions -->
+        <section class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+          <div class="bg-gradient-to-r from-[#c6e4ec] to-[#d9edf2] px-6 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-bold text-gray-800 flex items-center">
+              <i class="fas fa-bolt text-[#C2410C] mr-3"></i>
+              Quick Actions
+            </h2>
+          </div>
+          <div class="p-6 grid grid-cols-2 gap-4">
+            <button onclick="window.location.href='pet-browser.html'" 
+                    class="bg-[#c6e4ec] text-[#6bb7cc] p-4 rounded-xl hover:bg-[#b5d9e2] transition-colors flex flex-col items-center justify-center">
+              <i class="fas fa-search text-2xl mb-2"></i>
+              <span class="font-medium">Browse Pets</span>
+            </button>
+            <button onclick="window.location.href='user-profile.html'" 
+                    class="bg-[#c6e4ec] text-[#6bb7cc] p-4 rounded-xl hover:bg-[#b5d9e2] transition-colors flex flex-col items-center justify-center">
+              <i class="fas fa-user-circle text-2xl mb-2"></i>
+              <span class="font-medium">My Profile</span>
+            </button>
+            <button onclick="showNotificationsPanel()" 
+                    class="bg-[#f8b679] text-[#C2410C] p-4 rounded-xl hover:bg-[#f0a866] transition-colors flex flex-col items-center justify-center">
+              <i class="fas fa-bell text-2xl mb-2"></i>
+              <span class="font-medium">Notifications</span>
+            </button>
+            <button onclick="window.location.href='help.html'" 
+                    class="bg-[#c6e4ec] text-[#6bb7cc] p-4 rounded-xl hover:bg-[#b5d9e2] transition-colors flex flex-col items-center justify-center">
+              <i class="fas fa-question-circle text-2xl mb-2"></i>
+              <span class="font-medium">Help Center</span>
+            </button>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
 
   <script>
     const PETS_API_URL = "http://localhost:5001/api/pets";
@@ -146,15 +266,15 @@
 
         // fetch my requests
         loadMyAdoptionRequests();
-
         
         // Load training data
         loadTrainingData();
-            // Initialize real-time notifications
-    initializeNotifications();
-    
-    // Start polling for notifications
-    setInterval(pollForNotifications, 4000);
+        
+        // Initialize real-time notifications
+        initializeNotifications();
+        
+        // Start polling for notifications
+        setInterval(pollForNotifications, 4000);
 
       } catch (err) {
         console.error(err);
@@ -166,185 +286,239 @@
       const petsList = document.getElementById("petsList");
       const available = pets.filter(p => p.status === "Available");
       if (available.length === 0) {
-        petsList.innerHTML = `<p class="col-span-3 text-center text-gray-500">No pets available</p>`;
+        petsList.innerHTML = `
+          <div class="col-span-2 text-center py-8">
+            <i class="fas fa-paw text-4xl text-gray-300 mb-4"></i>
+            <p class="text-gray-500">No pets available at the moment</p>
+            <p class="text-sm text-gray-400 mt-1">Check back later for new arrivals</p>
+          </div>`;
         return;
       }
       petsList.innerHTML = available.map(pet => `
-        <div class="bg-white border rounded-xl shadow-md overflow-hidden">
-          ${pet.images && pet.images[0] ? `<img src="${pet.images[0].url}" class="w-full h-48 object-cover">`
-          : `<div class="w-full h-48 flex items-center justify-center bg-gray-200 text-gray-500">No Image</div>`}
+        <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+          ${pet.images && pet.images[0] ? 
+            `<img src="${pet.images[0].url}" class="w-full h-48 object-cover">` : 
+            `<div class="w-full h-48 flex items-center justify-center bg-gray-100 text-gray-400">
+              <i class="fas fa-paw text-3xl"></i>
+            </div>`}
           <div class="p-4">
-            <h3 class="text-lg font-semibold text-indigo-700">${pet.name}</h3>
-            <p class="text-sm text-gray-600">Breed: ${pet.breed || "Unknown"}</p>
-            <p class="text-sm text-gray-600">Status: ${pet.status}</p>
+            <h3 class="text-lg font-semibold text-gray-800">${pet.name}</h3>
+            <div class="flex items-center text-sm text-gray-600 mt-1">
+              <i class="fas fa-dog mr-1"></i>
+              <span>${pet.breed || "Unknown Breed"}</span>
+            </div>
+            <div class="flex justify-between items-center mt-3">
+              <span class="px-2 py-1 bg-[#c6e4ec] text-[#6bb7cc] text-xs rounded-full">Available</span>
+              <button data-id="${pet._id}" class="requestAdoptionBtn bg-[#6bb7cc] text-white px-3 py-1 rounded-lg text-sm hover:bg-[#5aa5b9] transition-colors">
+                <i class="fas fa-heart mr-1"></i>Adopt
+              </button>
+            </div>
           </div>
-          <button data-id="${pet._id}" class="requestAdoptionBtn w-full bg-green-600 text-white px-3 py-2">Request Adoption</button>
         </div>
       `).join("");
     }
 
     async function loadMyAdoptionRequests() {
-  try {
-    const res = await fetchWithAuth(`${ADOPTIONS_API_URL}/my-requests`);
-    const requests = await res.json();
-    const container = document.getElementById("my-requests");
-    container.innerHTML = "";
+      try {
+        const res = await fetchWithAuth(`${ADOPTIONS_API_URL}/my-requests`);
+        const requests = await res.json();
+        const container = document.getElementById("my-requests");
+        container.innerHTML = "";
 
-    if (requests.length === 0) {
-      container.innerHTML = "<p class='col-span-3 text-center text-gray-500'>No requests yet</p>";
-      return;
+        if (requests.length === 0) {
+          container.innerHTML = `
+            <div class="text-center py-8">
+              <i class="fas fa-inbox text-4xl text-gray-300 mb-4"></i>
+              <p class="text-gray-500">No adoption requests yet</p>
+              <p class="text-sm text-gray-400 mt-1">Browse available pets to get started</p>
+            </div>`;
+          return;
+        }
+
+        requests.forEach(req => {
+          // ✅ FIX: Check if pet exists before accessing its properties
+          if (!req.pet) {
+            console.warn('Skipping request with null pet:', req._id);
+            return; // Skip this request
+          }
+
+          const pet = req.pet;
+          const status = req.status;
+          const meeting = req.meeting;
+          const card = document.createElement("div");
+          card.className = "bg-white border border-gray-200 rounded-xl p-4 shadow-sm";
+
+          let actionButtons = '';
+          
+          if (status === 'approved') {
+            actionButtons = `
+              <div class="mt-4 space-y-2">
+                <button onclick="showMeetingBooking('${req._id}', '${pet.name}')" 
+                        class="w-full bg-[#6bb7cc] text-white px-3 py-2 rounded-lg hover:bg-[#5aa5b9] transition-colors flex items-center justify-center">
+                  <i class="fas fa-calendar-alt mr-2"></i>Book Meeting
+                </button>
+                <button onclick="startChat('${req._id}')" 
+                        class="w-full bg-[#6bb7cc] text-white px-3 py-2 rounded-lg hover:bg-[#5aa5b9] transition-colors flex items-center justify-center">
+                  <i class="fas fa-comments mr-2"></i>Chat with Staff
+                </button>
+              </div>
+            `;
+          } else if (status === 'meeting') {
+            const meetingDate = meeting?.date ? new Date(meeting.date) : null;
+            const isConfirmed = meeting?.confirmed;
+            const meetingType = meeting?.type || 'virtual';
+            const meetingLink = meeting?.meetingLink;
+            const location = meeting?.location;
+            
+            const displayDate = meetingDate ? meetingDate.toLocaleString('en-US', { 
+              weekday: 'long', 
+              year: 'numeric', 
+              month: 'long', 
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            }) : 'Date not set';
+
+            actionButtons = `
+              <div class="mt-4 space-y-4">
+                <div class="bg-[#e8f4f8] border border-[#6bb7cc] rounded-xl p-4">
+                  <div class="flex items-center justify-between mb-3">
+                    <h4 class="font-semibold text-[#6bb7cc] flex items-center">
+                      ${meetingType === 'virtual' ? '<i class="fas fa-video mr-2"></i>Virtual Meeting' : '<i class="fas fa-home mr-2"></i>In-Person Visit'}
+                    </h4>
+                    <span class="px-2 py-1 rounded-full text-xs ${
+                      isConfirmed ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                    }">
+                      ${isConfirmed ? 'Confirmed' : 'Pending Confirmation'}
+                    </span>
+                  </div>
+                  
+                  <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                      <span class="text-[#6bb7cc] font-medium">When:</span>
+                      <span>${displayDate}</span>
+                    </div>
+                    
+                    <div class="flex justify-between">
+                      <span class="text-[#6bb7cc] font-medium">Type:</span>
+                      <span>${meetingType === 'virtual' ? 'Video Call' : 'Shelter Visit'}</span>
+                    </div>
+                    
+                    ${location ? `
+                      <div class="flex justify-between">
+                        <span class="text-[#6bb7cc] font-medium">Location:</span>
+                        <span>${location}</span>
+                      </div>
+                    ` : ''}
+                    
+                    ${meetingType === 'virtual' && meetingLink ? `
+                      <div class="flex justify-between items-center mt-3">
+                        <span class="text-[#6bb7cc] font-medium">Meeting Link:</span>
+                        <a href="${meetingLink}" target="_blank" 
+                           class="bg-[#6bb7cc] text-white px-3 py-1 rounded text-sm hover:bg-[#5aa5b9] transition-colors flex items-center">
+                          <i class="fas fa-external-link-alt mr-1"></i>Join
+                        </a>
+                      </div>
+                    ` : ''}
+                  </div>
+                </div>
+
+                <div class="space-y-2">
+                  ${!isConfirmed ? `
+                    <button onclick="confirmMeeting('${req._id}')" 
+                            class="w-full bg-[#6bb7cc] text-white px-3 py-2 rounded-lg hover:bg-[#5aa5b9] transition-colors flex items-center justify-center">
+                      <i class="fas fa-check mr-2"></i>Confirm Meeting
+                    </button>
+                    <button onclick="rescheduleMeeting('${req._id}')" 
+                            class="w-full bg-[#f8b679] text-white px-3 py-2 rounded-lg hover:bg-[#f0a866] transition-colors flex items-center justify-center">
+                      <i class="fas fa-calendar-alt mr-2"></i>Reschedule
+                    </button>
+                  ` : `
+                    <div class="bg-green-50 border border-green-200 rounded-xl p-3 text-center">
+                      <p class="text-green-700 text-sm flex items-center justify-center">
+                        <i class="fas fa-check-circle mr-1"></i>Meeting confirmed on ${meeting?.confirmedAt ? new Date(meeting.confirmedAt).toLocaleDateString() : 'N/A'}
+                      </p>
+                    </div>
+                    ${meetingType === 'virtual' && meetingLink ? `
+                      <a href="${meetingLink}" target="_blank" 
+                         class="block w-full bg-[#6bb7cc] text-white px-3 py-2 rounded-lg text-center hover:bg-[#5aa5b9] transition-colors flex items-center justify-center">
+                        <i class="fas fa-video mr-2"></i>Join Virtual Meeting
+                      </a>
+                    ` : meetingType === 'in-person' ? `
+                      <div class="bg-orange-50 border border-orange-200 rounded-xl p-3">
+                        <p class="text-orange-700 text-sm text-center flex items-center justify-center">
+                          <i class="fas fa-home mr-1"></i>Please arrive at the shelter 10 minutes early
+                        </p>
+                      </div>
+                    ` : ''}
+                    
+                    <button onclick="showMeetingPreparation('${req._id}')" 
+                            class="w-full bg-[#6bb7cc] text-white px-3 py-2 rounded-lg hover:bg-[#5aa5b9] transition-colors flex items-center justify-center">
+                      <i class="fas fa-clipboard-list mr-2"></i>Preparation Guide
+                    </button>
+                  `}
+                  
+                  <button onclick="startChat('${req._id}')" 
+                          class="w-full bg-[#6bb7cc] text-white px-3 py-2 rounded-lg hover:bg-[#5aa5b9] transition-colors flex items-center justify-center">
+                    <i class="fas fa-comments mr-2"></i>Chat with Staff
+                  </button>
+                </div>
+              </div>
+            `;
+          } else if (status === 'finalized') {
+            actionButtons = `
+              <div class="mt-4 p-3 bg-green-100 border border-green-300 rounded-xl text-center">
+                <p class="text-green-800 flex items-center justify-center">
+                  <i class="fas fa-check-circle mr-2"></i>Adoption Finalized!
+                </p>
+              </div>
+            `;
+          }
+
+          // Status badge with color coding
+          let statusColor = 'bg-gray-400';
+          let statusIcon = 'fas fa-clock';
+          if (status === 'approved') {
+            statusColor = 'bg-[#6bb7cc]';
+            statusIcon = 'fas fa-check';
+          } else if (status === 'pending') {
+            statusColor = 'bg-[#f8b679]';
+            statusIcon = 'fas fa-clock';
+          } else if (status === 'meeting') {
+            statusColor = 'bg-[#6bb7cc]';
+            statusIcon = 'fas fa-calendar';
+          } else if (status === 'finalized') {
+            statusColor = 'bg-green-600';
+            statusIcon = 'fas fa-check-double';
+          }
+
+          card.innerHTML = `
+            <div class="flex items-start space-x-4">
+              ${pet.images && pet.images[0] ? 
+                `<img src="${pet.images[0].url}" class="w-16 h-16 object-cover rounded-lg">` : 
+                `<div class="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center text-gray-500">
+                  <i class="fas fa-paw"></i>
+                </div>`}
+              <div class="flex-1">
+                <h3 class="text-lg font-semibold text-gray-800">${pet.name}</h3>
+                <p class="text-sm text-gray-600">${pet.breed || "Unknown"}</p>
+                <div class="mt-2 flex items-center">
+                  <span class="px-3 py-1 rounded-full text-white text-sm ${statusColor} flex items-center">
+                    <i class="${statusIcon} mr-1"></i>
+                    ${status.charAt(0).toUpperCase() + status.slice(1)}
+                  </span>
+                </div>
+              </div>
+            </div>
+            ${actionButtons}
+          `;
+          container.appendChild(card);
+        });
+      } catch (err) {
+        console.error(err);
+      }
     }
 
-    requests.forEach(req => {
-      // ✅ FIX: Check if pet exists before accessing its properties
-      if (!req.pet) {
-        console.warn('Skipping request with null pet:', req._id);
-        return; // Skip this request
-      }
-
-      const pet = req.pet;
-      const status = req.status;
-      const meeting = req.meeting;
-      const card = document.createElement("div");
-      card.className = "bg-white border rounded-xl shadow-md p-4";
-
-      let actionButtons = '';
-      
-      if (status === 'approved') {
-        actionButtons = `
-          <button onclick="showMeetingBooking('${req._id}', '${pet.name}')" 
-                  class="mt-3 w-full bg-green-600 text-white px-3 py-2 rounded hover:bg-green-700">
-            📅 Book Meeting
-          </button>
-          <button onclick="startChat('${req._id}')" 
-                  class="mt-2 w-full bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700">
-            💬 Chat with Staff
-          </button>
-        `;
-      }  else if (status === 'meeting') {
-  const meetingDate = meeting?.date ? new Date(meeting.date) : null;
-  const isConfirmed = meeting?.confirmed;
-  const meetingType = meeting?.type || 'virtual';
-  const meetingLink = meeting?.meetingLink;
-  const location = meeting?.location;
-  
-  const displayDate = meetingDate ? meetingDate.toLocaleString('en-US', { 
-    weekday: 'long', 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  }) : 'Date not set';
-
-  actionButtons = `
-    <div class="mt-3 space-y-3">
-      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <div class="flex items-center justify-between mb-2">
-          <h4 class="font-semibold text-blue-800">
-            ${meetingType === 'virtual' ? '🎥 Virtual Meeting' : '🏠 In-Person Visit'}
-          </h4>
-          <span class="px-2 py-1 rounded-full text-xs ${
-            isConfirmed ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-          }">
-            ${isConfirmed ? 'Confirmed' : 'Pending Confirmation'}
-          </span>
-        </div>
-        
-        <div class="space-y-2 text-sm">
-          <div class="flex justify-between">
-            <span class="text-blue-600 font-medium">When:</span>
-            <span>${displayDate}</span>
-          </div>
-          
-          <div class="flex justify-between">
-            <span class="text-blue-600 font-medium">Type:</span>
-            <span>${meetingType === 'virtual' ? 'Video Call' : 'Shelter Visit'}</span>
-          </div>
-          
-          ${location ? `
-            <div class="flex justify-between">
-              <span class="text-blue-600 font-medium">Location:</span>
-              <span>${location}</span>
-            </div>
-          ` : ''}
-          
-          ${meetingType === 'virtual' && meetingLink ? `
-            <div class="flex justify-between items-center mt-3">
-              <span class="text-blue-600 font-medium">Meeting Link:</span>
-              <a href="${meetingLink}" target="_blank" 
-                 class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition-colors">
-                Join Meeting
-              </a>
-            </div>
-          ` : ''}
-        </div>
-      </div>
-
-      <div class="space-y-2">
-        ${!isConfirmed ? `
-          <button onclick="confirmMeeting('${req._id}')" 
-                  class="w-full bg-green-600 text-white px-3 py-2 rounded hover:bg-green-700 transition-colors">
-            ✅ Confirm Meeting
-          </button>
-          <button onclick="rescheduleMeeting('${req._id}')" 
-                  class="w-full bg-yellow-500 text-white px-3 py-2 rounded hover:bg-yellow-600 transition-colors">
-            📅 Reschedule Meeting
-          </button>
-        ` : `
-          <div class="bg-green-50 border border-green-200 rounded p-3 text-center">
-            <p class="text-green-700 text-sm">✅ Meeting confirmed on ${meeting?.confirmedAt ? new Date(meeting.confirmedAt).toLocaleDateString() : 'N/A'}</p>
-          </div>
-          ${meetingType === 'virtual' && meetingLink ? `
-            <a href="${meetingLink}" target="_blank" 
-               class="block w-full bg-blue-600 text-white px-3 py-2 rounded text-center hover:bg-blue-700 transition-colors">
-              🎥 Join Virtual Meeting
-            </a>
-          ` : meetingType === 'in-person' ? `
-            <div class="bg-orange-50 border border-orange-200 rounded p-3">
-              <p class="text-orange-700 text-sm text-center">
-                🏠 Please arrive at the shelter 10 minutes before your scheduled time
-              </p>
-            </div>
-          ` : ''}
-          
-          <button onclick="showMeetingPreparation('${req._id}')" 
-                  class="w-full bg-purple-600 text-white px-3 py-2 rounded hover:bg-purple-700 transition-colors">
-            📋 Meeting Preparation Guide
-          </button>
-        `}
-        
-        <button onclick="startChat('${req._id}')" 
-                class="w-full bg-indigo-600 text-white px-3 py-2 rounded hover:bg-indigo-700 transition-colors">
-          💬 Chat with Staff
-        </button>
-      </div>
-    </div>
-  `;
-} else if (status === 'finalized') {
-        actionButtons = `
-          <div class="mt-3 p-2 bg-green-100 border border-green-300 rounded">
-            <p class="text-sm text-green-800 text-center">🎉 Adoption Finalized!</p>
-          </div>
-        `;
-      }
-
-      card.innerHTML = `
-        <h3 class="text-lg font-semibold text-indigo-700">${pet.name}</h3>
-        <p class="text-sm text-gray-600">${pet.breed || "Unknown"}</p>
-        <p class="mt-2"><b>Status:</b> 
-          <span class="px-2 py-1 rounded text-white ${status === 'approved' ? 'bg-green-600' : status === 'pending' ? 'bg-yellow-500' : status === 'meeting' ? 'bg-blue-500' : 'bg-gray-400'}">
-            ${status}
-          </span>
-        </p>
-        ${actionButtons}
-      `;
-      container.appendChild(card);
-    });
-  } catch (err) {
-    console.error(err);
-  }
-}
     // Adoption request handler
     document.addEventListener("click", async (e) => {
       if (e.target.classList.contains("requestAdoptionBtn")) {
@@ -368,108 +542,100 @@
 
     document.getElementById("logoutBtn").addEventListener("click", () => {
       localStorage.removeItem("token");
-      window.location.href = "auth.html";
+      window.location.href = "orientation.html";
     });
 
     // Meeting functions
-    // function confirmMeeting(requestId) {
-    //   window.location.href = `meeting-confirmation.html?requestId=${requestId}`;
-    // }
-
     async function confirmMeeting(requestId) {
-  try {
-    // Ask for confirmation notes based on meeting type
-    const meeting = await getMeetingDetails(requestId); // You'll need to implement this
-    const meetingType = meeting?.type || 'virtual';
-    
-    let notes = '';
-    
-    if (meetingType === 'virtual') {
-      notes = prompt(`Please confirm your virtual meeting:\n\n• Ensure you have a stable internet connection\n• Test your camera and microphone\n• Find a quiet, well-lit space\n\nAdd any notes or questions:`);
-    } else {
-      notes = prompt(`Please confirm your in-person visit:\n\n• Please arrive 10 minutes early\n• Bring valid ID\n• Wear comfortable clothing\n• No young children without prior arrangement\n\nAdd any notes or questions:`);
+      try {
+        // Ask for confirmation notes based on meeting type
+        const meeting = await getMeetingDetails(requestId);
+        const meetingType = meeting?.type || 'virtual';
+        
+        let notes = '';
+        
+        if (meetingType === 'virtual') {
+          notes = prompt(`Please confirm your virtual meeting:\n\n• Ensure you have a stable internet connection\n• Test your camera and microphone\n• Find a quiet, well-lit space\n\nAdd any notes or questions:`);
+        } else {
+          notes = prompt(`Please confirm your in-person visit:\n\n• Please arrive 10 minutes early\n• Bring valid ID\n• Wear comfortable clothing\n• No young children without prior arrangement\n\nAdd any notes or questions:`);
+        }
+        
+        if (notes === null) return; // User cancelled
+        
+        const response = await fetchWithAuth(`http://localhost:5001/api/adoptions/${requestId}/confirm-meeting`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            notes: notes || 'Meeting confirmed by adopter'
+          })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.msg || 'Failed to confirm meeting');
+        }
+
+        const result = await response.json();
+        
+        // Show appropriate confirmation message
+        const meetingTypeText = meetingType === 'virtual' ? 'virtual meeting' : 'in-person visit';
+        alert(` ${meetingTypeText} confirmed successfully! ${meetingType === 'virtual' ? 'Check your email for the meeting link.' : 'See you at the shelter!'}`);
+        
+        // Refresh requests
+        await loadMyAdoptionRequests();
+        
+      } catch (error) {
+        console.error(' Error confirming meeting:', error);
+        alert('Failed to confirm meeting: ' + error.message);
+      }
     }
-    
-    if (notes === null) return; // User cancelled
-    
-    const response = await fetchWithAuth(`http://localhost:5001/api/adoptions/${requestId}/confirm-meeting`, {
-      method: 'PATCH',
-      body: JSON.stringify({
-        notes: notes || 'Meeting confirmed by adopter'
-      })
-    });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.msg || 'Failed to confirm meeting');
+    // Helper function to get meeting details
+    async function getMeetingDetails(requestId) {
+      try {
+        const response = await fetchWithAuth(`http://localhost:5001/api/adoptions/my-requests`);
+        const requests = await response.json();
+        const request = requests.find(req => req._id === requestId);
+        return request?.meeting;
+      } catch (error) {
+        console.error('Error getting meeting details:', error);
+        return null;
+      }
     }
 
-    const result = await response.json();
-    
-    // Show appropriate confirmation message
-    const meetingTypeText = meetingType === 'virtual' ? 'virtual meeting' : 'in-person visit';
-    alert(`✅ ${meetingTypeText} confirmed successfully! ${meetingType === 'virtual' ? 'Check your email for the meeting link.' : 'See you at the shelter!'}`);
-    
-    // Refresh requests
-    await loadMyAdoptionRequests();
-    
-  } catch (error) {
-    console.error('❌ Error confirming meeting:', error);
-    alert('Failed to confirm meeting: ' + error.message);
-  }
-}
-
-// Helper function to get meeting details
-async function getMeetingDetails(requestId) {
-  try {
-    const response = await fetchWithAuth(`http://localhost:5001/api/adoptions/my-requests`);
-    const requests = await response.json();
-    const request = requests.find(req => req._id === requestId);
-    return request?.meeting;
-  } catch (error) {
-    console.error('Error getting meeting details:', error);
-    return null;
-  }
-}
-
-
-
-    // function rescheduleMeeting(requestId) {
-    //   alert('To reschedule, please contact the shelter directly via chat or email.');
-    // }
     async function rescheduleMeeting(requestId) {
-  if (!confirm('Are you sure you want to reschedule this meeting? The current meeting will be cancelled and you can book a new time.')) {
-    return;
-  }
-  
-  try {
-    // First, get the current meeting details to preserve the type
-    const meeting = await getMeetingDetails(requestId);
-    const currentMeetingType = meeting?.type || 'virtual';
-    
-    // Show booking modal again with preserved meeting type
-    const request = await getAdoptionRequest(requestId); // You'll need to implement this
-    if (request && request.pet) {
-      showMeetingBooking(requestId, request.pet.name);
+      if (!confirm('Are you sure you want to reschedule this meeting? The current meeting will be cancelled and you can book a new time.')) {
+        return;
+      }
+      
+      try {
+        // First, get the current meeting details to preserve the type
+        const meeting = await getMeetingDetails(requestId);
+        const currentMeetingType = meeting?.type || 'virtual';
+        
+        // Show booking modal again with preserved meeting type
+        const request = await getAdoptionRequest(requestId);
+        if (request && request.pet) {
+          showMeetingBooking(requestId, request.pet.name);
+        }
+        
+      } catch (error) {
+        console.error('❌ Error rescheduling meeting:', error);
+        alert('Failed to reschedule meeting: ' + error.message);
+      }
     }
-    
-  } catch (error) {
-    console.error('❌ Error rescheduling meeting:', error);
-    alert('Failed to reschedule meeting: ' + error.message);
-  }
-}
 
-// Helper function to get adoption request details
-async function getAdoptionRequest(requestId) {
-  try {
-    const response = await fetchWithAuth(`http://localhost:5001/api/adoptions/my-requests`);
-    const requests = await response.json();
-    return requests.find(req => req._id === requestId);
-  } catch (error) {
-    console.error('Error getting adoption request:', error);
-    return null;
-  }
-}
+    // Helper function to get adoption request details
+    async function getAdoptionRequest(requestId) {
+      try {
+        const response = await fetchWithAuth(`http://localhost:5001/api/adoptions/my-requests`);
+        const requests = await response.json();
+        return requests.find(req => req._id === requestId);
+      } catch (error) {
+        console.error('Error getting adoption request:', error);
+        return null;
+      }
+    }
+
     function viewMeetingDetails(requestId) {
       window.location.href = `meeting-confirmation.html?requestId=${requestId}`;
     }
@@ -547,7 +713,7 @@ async function getAdoptionRequest(requestId) {
           <div class="bg-white border rounded-lg p-4 shadow-sm">
             <div class="flex justify-between items-start">
               <div class="flex-1">
-                <h4 class="font-semibold text-indigo-700">${request.pet?.name || 'Unknown Pet'}</h4>
+                <h4 class="font-semibold text-[#6bb7cc]">${request.pet?.name || 'Unknown Pet'}</h4>
                 <div class="grid grid-cols-2 gap-2 text-sm text-gray-600 mt-1">
                   <div><strong>Trainer:</strong> ${request.trainer?.name || 'Unknown'}</div>
                   <div><strong>Session:</strong> ${formatSessionType(request.sessionType)}</div>
@@ -565,10 +731,10 @@ async function getAdoptionRequest(requestId) {
                   </div>
                 ` : ''}
                 ${request.trainerResponse ? `
-                  <div class="mt-2 bg-blue-50 border border-blue-200 rounded p-2">
-                    <p class="text-sm text-blue-700"><strong>Trainer Response:</strong> ${request.trainerResponse.message}</p>
+                  <div class="mt-2 bg-[#e8f4f8] border border-[#6bb7cc] rounded p-2">
+                    <p class="text-sm text-[#6bb7cc]"><strong>Trainer Response:</strong> ${request.trainerResponse.message}</p>
                     ${request.trainerResponse.proposedDate ? `
-                      <p class="text-xs text-blue-600 mt-1">
+                      <p class="text-xs text-[#6bb7cc] mt-1">
                         <strong>Proposed Date:</strong> ${new Date(request.trainerResponse.proposedDate).toLocaleDateString()}
                       </p>
                     ` : ''}
@@ -584,7 +750,7 @@ async function getAdoptionRequest(requestId) {
                 ` : ''}
                 ${request.status === 'approved' ? `
                   <button onclick="viewTrainingDetails('${request._id}')" 
-                          class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
+                          class="bg-[#6bb7cc] text-white px-3 py-1 rounded text-sm hover:bg-[#5aa5b9]">
                     View Details
                   </button>
                 ` : ''}
@@ -638,7 +804,7 @@ async function getAdoptionRequest(requestId) {
                 <img src="${trainer.profileImage}" alt="${trainer.name}" 
                      class="w-16 h-16 rounded-full mx-auto mb-3 object-cover border">
               ` : `
-                <div class="w-16 h-16 bg-indigo-100 rounded-full mx-auto mb-3 flex items-center justify-center text-indigo-600 font-semibold">
+                <div class="w-16 h-16 bg-[#c6e4ec] rounded-full mx-auto mb-3 flex items-center justify-center text-[#6bb7cc] font-semibold">
                   ${trainer.name?.charAt(0) || 'T'}
                 </div>
               `}
@@ -652,7 +818,7 @@ async function getAdoptionRequest(requestId) {
                 <p class="text-xs text-gray-500 mb-3 line-clamp-2">${trainer.bio}</p>
               ` : ''}
               <button onclick="showTrainingForm('${trainer._id}')" 
-                      class="w-full bg-indigo-600 text-white py-2 rounded text-sm hover:bg-indigo-700 transition-colors">
+                      class="w-full bg-[#6bb7cc] text-white py-2 rounded text-sm hover:bg-[#5aa5b9] transition-colors">
                 Request Session
               </button>
             </div>
@@ -670,80 +836,81 @@ async function getAdoptionRequest(requestId) {
       }
     }
 
-// Show training request form - FIXED VERSION
-async function showTrainingForm(trainerId) {
-    try {
-        console.log('🔍 Loading adopted pets for training request...');
-        
-        // Load adopter's adopted pets using the correct endpoint
-        const response = await fetchWithAuth(`${ADOPTIONS_API_URL}/my-adopted-pets`);
-        
-        console.log('📊 Adopted pets response status:', response.status);
-        
-        if (!response.ok) {
-            console.error('❌ Adopted pets endpoint failed:', response.status);
-            alert('Failed to load your adopted pets. Please try again.');
-            return;
-        }
+    // Show training request form - FIXED VERSION
+    async function showTrainingForm(trainerId) {
+      try {
+          console.log('🔍 Loading adopted pets for training request...');
+          
+          // Load adopter's adopted pets using the correct endpoint
+          const response = await fetchWithAuth(`${ADOPTIONS_API_URL}/my-adopted-pets`);
+          
+          console.log('📊 Adopted pets response status:', response.status);
+          
+          if (!response.ok) {
+              console.error('❌ Adopted pets endpoint failed:', response.status);
+              alert('Failed to load your adopted pets. Please try again.');
+              return;
+          }
 
-        const data = await response.json();
-        console.log('📦 Adopted pets data:', data);
+          const data = await response.json();
+          console.log('📦 Adopted pets data:', data);
 
-        // ✅ FIX: Check the actual response structure
-        let adoptedPets = [];
-        
-        if (data.pets && Array.isArray(data.pets)) {
-            adoptedPets = data.pets;
-        } else if (data.adoptedPets && Array.isArray(data.adoptedPets)) {
-            adoptedPets = data.adoptedPets;
-        } else if (Array.isArray(data)) {
-            adoptedPets = data;
-        } else if (data.data && Array.isArray(data.data)) {
-            adoptedPets = data.data;
-        }
+          // ✅ FIX: Check the actual response structure
+          let adoptedPets = [];
+          
+          if (data.pets && Array.isArray(data.pets)) {
+              adoptedPets = data.pets;
+          } else if (data.adoptedPets && Array.isArray(data.adoptedPets)) {
+              adoptedPets = data.adoptedPets;
+          } else if (Array.isArray(data)) {
+              adoptedPets = data;
+          } else if (data.data && Array.isArray(data.data)) {
+              adoptedPets = data.data;
+          }
 
-        console.log('🐾 Found adopted pets:', adoptedPets);
+          console.log('🐾 Found adopted pets:', adoptedPets);
 
-        if (!adoptedPets || adoptedPets.length === 0) {
-            alert('You must have at least one adopted pet to request training.');
-            return;
-        }
+          if (!adoptedPets || adoptedPets.length === 0) {
+              alert('You must have at least one adopted pet to request training.');
+              return;
+          }
 
-        // Populate the pet dropdown dynamically
-        const form = document.getElementById('training-request-form');
-        
-        // Clear any existing pet dropdown
-        const existingPetSelect = form.querySelector('#selectedPetId');
-        if (existingPetSelect) existingPetSelect.remove();
+          // Populate the pet dropdown dynamically
+          const form = document.getElementById('training-request-form');
+          
+          // Clear any existing pet dropdown
+          const existingPetSelect = form.querySelector('#selectedPetId');
+          if (existingPetSelect) existingPetSelect.remove();
 
-        const petSelectHTML = `
-            <div class="mb-3">
-                <label class="block text-sm font-medium mb-1">Select Pet</label>
-                <select id="selectedPetId" class="w-full p-2 border rounded" required>
-                    <option value="">Select your pet</option>
-                    ${adoptedPets.map(pet => {
-                        // ✅ FIX: Handle null/undefined pet objects
-                        if (!pet || !pet._id) {
-                            console.warn('⚠️ Invalid pet data:', pet);
-                            return '';
-                        }
-                        return `<option value="${pet._id}">${pet.name || 'Unknown'} (${pet.breed || 'Unknown breed'})</option>`;
-                    }).join('')}
-                </select>
-            </div>
-        `;
+          const petSelectHTML = `
+              <div class="mb-3">
+                  <label class="block text-sm font-medium mb-1 text-gray-700">Select Pet</label>
+                  <select id="selectedPetId" class="w-full p-2 border rounded" required>
+                      <option value="">Select your pet</option>
+                      ${adoptedPets.map(pet => {
+                          // ✅ FIX: Handle null/undefined pet objects
+                          if (!pet || !pet._id) {
+                              console.warn('⚠️ Invalid pet data:', pet);
+                              return '';
+                          }
+                          return `<option value="${pet._id}">${pet.name || 'Unknown'} (${pet.breed || 'Unknown breed'})</option>`;
+                      }).join('')}
+                  </select>
+              </div>
+          `;
 
-        form.querySelector('form').insertAdjacentHTML('afterbegin', petSelectHTML);
-        form.classList.remove('hidden');
-        document.getElementById('selectedTrainerId').value = trainerId;
-        
-        console.log('✅ Training form shown successfully');
+          form.querySelector('form').insertAdjacentHTML('afterbegin', petSelectHTML);
+          form.classList.remove('hidden');
+          document.getElementById('selectedTrainerId').value = trainerId;
+          
+          console.log('✅ Training form shown successfully');
 
-    } catch (error) {
-        console.error('❌ Error showing training form:', error);
-        alert('Failed to load pets for training request: ' + error.message);
+      } catch (error) {
+          console.error('❌ Error showing training form:', error);
+          alert('Failed to load pets for training request: ' + error.message);
+      }
     }
-}
+
     // Hide the form
     function hideTrainingForm() {
       const form = document.getElementById('training-request-form');
@@ -865,872 +1032,706 @@ async function showTrainingForm(trainerId) {
         'pending': 'bg-yellow-100 text-yellow-800',
         'approved': 'bg-green-100 text-green-800',
         'rejected': 'bg-red-100 text-red-800',
-        'completed': 'bg-blue-100 text-blue-800',
+        'completed': 'bg-[#e8f4f8] text-[#6bb7cc]',
         'cancelled': 'bg-gray-100 text-gray-800'
       };
       return colors[status] || 'bg-gray-100 text-gray-800';
     }
 
-
     // Add this debug function to test the adopted pets endpoint
-async function debugAdoptedPets() {
-    try {
-        console.log('🐛 Debugging adopted pets endpoint...');
-        const response = await fetchWithAuth(`${ADOPTIONS_API_URL}/my-adopted-pets`);
-        console.log('🔍 Response status:', response.status);
-        console.log('🔍 Response headers:', response.headers);
-        
-        const data = await response.json();
-        console.log('🔍 Full response data:', data);
-        
-        // Check different possible structures
-        console.log('🔍 Checking data structure:');
-        console.log('- data.pets:', data.pets);
-        console.log('- data.adoptedPets:', data.adoptedPets);
-        console.log('- data.data:', data.data);
-        console.log('- Array.isArray(data):', Array.isArray(data));
-        console.log('- data.success:', data.success);
-        console.log('- data.msg:', data.msg);
-        
-    } catch (error) {
-        console.error('❌ Debug error:', error);
-    }
-}
-
-let socket;
-
-// Initialize Socket.io for real-time notifications
-function initializeNotifications() {
-  try {
-    socket = io('http://localhost:5001', {
-      transports: ['polling', 'websocket'],
-      timeout: 10000
-    });
-    
-    socket.on('connect', () => {
-      console.log('🔔 Connected to notification server');
-    });
-
-    socket.on('connect_error', (error) => {
-      console.log('🔌 Socket connection failed, using polling only:', error.message);
-      // Don't break the app - continue with polling
-    });
-
-    socket.on('notification', (data) => {
-      console.log('🔔 New notification received:', data);
-      showNotification(data);
-      refreshAdoptionRequests();
-    });
-
-  } catch (error) {
-    console.log('🔌 Socket initialization failed, using polling only');
-  }
-}
-
-// Show notification to user
-function showNotification(notification) {
-  // Create toast notification
-  const toast = document.createElement('div');
-  toast.className = 'fixed top-4 right-4 bg-green-500 text-white p-4 rounded-lg shadow-lg z-50';
-  toast.innerHTML = `
-    <div class="flex items-center">
-      <span class="text-lg mr-2">🔔</span>
-      <div>
-        <p class="font-semibold">${notification.message}</p>
-        <p class="text-sm opacity-90">${new Date().toLocaleTimeString()}</p>
-      </div>
-      <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
-        ×
-      </button>
-    </div>
-  `;
-  
-  document.body.appendChild(toast);
-  
-  // Auto remove after 5 seconds
-  setTimeout(() => {
-    if (toast.parentElement) {
-      toast.remove();
-    }
-  }, 5000);
-}
-
-// Refresh adoption requests
-async function refreshAdoptionRequests() {
-  await loadMyAdoptionRequests();
-}
-
-
-// Add to adopter.html - Meeting booking functionality
-
-// Function to show meeting booking modal
-// Function to show meeting booking modal
-// async function showMeetingBooking(requestId, petName) {
-//   try {
-//     console.log('📅 Loading available staff for meeting booking...');
-    
-//     const staffRes = await fetchWithAuth('http://localhost:5001/api/availability/available/staff');
-    
-//     if (!staffRes.ok) {
-//       throw new Error(`Server error: ${staffRes.status}`);
-//     }
-    
-//     const staffData = await staffRes.json();
-//     console.log('✅ Available staff data:', staffData);
-    
-//     if (!staffData.success || !staffData.staff || staffData.staff.length === 0) {
-//       alert('No staff members available for booking at the moment. Please try again later.');
-//       return;
-//     }
-
-//     // Create booking modal
-//     const modal = document.createElement('div');
-//     modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center';
-//     modal.innerHTML = `
-//       <div class="bg-white rounded-lg p-6 w-full max-w-2xl max-h-96 overflow-y-auto">
-//         <h3 class="text-xl font-semibold mb-4">📅 Book Meeting for ${petName}</h3>
-//         <p class="text-sm text-gray-600 mb-4">Select a staff member and available time slot:</p>
-        
-//         <div class="space-y-4">
-//           ${staffData.staff.map(staff => `
-//             <div class="border rounded-lg p-4">
-//               <h4 class="font-semibold">${staff.name} (${staff.role})</h4>
-//               ${staff.availability && staff.availability.length > 0 ? `
-//                 <p class="text-sm text-gray-600 mb-2">Available Slots:</p>
-//                 <div class="space-y-2">
-//                   ${staff.availability.map(slot => `
-//                     <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
-//                       <span class="text-sm">
-//                         <strong>${slot.day}</strong>: ${slot.startTime} - ${slot.endTime}
-//                         ${slot.date ? `<br><small>${new Date(slot.date).toLocaleDateString()}</small>` : ''}
-//                       </span>
-//                     <button onclick="bookMeetingSlot('${requestId}', '${staff._id}', '${JSON.stringify(slot).replace(/'/g, "\\'")}')" 
-//         class="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">
-//   Book This Slot
-// </button>
-//                     </div>
-//                   `).join('')}
-//                 </div>
-//               ` : `
-//                 <p class="text-sm text-yellow-600">No available slots</p>
-//               `}
-//             </div>
-//           `).join('')}
-//         </div>
-        
-//         <button onclick="this.closest('.fixed').remove()" 
-//                 class="mt-4 w-full bg-gray-500 text-white py-2 rounded hover:bg-gray-600">
-//           Cancel
-//         </button>
-//       </div>
-//     `;
-
-//     document.body.appendChild(modal);
-//   } catch (error) {
-//     console.error('❌ Error loading meeting booking:', error);
-//     alert('Failed to load available slots: ' + error.message);
-//   }
-// }
-
-async function showMeetingBooking(requestId, petName) {
-  try {
-    console.log('📅 Loading available staff for meeting booking...');
-    
-    const staffRes = await fetchWithAuth('http://localhost:5001/api/availability/available/staff');
-    
-    if (!staffRes.ok) {
-      throw new Error(`Server error: ${staffRes.status}`);
-    }
-    
-    const staffData = await staffRes.json();
-    console.log('✅ Available staff data:', staffData);
-    
-    if (!staffData.success || !staffData.staff || staffData.staff.length === 0) {
-      alert('No staff members available for booking at the moment. Please try again later.');
-      return;
+    async function debugAdoptedPets() {
+      try {
+          console.log('🐛 Debugging adopted pets endpoint...');
+          const response = await fetchWithAuth(`${ADOPTIONS_API_URL}/my-adopted-pets`);
+          console.log('🔍 Response status:', response.status);
+          console.log('🔍 Response headers:', response.headers);
+          
+          const data = await response.json();
+          console.log('🔍 Full response data:', data);
+          
+          // Check different possible structures
+          console.log('🔍 Checking data structure:');
+          console.log('- data.pets:', data.pets);
+          console.log('- data.adoptedPets:', data.adoptedPets);
+          console.log('- data.data:', data.data);
+          console.log('- Array.isArray(data):', Array.isArray(data));
+          console.log('- data.success:', data.success);
+          console.log('- data.msg:', data.msg);
+          
+      } catch (error) {
+          console.error('❌ Debug error:', error);
+      }
     }
 
-    // Create booking modal
-    const modal = document.createElement('div');
-    modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center';
-    modal.innerHTML = `
-      <div class="bg-white rounded-lg p-6 w-full max-w-2xl max-h-96 overflow-y-auto">
-        <h3 class="text-xl font-semibold mb-4">📅 Book Meeting for ${petName}</h3>
-        
-        <!-- Meeting Type Selection -->
-        <div class="mb-6 p-4 bg-gray-50 rounded-lg">
-          <label class="block text-sm font-medium mb-3">Choose Meeting Type</label>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <button class="meeting-type-btn border-2 rounded-lg p-4 text-center transition-all duration-200 bg-white border-blue-300 hover:border-blue-500 hover:bg-blue-50" data-type="virtual">
-              <div class="font-medium text-blue-700">🎥 Virtual Meet & Greet</div>
-              <div class="text-xs text-gray-600 mt-1">Video call introduction with staff</div>
-            </button>
-            <button class="meeting-type-btn border-2 rounded-lg p-4 text-center transition-all duration-200 bg-white border-green-300 hover:border-green-500 hover:bg-green-50" data-type="in-person">
-              <div class="font-medium text-green-700">🏠 In-Person Visit</div>
-              <div class="text-xs text-gray-600 mt-1">Visit shelter & meet pet in person</div>
-            </button>
-          </div>
-          <p class="text-xs text-gray-500 mt-2 text-center">Selected: <span id="selectedMeetingType" class="font-medium text-blue-600">Virtual Meet & Greet</span></p>
-        </div>
+    let socket;
 
-        <p class="text-sm text-gray-600 mb-4">Select a staff member and available time slot:</p>
-        
-        <div id="staffSlotsContainer" class="space-y-4">
-          ${staffData.staff.map((staff, staffIndex) => `
-            <div class="border rounded-lg p-4">
-              <h4 class="font-semibold">${staff.name} (${staff.role})</h4>
-              ${staff.availability && staff.availability.length > 0 ? `
-                <p class="text-sm text-gray-600 mb-2">Available Slots:</p>
-                <div class="space-y-2">
-                  ${staff.availability.map((slot, slotIndex) => {
-                    const slotDate = slot.date ? new Date(slot.date) : null;
-                    const displayDate = slotDate ? slotDate.toLocaleDateString('en-US', { 
-                      weekday: 'long', 
-                      year: 'numeric', 
-                      month: 'long', 
-                      day: 'numeric' 
-                    }) : `${slot.day} (Recurring)`;
-                    
-                    return `
-                    <div class="flex justify-between items-center p-3 bg-gray-50 rounded border">
-                      <div class="text-sm flex-1">
-                        <div class="font-medium">${displayDate}</div>
-                        <div class="text-gray-600">${slot.startTime} - ${slot.endTime}</div>
-                      </div>
-                      <button 
-                        data-request="${requestId}"
-                        data-staff="${staff._id}" 
-                        data-staff-index="${staffIndex}"
-                        data-slot-index="${slotIndex}"
-                        class="book-slot-btn bg-green-600 text-white px-4 py-2 rounded text-sm hover:bg-green-700 transition-colors">
-                        Book This Slot
-                      </button>
-                    </div>
-                    `;
-                  }).join('')}
-                </div>
-              ` : `
-                <p class="text-sm text-yellow-600">No available slots</p>
-              `}
-            </div>
-          `).join('')}
-        </div>
-        
-        <button id="closeBookingModal" class="mt-4 w-full bg-gray-500 text-white py-2 rounded hover:bg-gray-600 transition-colors">
-          Cancel
-        </button>
-      </div>
-    `;
-
-    // Set default selected meeting type
-    let selectedMeetingType = 'virtual';
-    const selectedTypeSpan = modal.querySelector('#selectedMeetingType');
-
-    // Add meeting type selection logic
-    modal.querySelectorAll('.meeting-type-btn').forEach(btn => {
-      btn.addEventListener('click', function() {
-        selectedMeetingType = this.getAttribute('data-type');
-        
-        // Update UI to show selected type
-        modal.querySelectorAll('.meeting-type-btn').forEach(b => {
-          b.classList.remove('border-blue-500', 'bg-blue-100', 'border-green-500', 'bg-green-100');
-          b.classList.add('border-blue-300', 'bg-white', 'border-green-300');
+    // Initialize Socket.io for real-time notifications
+    function initializeNotifications() {
+      try {
+        socket = io('http://localhost:5001', {
+          transports: ['polling', 'websocket'],
+          timeout: 10000
         });
         
-        if (selectedMeetingType === 'virtual') {
-          this.classList.remove('border-blue-300', 'bg-white');
-          this.classList.add('border-blue-500', 'bg-blue-100');
-          selectedTypeSpan.textContent = 'Virtual Meet & Greet';
-          selectedTypeSpan.className = 'font-medium text-blue-600';
-        } else {
-          this.classList.remove('border-green-300', 'bg-white');
-          this.classList.add('border-green-500', 'bg-green-100');
-          selectedTypeSpan.textContent = 'In-Person Visit';
-          selectedTypeSpan.className = 'font-medium text-green-600';
-        }
-      });
-    });
+        socket.on('connect', () => {
+          console.log('🔔 Connected to notification server');
+        });
 
-    // Set initial selection
-    modal.querySelector('.meeting-type-btn[data-type="virtual"]').click();
+        socket.on('connect_error', (error) => {
+          console.log('🔌 Socket connection failed, using polling only:', error.message);
+          // Don't break the app - continue with polling
+        });
 
-    // Add event listeners for booking slots
-    modal.addEventListener('click', (e) => {
-      // Close modal
-      if (e.target.id === 'closeBookingModal') {
-        modal.remove();
-        return;
-      }
-      
-      // Book slot
-      if (e.target.classList.contains('book-slot-btn')) {
-        const btn = e.target;
-        const requestId = btn.getAttribute('data-request');
-        const staffId = btn.getAttribute('data-staff');
-        const staffIndex = btn.getAttribute('data-staff-index');
-        const slotIndex = btn.getAttribute('data-slot-index');
-        
-        // Find the staff member
-        const staff = staffData.staff.find(s => s._id === staffId);
-        if (staff && staff.availability[slotIndex]) {
-          const slot = staff.availability[slotIndex];
-          
-          console.log('📅 Slot being booked:', slot);
-          
-          // Validate the slot has a date
-          if (!slot.date) {
-            alert('Error: This slot does not have a date. Please contact support.');
-            return;
-          }
-          
-          // Validate the date
-          const slotDate = new Date(slot.date);
-          if (isNaN(slotDate.getTime())) {
-            alert('Error: Invalid date in this slot. Please choose another slot.');
-            return;
-          }
-          
-          // Check if the slot is in the future
-          if (slotDate < new Date()) {
-            alert('Error: This time slot has already passed. Please choose a future date.');
-            return;
-          }
-          
-          // Enhanced slot with meeting type
-          const enhancedSlot = {
-            ...slot,
-            type: selectedMeetingType,
-            location: selectedMeetingType === 'in-person' ? 'Shelter Facility' : 'virtual'
-          };
-          
-          console.log('🚀 Enhanced slot data:', enhancedSlot);
-          bookMeetingSlot(requestId, staffId, enhancedSlot);
-          modal.remove(); // Close modal after booking
-        }
-      }
-    });
+        socket.on('notification', (data) => {
+          console.log('🔔 New notification received:', data);
+          showNotification(data);
+          refreshAdoptionRequests();
+        });
 
-    document.body.appendChild(modal);
-  } catch (error) {
-    console.error('❌ Error loading meeting booking:', error);
-    alert('Failed to load available slots: ' + error.message);
-  }
-}
-
-
-// Function to book a meeting slot
-
-// async function bookMeetingSlot(requestId, staffId, slot) {
-//   try {
-//     const response = await fetchWithAuth(`http://localhost:5001/api/adoptions/${requestId}/schedule-meeting`, {
-//       method: 'POST',
-//       body: JSON.stringify({
-//         staffId: staffId,
-//         slot: slot
-//       })
-//     });
-
-//     if (!response.ok) {
-//       const errorData = await response.json();
-//       throw new Error(errorData.message || 'Failed to book meeting');
-//     }
-
-//     const result = await response.json();
-//     alert('✅ Meeting booked successfully!');
-    
-//     // Close modal and refresh requests
-//     document.querySelector('.fixed.inset-0')?.remove();
-//     await loadMyAdoptionRequests();
-//   } catch (error) {
-//     console.error('Error booking meeting:', error);
-//     alert('❌ Failed to book meeting: ' + error.message);
-//   }
-// }
-// Function to book a meeting slot
-async function bookMeetingSlot(requestId, staffId, slot) {
-  try {
-    console.log('🚀 Booking meeting:', { requestId, staffId, slot });
-    
-    const response = await fetchWithAuth(`http://localhost:5001/api/adoptions/${requestId}/schedule-meeting`, {
-      method: 'POST',
-      body: JSON.stringify({
-        staffId: staffId,
-        slot: slot
-      })
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.msg || 'Failed to book meeting');
-    }
-
-    const result = await response.json();
-    
-    // Show appropriate success message based on meeting type
-    const meetingType = slot.type === 'virtual' ? 'Virtual meeting' : 'In-person visit';
-    alert(`✅ ${meetingType} booked successfully!`);
-    
-    // Refresh requests to show updated status
-    await loadMyAdoptionRequests();
-  } catch (error) {
-    console.error('❌ Error booking meeting:', error);
-    alert('Failed to book meeting: ' + error.message);
-  }
-}
-
-
-
-// Update the adoption request card to include booking button
-// In your loadMyAdoptionRequests function, add this to the approved status:
-if (status === 'approved') {
-  actionButtons = `
-    <button onclick="showMeetingBooking('${req._id}', '${pet.name}')" 
-            class="mt-3 w-full bg-green-600 text-white px-3 py-2 rounded hover:bg-green-700">
-      📅 Book Meeting
-    </button>
-    <button onclick="startChat('${req._id}')" 
-            class="mt-2 w-full bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700">
-      💬 Chat with Staff
-    </button>
-  `;
-}
-
-
-
-
-// Poll for notifications (fallback if sockets fail)
-async function pollForNotifications() {
-  try {
-    const response = await fetchWithAuth('http://localhost:5001/api/notifications');
-    const data = await response.json();
-    
-    if (data.success && data.notifications) {
-      const unread = data.notifications.filter(n => !n.read);
-      if (unread.length > 0) {
-        updateNotificationBadge(unread.length);
+      } catch (error) {
+        console.log('🔌 Socket initialization failed, using polling only');
       }
     }
-  } catch (error) {
-    console.log('Notification polling failed:', error);
-  }
-}
 
-// Update notification badge
-function updateNotificationBadge(count) {
-  let badge = document.getElementById('notificationBadge');
-  if (!badge) {
-    badge = document.createElement('span');
-    badge.id = 'notificationBadge';
-    badge.className = 'absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center';
-    
-    const notifyBtn = document.createElement('button');
-    notifyBtn.className = 'bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 relative';
-    notifyBtn.innerHTML = '🔔 Notifications';
-    notifyBtn.appendChild(badge);
-    notifyBtn.onclick = showNotificationsPanel;
-    
-    document.querySelector('.flex.gap-2').prepend(notifyBtn);
-  }
-  badge.textContent = count;
-}
-
-// Show notifications panel
-// function showNotificationsPanel() {
-//   // Implement notifications panel UI
-//   alert('Notifications panel would open here with all your notifications');
-// }
-// socket integration end
-
-
-// Replace this placeholder function:
-function showNotificationsPanel() {
-  // Implement notifications panel UI
-  alert('Notifications panel would open here with all your notifications');
-}
-
-// WITH THIS REAL IMPLEMENTATION:
-async function showNotificationsPanel() {
-  try {
-    const response = await fetchWithAuth('http://localhost:5001/api/notifications/');
-    const data = await response.json();
-    
-    if (!data.success) {
-      alert('Failed to load notifications');
-      return;
-    }
-
-    // Create modal overlay
-    const overlay = document.createElement('div');
-    overlay.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center';
-    overlay.onclick = (e) => {
-      if (e.target === overlay) overlay.remove();
-    };
-
-    // Create notifications panel
-    const panel = document.createElement('div');
-    panel.className = 'bg-white rounded-lg shadow-xl w-full max-w-md max-h-96 overflow-hidden';
-    panel.onclick = (e) => e.stopPropagation();
-
-    const notifications = data.notifications || [];
-    
-    panel.innerHTML = `
-      <div class="bg-indigo-600 text-white p-4 flex justify-between items-center">
-        <h3 class="text-lg font-semibold">🔔 Notifications</h3>
-        <button onclick="this.closest('.fixed').remove()" class="text-white hover:text-gray-200 text-xl">×</button>
-      </div>
-      
-      <div class="max-h-80 overflow-y-auto">
-        ${notifications.length === 0 ? `
-          <div class="p-8 text-center text-gray-500">
-            <p class="text-lg">No notifications yet</p>
-            <p class="text-sm mt-2">You'll see updates about your adoption requests here</p>
+    // Show notification to user
+    function showNotification(notification) {
+      // Create toast notification
+      const toast = document.createElement('div');
+      toast.className = 'fixed top-4 right-4 bg-green-500 text-white p-4 rounded-lg shadow-lg z-50';
+      toast.innerHTML = `
+        <div class="flex items-center">
+          <span class="text-lg mr-2">🔔</span>
+          <div>
+            <p class="font-semibold">${notification.message}</p>
+            <p class="text-sm opacity-90">${new Date().toLocaleTimeString()}</p>
           </div>
-        ` : `
-          <div class="divide-y">
-            ${notifications.map(notif => `
-              <div class="p-4 hover:bg-gray-50 ${!notif.read ? 'bg-blue-50 border-l-4 border-blue-500' : ''}">
-                <div class="flex justify-between items-start">
-                  <div class="flex-1">
-                    <p class="font-medium text-gray-900">${notif.message}</p>
-                    <p class="text-sm text-gray-500 mt-1">
-                      ${new Date(notif.createdAt).toLocaleString()}
-                    </p>
-                    ${notif.meta?.action ? `
-                      <button onclick="handleNotificationAction('${notif.meta.action}', ${JSON.stringify(notif.meta).replace(/'/g, "\\'")})" 
-                              class="mt-2 text-sm bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700">
-                        ${getActionText(notif.meta.action)}
-                      </button>
-                    ` : ''}
-                  </div>
-                  ${!notif.read ? `
-                    <button onclick="markNotificationAsRead('${notif._id}', this)" 
-                            class="ml-2 text-blue-600 hover:text-blue-800 text-sm">
-                      Mark read
-                    </button>
-                  ` : ''}
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        `}
-      </div>
-      
-      ${notifications.length > 0 ? `
-        <div class="border-t p-3 bg-gray-50">
-          <button onclick="markAllNotificationsRead()" 
-                  class="w-full bg-gray-200 text-gray-700 py-2 rounded hover:bg-gray-300">
-            Mark all as read
+          <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+            ×
           </button>
         </div>
-      ` : ''}
-    `;
+      `;
 
-    overlay.appendChild(panel);
-    document.body.appendChild(overlay);
+      document.body.appendChild(toast);
 
-  } catch (error) {
-    console.error('Error loading notifications:', error);
-    alert('Failed to load notifications');
-  }
-}
-
-// Helper function for action buttons
-function getActionText(action) {
-  const actions = {
-    'review_request': 'Review Request',
-    'open_chat': 'Open Chat',
-    'confirm_meeting': 'Confirm Meeting',
-    'view_meeting_details': 'View Details',
-    'browse_other_pets': 'Browse Pets',
-    'view_pet_profile': 'View Pet'
-  };
-  return actions[action] || 'View';
-}
-
-// Handle notification actions
-function handleNotificationAction(action, meta) {
-  switch(action) {
-    case 'open_chat':
-      if (meta.chatId) {
-        window.location.href = `chat.html?chatId=${meta.chatId}`;
-      }
-      break;
-    case 'confirm_meeting':
-      if (meta.requestId) {
-        confirmMeeting(meta.requestId);
-      }
-      break;
-    case 'view_meeting_details':
-      if (meta.requestId) {
-        viewMeetingDetails(meta.requestId);
-      }
-      break;
-    case 'view_pet_profile':
-      if (meta.petId) {
-        window.location.href = `pet-details.html?id=${meta.petId}`;
-      }
-      break;
-    default:
-      console.log('Action:', action, meta);
-  }
-}
-
-// Mark single notification as read
-async function markNotificationAsRead(notificationId, button) {
-  try {
-    const response = await fetchWithAuth(`http://localhost:5001/api/notifications/${notificationId}/read`, {
-      method: 'PATCH'
-    });
-    
-    if (response.ok) {
-      // Update UI
-      const notificationItem = button.closest('.hover\\:bg-gray-50');
-      notificationItem.classList.remove('bg-blue-50', 'border-l-4', 'border-blue-500');
-      button.remove();
-      
-      // Update badge
-      updateNotificationBadgeFromServer();
-    }
-  } catch (error) {
-    console.error('Error marking notification as read:', error);
-  }
-}
-
-// Add this function to show meeting preparation
-async function showMeetingPreparation(requestId) {
-  try {
-    // Fetch the latest meeting details from the server
-    const response = await fetchWithAuth('http://localhost:5001/api/adoptions/my-requests');
-    const requests = await response.json();
-    const request = requests.find(req => req._id === requestId);
-    
-    if (!request) {
-      alert('Adoption request not found');
-      return;
+      // Auto remove after 5 seconds
+      setTimeout(() => {
+        if (toast.parentElement) {
+          toast.remove();
+        }
+      }, 5000);
     }
 
-    if (!request.meeting) {
-      alert('No meeting scheduled for this request');
-      return;
+    // Refresh adoption requests
+    async function refreshAdoptionRequests() {
+      await loadMyAdoptionRequests();
     }
 
-    const meeting = request.meeting;
-    const meetingType = meeting.type || 'virtual';
-    
-    // Generate preparation guide if it doesn't exist
-    const preparation = meeting.preparationGuide || generateDefaultPreparation(meetingType);
-    
-    const modal = document.createElement('div');
-    modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center';
-    
-    modal.innerHTML = `
-      <div class="bg-white rounded-lg p-6 w-full max-w-2xl max-h-96 overflow-y-auto">
-        <h3 class="text-xl font-semibold mb-4">📋 Meeting Preparation Guide</h3>
-        <div class="space-y-4">
-          <!-- Pet Info -->
-          <div class="bg-blue-50 border border-blue-200 rounded p-4">
-            <h4 class="font-semibold text-blue-800 mb-2">Meeting for ${request.pet?.name || 'Pet Adoption'}</h4>
-            <div class="grid grid-cols-2 gap-2 text-sm">
-              <div><strong>Meeting Type:</strong> ${meetingType === 'virtual' ? 'Virtual Meeting' : 'In-Person Visit'}</div>
-              <div><strong>Date:</strong> ${meeting.date ? new Date(meeting.date).toLocaleDateString() : 'Not set'}</div>
-              ${request.pet?.breed ? `<div><strong>Breed:</strong> ${request.pet.breed}</div>` : ''}
-              ${request.pet?.age ? `<div><strong>Age:</strong> ${request.pet.age}</div>` : ''}
+    // Meeting booking functionality
+    async function showMeetingBooking(requestId, petName) {
+      try {
+        console.log('📅 Loading available staff for meeting booking...');
+        
+        const staffRes = await fetchWithAuth('http://localhost:5001/api/availability/available/staff');
+        
+        if (!staffRes.ok) {
+          throw new Error(`Server error: ${staffRes.status}`);
+        }
+        
+        const staffData = await staffRes.json();
+        console.log('✅ Available staff data:', staffData);
+        
+        if (!staffData.success || !staffData.staff || staffData.staff.length === 0) {
+          alert('No staff members available for booking at the moment. Please try again later.');
+          return;
+        }
+
+        // Create booking modal
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center';
+        modal.innerHTML = `
+          <div class="bg-white rounded-lg p-6 w-full max-w-2xl max-h-96 overflow-y-auto">
+            <h3 class="text-xl font-semibold mb-4">📅 Book Meeting for ${petName}</h3>
+            
+            <!-- Meeting Type Selection -->
+            <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+              <label class="block text-sm font-medium mb-3">Choose Meeting Type</label>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <button class="meeting-type-btn border-2 rounded-lg p-4 text-center transition-all duration-200 bg-white border-[#6bb7cc] hover:border-[#5aa5b9] hover:bg-[#e8f4f8]" data-type="virtual">
+                  <div class="font-medium text-[#6bb7cc]">🎥 Virtual Meet & Greet</div>
+                  <div class="text-xs text-gray-600 mt-1">Video call introduction with staff</div>
+                </button>
+                <button class="meeting-type-btn border-2 rounded-lg p-4 text-center transition-all duration-200 bg-white border-[#f8b679] hover:border-[#f0a866] hover:bg-[#fef3e6]" data-type="in-person">
+                  <div class="font-medium text-[#C2410C]">🏠 In-Person Visit</div>
+                  <div class="text-xs text-gray-600 mt-1">Visit shelter & meet pet in person</div>
+                </button>
+              </div>
+              <p class="text-xs text-gray-500 mt-2 text-center">Selected: <span id="selectedMeetingType" class="font-medium text-[#6bb7cc]">Virtual Meet & Greet</span></p>
             </div>
-          </div>
 
-          <!-- Checklist -->
-          <div>
-            <h4 class="font-semibold mb-2">✅ Preparation Checklist</h4>
-            <ul class="space-y-2 text-sm">
-              ${preparation.checklist.map(item => `
-                <li class="flex items-start">
-                  <span class="text-green-500 mr-2 mt-1">✓</span>
-                  <span>${item}</span>
-                </li>
+            <p class="text-sm text-gray-600 mb-4">Select a staff member and available time slot:</p>
+            
+            <div id="staffSlotsContainer" class="space-y-4">
+              ${staffData.staff.map((staff, staffIndex) => `
+                <div class="border rounded-lg p-4">
+                  <h4 class="font-semibold">${staff.name} (${staff.role})</h4>
+                  ${staff.availability && staff.availability.length > 0 ? `
+                    <p class="text-sm text-gray-600 mb-2">Available Slots:</p>
+                    <div class="space-y-2">
+                      ${staff.availability.map((slot, slotIndex) => {
+                        const slotDate = slot.date ? new Date(slot.date) : null;
+                        const displayDate = slotDate ? slotDate.toLocaleDateString('en-US', { 
+                          weekday: 'long', 
+                          year: 'numeric', 
+                          month: 'long', 
+                          day: 'numeric' 
+                        }) : `${slot.day} (Recurring)`;
+                        
+                        return `
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded border">
+                          <div class="text-sm flex-1">
+                            <div class="font-medium">${displayDate}</div>
+                            <div class="text-gray-600">${slot.startTime} - ${slot.endTime}</div>
+                          </div>
+                          <button 
+                            data-request="${requestId}"
+                            data-staff="${staff._id}" 
+                            data-staff-index="${staffIndex}"
+                            data-slot-index="${slotIndex}"
+                            class="book-slot-btn bg-[#6bb7cc] text-white px-4 py-2 rounded text-sm hover:bg-[#5aa5b9] transition-colors">
+                            Book This Slot
+                          </button>
+                        </div>
+                        `;
+                      }).join('')}
+                    </div>
+                  ` : `
+                    <p class="text-sm text-yellow-600">No available slots</p>
+                  `}
+                </div>
               `).join('')}
-            </ul>
+            </div>
+            
+            <button id="closeBookingModal" class="mt-4 w-full bg-gray-500 text-white py-2 rounded hover:bg-gray-600 transition-colors">
+              Cancel
+            </button>
           </div>
+        `;
 
-          <!-- Tips -->
-          <div>
-            <h4 class="font-semibold mb-2">💡 Helpful Tips</h4>
-            <ul class="space-y-1 text-sm text-gray-600">
-              ${preparation.tips.map(tip => `
-                <li class="flex items-start">
-                  <span class="text-blue-500 mr-2 mt-1">•</span>
-                  <span>${tip}</span>
-                </li>
-              `).join('')}
-            </ul>
+        // Set default selected meeting type
+        let selectedMeetingType = 'virtual';
+        const selectedTypeSpan = modal.querySelector('#selectedMeetingType');
+
+        // Add meeting type selection logic
+        modal.querySelectorAll('.meeting-type-btn').forEach(btn => {
+          btn.addEventListener('click', function() {
+            selectedMeetingType = this.getAttribute('data-type');
+            
+            // Update UI to show selected type
+            modal.querySelectorAll('.meeting-type-btn').forEach(b => {
+              b.classList.remove('border-[#6bb7cc]', 'bg-[#e8f4f8]', 'border-[#f8b679]', 'bg-[#fef3e6]');
+              b.classList.add('border-[#6bb7cc]', 'bg-white', 'border-[#f8b679]');
+            });
+            
+            if (selectedMeetingType === 'virtual') {
+              this.classList.remove('border-[#6bb7cc]', 'bg-white');
+              this.classList.add('border-[#6bb7cc]', 'bg-[#e8f4f8]');
+              selectedTypeSpan.textContent = 'Virtual Meet & Greet';
+              selectedTypeSpan.className = 'font-medium text-[#6bb7cc]';
+            } else {
+              this.classList.remove('border-[#f8b679]', 'bg-white');
+              this.classList.add('border-[#f8b679]', 'bg-[#fef3e6]');
+              selectedTypeSpan.textContent = 'In-Person Visit';
+              selectedTypeSpan.className = 'font-medium text-[#C2410C]';
+            }
+          });
+        });
+
+        // Set initial selection
+        modal.querySelector('.meeting-type-btn[data-type="virtual"]').click();
+
+        // Add event listeners for booking slots
+        modal.addEventListener('click', (e) => {
+          // Close modal
+          if (e.target.id === 'closeBookingModal') {
+            modal.remove();
+            return;
+          }
+          
+          // Book slot
+          if (e.target.classList.contains('book-slot-btn')) {
+            const btn = e.target;
+            const requestId = btn.getAttribute('data-request');
+            const staffId = btn.getAttribute('data-staff');
+            const staffIndex = btn.getAttribute('data-staff-index');
+            const slotIndex = btn.getAttribute('data-slot-index');
+            
+            // Find the staff member
+            const staff = staffData.staff.find(s => s._id === staffId);
+            if (staff && staff.availability[slotIndex]) {
+              const slot = staff.availability[slotIndex];
+              
+              console.log('📅 Slot being booked:', slot);
+              
+              // Validate the slot has a date
+              if (!slot.date) {
+                alert('Error: This slot does not have a date. Please contact support.');
+                return;
+              }
+              
+              // Validate the date
+              const slotDate = new Date(slot.date);
+              if (isNaN(slotDate.getTime())) {
+                alert('Error: Invalid date in this slot. Please choose another slot.');
+                return;
+              }
+              
+              // Check if the slot is in the future
+              if (slotDate < new Date()) {
+                alert('Error: This time slot has already passed. Please choose a future date.');
+                return;
+              }
+              
+              // Enhanced slot with meeting type
+              const enhancedSlot = {
+                ...slot,
+                type: selectedMeetingType,
+                location: selectedMeetingType === 'in-person' ? 'Shelter Facility' : 'virtual'
+              };
+              
+              console.log('🚀 Enhanced slot data:', enhancedSlot);
+              bookMeetingSlot(requestId, staffId, enhancedSlot);
+              modal.remove(); // Close modal after booking
+            }
+          }
+        });
+
+        document.body.appendChild(modal);
+      } catch (error) {
+        console.error('❌ Error loading meeting booking:', error);
+        alert('Failed to load available slots: ' + error.message);
+      }
+    }
+
+    // Function to book a meeting slot
+    async function bookMeetingSlot(requestId, staffId, slot) {
+      try {
+        console.log('🚀 Booking meeting:', { requestId, staffId, slot });
+        
+        const response = await fetchWithAuth(`http://localhost:5001/api/adoptions/${requestId}/schedule-meeting`, {
+          method: 'POST',
+          body: JSON.stringify({
+            staffId: staffId,
+            slot: slot
+          })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.msg || 'Failed to book meeting');
+        }
+
+        const result = await response.json();
+        
+        // Show appropriate success message based on meeting type
+        const meetingType = slot.type === 'virtual' ? 'Virtual meeting' : 'In-person visit';
+        alert(`✅ ${meetingType} booked successfully!`);
+        
+        // Refresh requests to show updated status
+        await loadMyAdoptionRequests();
+      } catch (error) {
+        console.error('❌ Error booking meeting:', error);
+        alert('Failed to book meeting: ' + error.message);
+      }
+    }
+
+    // Poll for notifications (fallback if sockets fail)
+    async function pollForNotifications() {
+      try {
+        const response = await fetchWithAuth('http://localhost:5001/api/notifications');
+        const data = await response.json();
+        
+        if (data.success && data.notifications) {
+          const unread = data.notifications.filter(n => !n.read);
+          if (unread.length > 0) {
+            updateNotificationBadge(unread.length);
+          }
+        }
+      } catch (error) {
+        console.log('Notification polling failed:', error);
+      }
+    }
+
+    // Update notification badge
+    function updateNotificationBadge(count) {
+      let badge = document.getElementById('notificationBadge');
+      if (!badge) {
+        badge = document.createElement('span');
+        badge.id = 'notificationBadge';
+        badge.className = 'absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center';
+        
+        const notifyBtn = document.querySelector('button[onclick="showNotificationsPanel()"]');
+        notifyBtn.appendChild(badge);
+      }
+      badge.textContent = count;
+      badge.classList.toggle('hidden', count === 0);
+    }
+
+    // Show notifications panel
+    async function showNotificationsPanel() {
+      try {
+        const response = await fetchWithAuth('http://localhost:5001/api/notifications/');
+        const data = await response.json();
+        
+        if (!data.success) {
+          alert('Failed to load notifications');
+          return;
+        }
+
+        // Create modal overlay
+        const overlay = document.createElement('div');
+        overlay.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center';
+        overlay.onclick = (e) => {
+          if (e.target === overlay) overlay.remove();
+        };
+
+        // Create notifications panel
+        const panel = document.createElement('div');
+        panel.className = 'bg-white rounded-lg shadow-xl w-full max-w-md max-h-96 overflow-hidden';
+        panel.onclick = (e) => e.stopPropagation();
+
+        const notifications = data.notifications || [];
+        
+        panel.innerHTML = `
+          <div class="bg-[#6bb7cc] text-white p-4 flex justify-between items-center">
+            <h3 class="text-lg font-semibold">🔔 Notifications</h3>
+            <button onclick="this.closest('.fixed').remove()" class="text-white hover:text-gray-200 text-xl">×</button>
           </div>
-
-          <!-- What to Bring -->
-          <div>
-            <h4 class="font-semibold mb-2">🎒 What to Bring</h4>
-            <ul class="space-y-1 text-sm text-gray-600">
-              ${preparation.whatToBring.map(item => `
-                <li class="flex items-start">
-                  <span class="text-orange-500 mr-2 mt-1">•</span>
-                  <span>${item}</span>
-                </li>
-              `).join('')}
-            </ul>
+          
+          <div class="max-h-80 overflow-y-auto">
+            ${notifications.length === 0 ? `
+              <div class="p-8 text-center text-gray-500">
+                <p class="text-lg">No notifications yet</p>
+                <p class="text-sm mt-2">You'll see updates about your adoption requests here</p>
+              </div>
+            ` : `
+              <div class="divide-y">
+                ${notifications.map(notif => `
+                  <div class="p-4 hover:bg-gray-50 ${!notif.read ? 'bg-[#e8f4f8] border-l-4 border-[#6bb7cc]' : ''}">
+                    <div class="flex justify-between items-start">
+                      <div class="flex-1">
+                        <p class="font-medium text-gray-900">${notif.message}</p>
+                        <p class="text-sm text-gray-500 mt-1">
+                          ${new Date(notif.createdAt).toLocaleString()}
+                        </p>
+                        ${notif.meta?.action ? `
+                          <button onclick="handleNotificationAction('${notif.meta.action}', ${JSON.stringify(notif.meta).replace(/'/g, "\\'")})" 
+                                  class="mt-2 text-sm bg-[#6bb7cc] text-white px-3 py-1 rounded hover:bg-[#5aa5b9]">
+                            ${getActionText(notif.meta.action)}
+                          </button>
+                        ` : ''}
+                      </div>
+                      ${!notif.read ? `
+                        <button onclick="markNotificationAsRead('${notif._id}', this)" 
+                                class="ml-2 text-[#6bb7cc] hover:text-[#5aa5b9] text-sm">
+                          Mark read
+                        </button>
+                      ` : ''}
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            `}
           </div>
-
-          ${meeting.meetingLink ? `
-            <div class="bg-green-50 border border-green-200 rounded p-3">
-              <p class="text-green-700 text-sm">
-                <strong>Meeting Link:</strong> 
-                <a href="${meeting.meetingLink}" target="_blank" class="underline ml-1 font-medium">
-                  Click here to join virtual meeting
-                </a>
-              </p>
+          
+          ${notifications.length > 0 ? `
+            <div class="border-t p-3 bg-gray-50">
+              <button onclick="markAllNotificationsRead()" 
+                      class="w-full bg-gray-200 text-gray-700 py-2 rounded hover:bg-gray-300">
+                Mark all as read
+              </button>
             </div>
           ` : ''}
+        `;
 
-          ${meetingType === 'in-person' && meeting.location ? `
-            <div class="bg-orange-50 border border-orange-200 rounded p-3">
-              <p class="text-orange-700 text-sm">
-                <strong>Location:</strong> ${meeting.location}
-              </p>
+        overlay.appendChild(panel);
+        document.body.appendChild(overlay);
+
+      } catch (error) {
+        console.error('Error loading notifications:', error);
+        alert('Failed to load notifications');
+      }
+    }
+
+    // Helper function for action buttons
+    function getActionText(action) {
+      const actions = {
+        'review_request': 'Review Request',
+        'open_chat': 'Open Chat',
+        'confirm_meeting': 'Confirm Meeting',
+        'view_meeting_details': 'View Details',
+        'browse_other_pets': 'Browse Pets',
+        'view_pet_profile': 'View Pet'
+      };
+      return actions[action] || 'View';
+    }
+
+    // Handle notification actions
+    function handleNotificationAction(action, meta) {
+      switch(action) {
+        case 'open_chat':
+          if (meta.chatId) {
+            window.location.href = `chat.html?chatId=${meta.chatId}`;
+          }
+          break;
+        case 'confirm_meeting':
+          if (meta.requestId) {
+            confirmMeeting(meta.requestId);
+          }
+          break;
+        case 'view_meeting_details':
+          if (meta.requestId) {
+            viewMeetingDetails(meta.requestId);
+          }
+          break;
+        case 'view_pet_profile':
+          if (meta.petId) {
+            window.location.href = `pet-details.html?id=${meta.petId}`;
+          }
+          break;
+        default:
+          console.log('Action:', action, meta);
+      }
+    }
+
+    // Mark single notification as read
+    async function markNotificationAsRead(notificationId, button) {
+      try {
+        const response = await fetchWithAuth(`http://localhost:5001/api/notifications/${notificationId}/read`, {
+          method: 'PATCH'
+        });
+        
+        if (response.ok) {
+          // Update UI
+          const notificationItem = button.closest('.hover\\:bg-gray-50');
+          notificationItem.classList.remove('bg-[#e8f4f8]', 'border-l-4', 'border-[#6bb7cc]');
+          button.remove();
+          
+          // Update badge
+          updateNotificationBadgeFromServer();
+        }
+      } catch (error) {
+        console.error('Error marking notification as read:', error);
+      }
+    }
+
+    // Add this function to show meeting preparation
+    async function showMeetingPreparation(requestId) {
+      try {
+        // Fetch the latest meeting details from the server
+        const response = await fetchWithAuth('http://localhost:5001/api/adoptions/my-requests');
+        const requests = await response.json();
+        const request = requests.find(req => req._id === requestId);
+        
+        if (!request) {
+          alert('Adoption request not found');
+          return;
+        }
+
+        if (!request.meeting) {
+          alert('No meeting scheduled for this request');
+          return;
+        }
+
+        const meeting = request.meeting;
+        const meetingType = meeting.type || 'virtual';
+        
+        // Generate preparation guide if it doesn't exist
+        const preparation = meeting.preparationGuide || generateDefaultPreparation(meetingType);
+        
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center';
+        
+        modal.innerHTML = `
+          <div class="bg-white rounded-lg p-6 w-full max-w-2xl max-h-96 overflow-y-auto">
+            <h3 class="text-xl font-semibold mb-4">📋 Meeting Preparation Guide</h3>
+            <div class="space-y-4">
+              <!-- Pet Info -->
+              <div class="bg-[#e8f4f8] border border-[#6bb7cc] rounded p-4">
+                <h4 class="font-semibold text-[#6bb7cc] mb-2">Meeting for ${request.pet?.name || 'Pet Adoption'}</h4>
+                <div class="grid grid-cols-2 gap-2 text-sm">
+                  <div><strong>Meeting Type:</strong> ${meetingType === 'virtual' ? 'Virtual Meeting' : 'In-Person Visit'}</div>
+                  <div><strong>Date:</strong> ${meeting.date ? new Date(meeting.date).toLocaleDateString() : 'Not set'}</div>
+                  ${request.pet?.breed ? `<div><strong>Breed:</strong> ${request.pet.breed}</div>` : ''}
+                  ${request.pet?.age ? `<div><strong>Age:</strong> ${request.pet.age}</div>` : ''}
+                </div>
+              </div>
+
+              <!-- Checklist -->
+              <div>
+                <h4 class="font-semibold mb-2">✅ Preparation Checklist</h4>
+                <ul class="space-y-2 text-sm">
+                  ${preparation.checklist.map(item => `
+                    <li class="flex items-start">
+                      <span class="text-green-500 mr-2 mt-1">✓</span>
+                      <span>${item}</span>
+                    </li>
+                  `).join('')}
+                </ul>
+              </div>
+
+              <!-- Tips -->
+              <div>
+                <h4 class="font-semibold mb-2">💡 Helpful Tips</h4>
+                <ul class="space-y-1 text-sm text-gray-600">
+                  ${preparation.tips.map(tip => `
+                    <li class="flex items-start">
+                      <span class="text-[#6bb7cc] mr-2 mt-1">•</span>
+                      <span>${tip}</span>
+                    </li>
+                  `).join('')}
+                </ul>
+              </div>
+
+              <!-- What to Bring -->
+              <div>
+                <h4 class="font-semibold mb-2">🎒 What to Bring</h4>
+                <ul class="space-y-1 text-sm text-gray-600">
+                  ${preparation.whatToBring.map(item => `
+                    <li class="flex items-start">
+                      <span class="text-[#C2410C] mr-2 mt-1">•</span>
+                      <span>${item}</span>
+                    </li>
+                  `).join('')}
+                </ul>
+              </div>
+
+              ${meeting.meetingLink ? `
+                <div class="bg-green-50 border border-green-200 rounded p-3">
+                  <p class="text-green-700 text-sm">
+                    <strong>Meeting Link:</strong> 
+                    <a href="${meeting.meetingLink}" target="_blank" class="underline ml-1 font-medium">
+                      Click here to join virtual meeting
+                    </a>
+                  </p>
+                </div>
+              ` : ''}
+
+              ${meetingType === 'in-person' && meeting.location ? `
+                <div class="bg-orange-50 border border-orange-200 rounded p-3">
+                  <p class="text-orange-700 text-sm">
+                    <strong>Location:</strong> ${meeting.location}
+                  </p>
+                </div>
+              ` : ''}
             </div>
-          ` : ''}
-        </div>
 
-        <button onclick="this.closest('.fixed').remove()" 
-                class="mt-6 w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition-colors">
-          Got it, I'm prepared!
-        </button>
-      </div>
-    `;
+            <button onclick="this.closest('.fixed').remove()" 
+                    class="mt-6 w-full bg-[#6bb7cc] text-white py-2 rounded hover:bg-[#5aa5b9] transition-colors">
+              Got it, I'm prepared!
+            </button>
+          </div>
+        `;
 
-    document.body.appendChild(modal);
-  } catch (error) {
-    console.error('❌ Error loading preparation guide:', error);
-    alert('Failed to load preparation guide: ' + error.message);
-  }
-}
-
-// Default preparation guide generator
-function generateDefaultPreparation(meetingType) {
-  if (meetingType === 'virtual') {
-    return {
-      checklist: [
-        'Test your internet connection and speed',
-        'Ensure your camera and microphone are working',
-        'Find a quiet, well-lit space for the call',
-        'Close unnecessary applications and browser tabs',
-        'Have questions ready about the pet and adoption process',
-        'Prepare to discuss your home environment and experience'
-      ],
-      tips: [
-        'Join the meeting 5 minutes early to test audio/video',
-        'Have a notepad ready to take important notes',
-        'Be prepared to show your living space via camera if requested',
-        'Speak clearly and maintain eye contact with the camera',
-        'Have good lighting in front of you, not behind you'
-      ],
-      whatToBring: [
-        'Valid government-issued ID for verification',
-        'List of questions about the pet\'s behavior and needs',
-        'Information about your living situation and schedule',
-        'Details about other pets or family members in the home'
-      ]
-    };
-  } else {
-    return {
-      checklist: [
-        'Arrive 10-15 minutes before your scheduled time',
-        'Bring valid government-issued photo ID',
-        'Wear comfortable, appropriate clothing and closed-toe shoes',
-        'Leave young children at home (unless pre-approved)',
-        'Be prepared to spend 45-60 minutes at the shelter',
-        'Bring any family members involved in the decision'
-      ],
-      tips: [
-        'The pet may be nervous in the shelter environment - move slowly and speak softly',
-        'Ask about the pet\'s daily routine, favorite activities, and preferences',
-        'Be honest about your experience level and lifestyle',
-        'Take notes during the meeting to remember important details',
-        'Observe how the pet interacts with you and the environment',
-        'Ask about any known medical conditions or behavioral needs'
-      ],
-      whatToBring: [
-        'Valid photo ID (driver\'s license, passport, etc.)',
-        'Proof of address if required by the shelter',
-        'List of questions for the adoption counselor',
-        'Any documentation about your current living situation',
-        'Names and contact information of personal references'
-      ]
-    };
-  }
-}
-
-// Default preparation if none provided
-// function generateDefaultPreparation(meetingType) {
-//   return meetingType === 'virtual' ? {
-//     checklist: [
-//       'Test internet connection and equipment',
-//       'Find quiet, well-lit space',
-//       'Prepare questions about the pet'
-//     ],
-//     tips: [
-//       'Join a few minutes early to test everything',
-//       'Be ready to discuss your experience with pets'
-//     ],
-//     whatToBring: ['Valid ID', 'List of questions']
-//   } : {
-//     checklist: [
-//       'Arrive 10 minutes early',
-//       'Bring valid ID',
-//       'Wear appropriate clothing'
-//     ],
-//     tips: [
-//       'The pet may be shy at first',
-//       'Ask about the pet\'s routine and needs'
-//     ],
-//     whatToBring: ['Photo ID', 'Questions for staff']
-//   };
-// }
-
-// Mark all as read
-async function markAllNotificationsRead() {
-  try {
-    const response = await fetchWithAuth('http://localhost:5001/api/notifications/read-all', {
-      method: 'PATCH'
-    });
-    
-    if (response.ok) {
-      // Reload notifications panel
-      const overlay = document.querySelector('.fixed.inset-0');
-      if (overlay) overlay.remove();
-      showNotificationsPanel();
-      
-      // Update badge
-      updateNotificationBadge(0);
+        document.body.appendChild(modal);
+      } catch (error) {
+        console.error('❌ Error loading preparation guide:', error);
+        alert('Failed to load preparation guide: ' + error.message);
+      }
     }
-  } catch (error) {
-    console.error('Error marking all as read:', error);
-  }
-}
 
-// Update badge count from server
-async function updateNotificationBadgeFromServer() {
-  try {
-    const response = await fetchWithAuth('http://localhost:5001/api/notifications/');
-    const data = await response.json();
-    
-    if (data.success) {
-      const unreadCount = data.notifications.filter(n => !n.read).length;
-      updateNotificationBadge(unreadCount);
+    // Default preparation guide generator
+    function generateDefaultPreparation(meetingType) {
+      if (meetingType === 'virtual') {
+        return {
+          checklist: [
+            'Test your internet connection and speed',
+            'Ensure your camera and microphone are working',
+            'Find a quiet, well-lit space for the call',
+            'Close unnecessary applications and browser tabs',
+            'Have questions ready about the pet and adoption process',
+            'Prepare to discuss your home environment and experience'
+          ],
+          tips: [
+            'Join the meeting 5 minutes early to test audio/video',
+            'Have a notepad ready to take important notes',
+            'Be prepared to show your living space via camera if requested',
+            'Speak clearly and maintain eye contact with the camera',
+            'Have good lighting in front of you, not behind you'
+          ],
+          whatToBring: [
+            'Valid government-issued ID for verification',
+            'List of questions about the pet\'s behavior and needs',
+            'Information about your living situation and schedule',
+            'Details about other pets or family members in the home'
+          ]
+        };
+      } else {
+        return {
+          checklist: [
+            'Arrive 10-15 minutes before your scheduled time',
+            'Bring valid government-issued photo ID',
+            'Wear comfortable, appropriate clothing and closed-toe shoes',
+            'Leave young children at home (unless pre-approved)',
+            'Be prepared to spend 45-60 minutes at the shelter',
+            'Bring any family members involved in the decision'
+          ],
+          tips: [
+            'The pet may be nervous in the shelter environment - move slowly and speak softly',
+            'Ask about the pet\'s daily routine, favorite activities, and preferences',
+            'Be honest about your experience level and lifestyle',
+            'Take notes during the meeting to remember important details',
+            'Observe how the pet interacts with you and the environment',
+            'Ask about any known medical conditions or behavioral needs'
+          ],
+          whatToBring: [
+            'Valid photo ID (driver\'s license, passport, etc.)',
+            'Proof of address if required by the shelter',
+            'List of questions for the adoption counselor',
+            'Any documentation about your current living situation',
+            'Names and contact information of personal references'
+          ]
+        };
+      }
     }
-  } catch (error) {
-    console.error('Error updating badge:', error);
-  }
-}
 
-// Call this function to debug
-debugAdoptedPets();
+    // Mark all as read
+    async function markAllNotificationsRead() {
+      try {
+        const response = await fetchWithAuth('http://localhost:5001/api/notifications/read-all', {
+          method: 'PATCH'
+        });
+        
+        if (response.ok) {
+          // Reload notifications panel
+          const overlay = document.querySelector('.fixed.inset-0');
+          if (overlay) overlay.remove();
+          showNotificationsPanel();
+          
+          // Update badge
+          updateNotificationBadge(0);
+        }
+      } catch (error) {
+        console.error('Error marking all as read:', error);
+      }
+    }
+
+    // Update badge count from server
+    async function updateNotificationBadgeFromServer() {
+      try {
+        const response = await fetchWithAuth('http://localhost:5001/api/notifications/');
+        const data = await response.json();
+        
+        if (data.success) {
+          const unreadCount = data.notifications.filter(n => !n.read).length;
+          updateNotificationBadge(unreadCount);
+        }
+      } catch (error) {
+        console.error('Error updating badge:', error);
+      }
+    }
+
+    // Call this function to debug
+    debugAdoptedPets();
 
     // Set min date dynamically for preferred date input
     document.addEventListener('DOMContentLoaded', () => {
@@ -1767,14 +1768,13 @@ debugAdoptedPets();
       transition: box-shadow 0.2s ease;
     }
     .notification-toast {
-  animation: slideIn 0.3s ease-out;
-}
+      animation: slideIn 0.3s ease-out;
+    }
 
-@keyframes slideIn {
-  from { transform: translateX(100%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
-}
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
   </style>
-
 </body>
 </html>

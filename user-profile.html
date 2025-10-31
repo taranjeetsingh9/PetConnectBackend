@@ -4,102 +4,918 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Profile - PetConnect</title>
-    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* ===== CSS Variables ===== */
+        :root {
+            --primary: #3498db;
+            --primary-dark: #2980b9;
+            --primary-light: #ebf5fb;
+            --secondary: #2ecc71;
+            --secondary-dark: #27ae60;
+            --secondary-light: #eafaf1;
+            --accent: #e74c3c;
+            --accent-light: #fdedec;
+            --warning: #f39c12;
+            --warning-light: #fef5e7;
+            --bg-light: #f8fafc;
+            --bg-white: #ffffff;
+            --text-dark: #2c3e50;
+            --text-muted: #7f8c8d;
+            --border-light: #ecf0f1;
+            --border: #bdc3c7;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --shadow-light: 0 2px 4px rgba(0, 0, 0, 0.05);
+            --shadow-hover: 0 8px 15px rgba(0, 0, 0, 0.1);
+            --radius: 12px;
+            --radius-sm: 8px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* ===== Base Styles ===== */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            color: var(--text-dark);
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .profile-page {
+            min-height: 100vh;
+            padding: 1.5rem;
+        }
+
+        /* ===== Header ===== */
+        .profile-header {
+            margin-bottom: 2rem;
+        }
+
+        .profile-header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 2rem;
+            border-radius: var(--radius);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            box-shadow: var(--shadow);
+            color: white;
+        }
+
+        .profile-header h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .profile-header h1 i {
+            font-size: 1.5rem;
+        }
+
+        .profile-header-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        /* ===== Profile Card ===== */
+        .profile-card {
+            border-radius: var(--radius);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            background: var(--bg-white);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-light);
+            transition: var(--transition);
+        }
+
+        .profile-card:hover {
+            box-shadow: var(--shadow-hover);
+        }
+
+        .profile-info {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .avatar-section {
+            position: relative;
+        }
+
+        .avatar-container {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 4px solid var(--bg-white);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .avatar-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .avatar-initials {
+            font-size: 2rem;
+            font-weight: bold;
+            color: white;
+        }
+
+        .avatar-upload-btn {
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            background: var(--secondary);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: var(--shadow);
+            font-size: 0.9rem;
+            z-index: 2;
+        }
+
+        .avatar-upload-btn:hover {
+            background: var(--secondary-dark);
+            transform: scale(1.1);
+        }
+
+        .user-details {
+            flex: 1;
+        }
+
+        .user-name {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 0.5rem;
+        }
+
+        .user-email {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .user-email i {
+            color: var(--primary);
+        }
+
+        .user-tags {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .role-tag, .status-tag {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .role-tag {
+            background: var(--primary-light);
+            color: var(--primary-dark);
+            border: 1px solid var(--primary);
+        }
+
+        .role-tag i {
+            font-size: 0.8rem;
+        }
+
+        .status-tag {
+            background: var(--secondary-light);
+            color: var(--secondary-dark);
+            border: 1px solid var(--secondary);
+        }
+
+        .status-tag i {
+            font-size: 0.8rem;
+        }
+
+        /* ===== Stats Cards ===== */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            text-align: center;
+            transition: var(--transition);
+            background: var(--bg-white);
+            box-shadow: var(--shadow);
+            border-top: 4px solid var(--primary);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .stat-icon {
+            font-size: 2rem;
+            color: var(--primary);
+            margin-bottom: 1rem;
+        }
+
+        .stat-card h3 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-bottom: 0.75rem;
+        }
+
+        .stat-number {
+            font-size: 2.25rem;
+            font-weight: bold;
+            color: var(--primary);
+            margin: 0;
+            line-height: 1;
+        }
+
+        .stat-text {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin: 0;
+        }
+
+        /* ===== Tab Navigation ===== */
+        .tab-container {
+            background-color: var(--bg-white);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            margin-bottom: 2rem;
+        }
+
+        .tab-navigation {
+            display: flex;
+            border-bottom: 1px solid var(--border-light);
+            background: var(--bg-light);
+            overflow-x: auto;
+        }
+
+        .tab-button {
+            padding: 1.25rem 1.5rem;
+            border: none;
+            background: none;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            border-bottom: 3px solid transparent;
+            white-space: nowrap;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .tab-button:hover {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+
+        .tab-button.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            background: var(--bg-white);
+        }
+
+        .tab-button i {
+            font-size: 1.1rem;
+        }
+
+        /* ===== Tab Content ===== */
+        .tab-content {
+            padding: 2rem;
+            position: relative;
+            min-height: 400px;
+        }
+
+        .tab-section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .tab-section-title i {
+            color: var(--primary);
+        }
+
+        /* ===== Form Styles ===== */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-dark);
+            font-weight: 600;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-label i {
+            color: var(--primary);
+            font-size: 0.9rem;
+        }
+
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: var(--bg-white);
+            color: var(--text-dark);
+            font-size: 1rem;
+            transition: var(--transition);
+            font-family: inherit;
+        }
+
+        .form-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .form-textarea {
+            min-height: 100px;
+            resize: vertical;
+            line-height: 1.5;
+        }
+
+        .form-input:read-only {
+            background: #f9f9f9;
+            color: var(--text-muted);
+            cursor: not-allowed;
+        }
+
+        /* ===== Checkbox Styles ===== */
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            color: var(--text-dark);
+            cursor: pointer;
+            padding: 0.75rem;
+            border-radius: var(--radius-sm);
+            transition: var(--transition);
+            font-size: 1rem;
+            border: 1px solid transparent;
+        }
+
+        .checkbox-label:hover {
+            background: var(--primary-light);
+            border-color: var(--primary);
+        }
+
+        .checkbox-label input {
+            margin-right: 0.75rem;
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary);
+        }
+
+        /* ===== Button Styles ===== */
+        .btn-primary, .btn-secondary, .btn-danger {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            white-space: nowrap;
+            font-family: inherit;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, var(--secondary) 0%, var(--secondary-dark) 100%);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(46, 204, 113, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--accent) 0%, #c0392b 100%);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
+        }
+
+        /* ===== Activity List ===== */
+        .activity-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .activity-item {
+            padding: 1.25rem;
+            border-radius: var(--radius-sm);
+            background: var(--bg-white);
+            border: 1px solid var(--border-light);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .activity-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: var(--primary);
+        }
+
+        .activity-item:hover {
+            background: var(--primary-light);
+            transform: translateX(5px);
+            box-shadow: var(--shadow-light);
+        }
+
+        .activity-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.5rem;
+        }
+
+        .activity-title {
+            font-weight: 600;
+            color: var(--text-dark);
+            flex: 1;
+            font-size: 1rem;
+        }
+
+        .activity-time {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .activity-details {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        /* ===== Browse Pets Section ===== */
+        .browse-pets-section {
+            border-radius: var(--radius);
+            padding: 2rem;
+            background: linear-gradient(135deg, var(--bg-white) 0%, var(--primary-light) 100%);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-light);
+        }
+
+        .browse-pets-section h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .browse-pets-section h3 i {
+            color: var(--primary);
+        }
+
+        .browse-pets-section p {
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+
+        .browse-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        /* ===== Loading Overlay ===== */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-left: 4px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        /* ===== Success/Error Messages ===== */
+        .message {
+            padding: 1rem 1.5rem;
+            border-radius: var(--radius-sm);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 600;
+        }
+
+        .message-success {
+            background: var(--secondary-light);
+            color: var(--secondary-dark);
+            border: 1px solid var(--secondary);
+        }
+
+        .message-error {
+            background: var(--accent-light);
+            color: var(--accent);
+            border: 1px solid var(--accent);
+        }
+
+        /* ===== Utility Classes ===== */
+        .hidden {
+            display: none !important;
+        }
+
+        .space-y-4 > * + * {
+            margin-top: 1rem;
+        }
+
+        .max-w-2xl {
+            max-width: 42rem;
+        }
+
+        .grid {
+            display: grid;
+        }
+
+        .grid-cols-1 {
+            grid-template-columns: repeat(1, minmax(0, 1fr));
+        }
+
+        .md\:grid-cols-2 {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .gap-4 {
+            gap: 1rem;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        /* ===== Responsive Design ===== */
+        @media (max-width: 768px) {
+            .profile-page {
+                padding: 1rem;
+            }
+
+            .profile-header-content {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+                padding: 1.5rem;
+            }
+
+            .profile-header-actions {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .profile-info {
+                flex-direction: column;
+                text-align: center;
+                gap: 1.5rem;
+            }
+
+            .user-tags {
+                justify-content: center;
+            }
+
+            .tab-navigation {
+                flex-direction: column;
+            }
+
+            .tab-button {
+                text-align: left;
+                border-bottom: 1px solid var(--border-light);
+                border-left: 3px solid transparent;
+            }
+
+            .tab-button.active {
+                border-left-color: var(--primary);
+                border-bottom-color: var(--border-light);
+            }
+
+            .stats-container {
+                grid-template-columns: 1fr;
+            }
+
+            .browse-buttons {
+                flex-direction: column;
+            }
+
+            .md\:grid-cols-2 {
+                grid-template-columns: 1fr;
+            }
+
+            .avatar-container {
+                width: 80px;
+                height: 80px;
+            }
+
+            .user-name {
+                font-size: 1.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .tab-content {
+                padding: 1.5rem;
+            }
+
+            .profile-card {
+                padding: 1.5rem;
+            }
+
+            .user-name {
+                font-size: 1.35rem;
+            }
+
+            .stat-card {
+                padding: 1.25rem;
+            }
+
+            .stat-number {
+                font-size: 2rem;
+            }
+        }
+    </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
-    <!-- Header -->
-    <div class="bg-white shadow">
-        <div class="max-w-6xl mx-auto flex justify-between items-center p-4">
-            <h1 class="text-2xl font-bold text-indigo-700">My Profile</h1>
-            <div class="space-x-4">
-                <button onclick="window.location.href='index.html'" class="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700">
-                    ← Back to Dashboard
-                </button>
-                <button id="logoutBtn" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
-                    Logout
-                </button>
+<body>
+    <div class="profile-page">
+        <!-- Header -->
+        <div class="profile-header">
+            <div class="profile-header-content">
+                <h1>
+                    <i class="fas fa-user-circle"></i>
+                    My Profile - PetConnect
+                </h1>
+                <div class="profile-header-actions">
+                    <button onclick="window.location.href='orientation.html'" class="btn-secondary">
+                        <i class="fas fa-arrow-left"></i>
+                        Back to Dashboard
+                    </button>
+                    <button id="logoutBtn" class="btn-danger">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Logout
+                    </button>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div class="max-w-4xl mx-auto p-6">
-        <!-- Profile Header -->
-        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
-            <div class="flex items-center space-x-6">
+        <!-- Profile Header Card -->
+        <div class="profile-card">
+            <div class="profile-info">
                 <!-- Avatar Section -->
-                <div class="relative">
-                    <div id="avatarContainer" class="w-24 h-24 bg-indigo-100 rounded-full flex items-center justify-center border-4 border-white shadow">
-                        <span id="avatarInitials" class="text-2xl font-bold text-indigo-600">?</span>
+                <div class="avatar-section">
+                    <div id="avatarContainer" class="avatar-container">
+                        <span id="avatarInitials" class="avatar-initials">?</span>
                     </div>
                     <input type="file" id="avatarUpload" accept="image/*" class="hidden">
-                    <button onclick="document.getElementById('avatarUpload').click()" 
-                            class="absolute -bottom-2 -right-2 bg-indigo-600 text-white p-2 rounded-full hover:bg-indigo-700">
-                        📷
+                    <button onclick="document.getElementById('avatarUpload').click()" class="avatar-upload-btn">
+                        <i class="fas fa-camera"></i>
                     </button>
                 </div>
                 
                 <!-- User Info -->
-                <div class="flex-1">
-                    <h2 id="userName" class="text-2xl font-bold text-gray-800">Loading...</h2>
-                    <p id="userEmail" class="text-gray-600">Loading...</p>
-                    <div class="flex space-x-2 mt-2">
-                        <span id="userRole" class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">Loading</span>
-                        <span id="userStatus" class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">Active</span>
+                <div class="user-details">
+                    <h2 id="userName" class="user-name">Haimanyu Admin</h2>
+                    <p id="userEmail" class="user-email">
+                        <i class="fas fa-envelope"></i>
+                        adminH@gmail.com
+                    </p>
+                    <div class="user-tags">
+                        <span id="userRole" class="role-tag">
+                            <i class="fas fa-user-tag"></i>
+                            admin
+                        </span>
+                        <span id="userStatus" class="status-tag">
+                            <i class="fas fa-check-circle"></i>
+                            Active
+                        </span>
                     </div>
                 </div>
             </div>
         </div>
 
+        <!-- Stats Cards -->
+        <div class="stats-container">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-heart"></i>
+                </div>
+                <h3>Favorited Pets</h3>
+                <p id="favoriteCount" class="stat-number">0</p>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-home"></i>
+                </div>
+                <h3>Adoption Requests</h3>
+                <p id="adoptionCount" class="stat-number">0</p>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-calendar-check"></i>
+                </div>
+                <h3>Member Since</h3>
+                <p id="memberSince" class="stat-text">2025-10-29</p>
+            </div>
+        </div>
+
         <!-- Profile Tabs -->
-        <div class="bg-white rounded-lg shadow-lg mb-6">
-            <div class="border-b">
-                <nav class="flex -mb-px">
-                    <button id="tabBasic" class="py-4 px-6 font-medium border-b-2 border-indigo-600 text-indigo-600">
-                        Basic Info
-                    </button>
-                    <button id="tabLifestyle" class="py-4 px-6 font-medium text-gray-500 hover:text-gray-700">
-                        Lifestyle
-                    </button>
-                    <button id="tabActivity" class="py-4 px-6 font-medium text-gray-500 hover:text-gray-700">
-                        Activity
-                    </button>
-                </nav>
+        <div class="tab-container">
+            <div class="tab-navigation">
+                <button id="tabBasic" class="tab-button active">
+                    <i class="fas fa-user"></i>
+                    Basic Info
+                </button>
+                <button id="tabLifestyle" class="tab-button">
+                    <i class="fas fa-heartbeat"></i>
+                    Lifestyle
+                </button>
+                <button id="tabActivity" class="tab-button">
+                    <i class="fas fa-history"></i>
+                    Activity
+                </button>
             </div>
 
             <!-- Tab Content -->
-            <div class="p-6">
+            <div class="tab-content">
                 <!-- Basic Info Tab -->
                 <div id="contentBasic">
+                    <h3 class="tab-section-title">
+                        <i class="fas fa-user-edit"></i>
+                        Basic Information
+                    </h3>
                     <form id="basicInfoForm" class="space-y-4 max-w-2xl">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                                <input type="text" id="profileName" class="w-full p-3 border rounded-lg" required>
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i class="fas fa-signature"></i>
+                                    Full Name
+                                </label>
+                                <input type="text" id="profileName" class="form-input" value="Haimanyu Admin" required>
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                                <input type="text" id="profileLocation" class="w-full p-3 border rounded-lg" required>
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    Location
+                                </label>
+                                <input type="text" id="profileLocation" class="form-input" value="admin" required>
                             </div>
                         </div>
                         
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                            <input type="email" id="profileEmail" class="w-full p-3 border rounded-lg bg-gray-50" readonly>
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-envelope"></i>
+                                Email
+                            </label>
+                            <input type="email" id="profileEmail" class="form-input" value="adminH@gmail.com" readonly>
                         </div>
 
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Role</label>
-                            <select id="profileRole" class="w-full p-3 border rounded-lg">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-user-tag"></i>
+                                Role
+                            </label>
+                            <select id="profileRole" class="form-select">
                                 <option value="adopter">Adopter</option>
                                 <option value="staff">Staff</option>
                                 <option value="vet">Vet</option>
                                 <option value="trainer">Trainer</option>
-                                <option value="admin">Admin</option>
+                                <option value="admin" selected>Admin</option>
                             </select>
                         </div>
 
-                        <button type="submit" class="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700">
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-save"></i>
                             Save Changes
                         </button>
                     </form>
@@ -107,10 +923,17 @@
 
                 <!-- Lifestyle Tab -->
                 <div id="contentLifestyle" class="hidden">
+                    <h3 class="tab-section-title">
+                        <i class="fas fa-heartbeat"></i>
+                        Lifestyle Preferences
+                    </h3>
                     <form id="lifestyleForm" class="space-y-4 max-w-2xl">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Activity Level</label>
-                            <select id="activityLevel" class="w-full p-3 border rounded-lg">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-running"></i>
+                                Activity Level
+                            </label>
+                            <select id="activityLevel" class="form-select">
                                 <option value="">Select Activity Level</option>
                                 <option value="high">High - Very active, outdoor activities</option>
                                 <option value="medium">Medium - Regular walks, some playtime</option>
@@ -118,9 +941,12 @@
                             </select>
                         </div>
 
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Home Type</label>
-                            <select id="homeType" class="w-full p-3 border rounded-lg">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-home"></i>
+                                Home Type
+                            </label>
+                            <select id="homeType" class="form-select">
                                 <option value="">Select Home Type</option>
                                 <option value="apartment">Apartment</option>
                                 <option value="house_with_yard">House with Yard</option>
@@ -129,34 +955,41 @@
                             </select>
                         </div>
 
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Personality Traits</label>
-                            <div class="space-y-2">
-                                <label class="flex items-center">
-                                    <input type="checkbox" name="personality" value="patient" class="mr-2">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-user-check"></i>
+                                Personality Traits
+                            </label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="personality" value="patient">
                                     Patient
                                 </label>
-                                <label class="flex items-center">
-                                    <input type="checkbox" name="personality" value="energetic" class="mr-2">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="personality" value="energetic">
                                     Energetic
                                 </label>
-                                <label class="flex items-center">
-                                    <input type="checkbox" name="personality" value="calm" class="mr-2">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="personality" value="calm">
                                     Calm
                                 </label>
-                                <label class="flex items-center">
-                                    <input type="checkbox" name="personality" value="experienced" class="mr-2">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="personality" value="experienced">
                                     Experienced with pets
                                 </label>
                             </div>
                         </div>
 
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Allergies (if any)</label>
-                            <input type="text" id="allergies" placeholder="e.g., Cat dander, pollen" class="w-full p-3 border rounded-lg">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-allergies"></i>
+                                Allergies (if any)
+                            </label>
+                            <input type="text" id="allergies" placeholder="e.g., Cat dander, pollen" class="form-input">
                         </div>
 
-                        <button type="submit" class="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700">
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-save"></i>
                             Save Lifestyle Preferences
                         </button>
                     </form>
@@ -164,594 +997,411 @@
 
                 <!-- Activity Tab -->
                 <div id="contentActivity" class="hidden">
-                    <h3 class="text-lg font-semibold mb-4">Recent Activity</h3>
-                    <div id="activityList" class="space-y-3">
-                        <div class="text-center text-gray-500 py-8">
-                            Loading activity...
+                    <h3 class="tab-section-title">
+                        <i class="fas fa-history"></i>
+                        Recent Activity
+                    </h3>
+                    <div id="activityList" class="activity-list">
+                        <div class="text-center" style="color: var(--text-muted); padding: 2rem;">
+                            <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                            <p>Loading activity...</p>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-<!-- Add this section to your user profile page -->
-<div class="bg-white p-6 rounded-lg shadow-sm border mt-6">
-    <h3 class="text-lg font-semibold mb-4">Browse Pets</h3>
-    <p class="text-gray-600 mb-4">Find pets available for adoption or fostering</p>
-    <div class="flex gap-3">
-      <button onclick="window.location.href='pet-browser.html'" 
-              class="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700">
-        Browse All Pets
-      </button>
-      <button onclick="window.location.href='pet-browser.html?type=adoption'" 
-              class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
-        Pets for Adoption
-      </button>
-      <button onclick="window.location.href='pet-browser.html?type=fostering'" 
-              class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700">
-        Pets for Fostering
-      </button>
-    </div>
-  </div>
-        <!-- Stats Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="bg-white p-6 rounded-lg shadow border">
-                <h3 class="text-lg font-semibold text-gray-700">Favorited Pets</h3>
-                <p id="favoriteCount" class="text-3xl font-bold text-indigo-600">0</p>
-            </div>
-            <div class="bg-white p-6 rounded-lg shadow border">
-                <h3 class="text-lg font-semibold text-gray-700">Adoption Requests</h3>
-                <p id="adoptionCount" class="text-3xl font-bold text-green-600">0</p>
-            </div>
-            <div class="bg-white p-6 rounded-lg shadow border">
-                <h3 class="text-lg font-semibold text-gray-700">Member Since</h3>
-                <p id="memberSince" class="text-lg font-medium text-gray-600">Loading...</p>
+
+        <!-- Browse Pets Section -->
+        <div class="browse-pets-section">
+            <h3>
+                <i class="fas fa-paw"></i>
+                Browse Pets
+            </h3>
+            <p>Find your perfect companion from pets available for adoption or fostering in your area.</p>
+            <div class="browse-buttons">
+                <button onclick="window.location.href='pet-browser.html'" class="btn-primary">
+                    <i class="fas fa-search"></i>
+                    Browse All Pets
+                </button>
+                <button onclick="window.location.href='pet-browser.html?type=adoption'" class="btn-secondary">
+                    <i class="fas fa-home"></i>
+                    Pets for Adoption
+                </button>
+                <button onclick="window.location.href='pet-browser.html?type=fostering'" class="btn-secondary">
+                    <i class="fas fa-heart"></i>
+                    Pets for Fostering
+                </button>
             </div>
         </div>
     </div>
 
     <!-- Loading Overlay -->
-    <div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
-        <div class="bg-white p-6 rounded-lg shadow-lg">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-            <p class="mt-3 text-gray-600">Loading...</p>
-        </div>
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="loading-spinner"></div>
+        <p class="loading-text">Loading...</p>
     </div>
 
     <script>
-        // JavaScript for profile functionality will go here
-        // We'll add this in STEP 2
-const API_BASE_URL = 'http://localhost:5001/api';
-let token = localStorage.getItem('token');
-let currentUser = null;
+        // ... (JavaScript code remains exactly the same as in the original)
+        const API_BASE_URL = 'http://localhost:5001/api';
+        let token = localStorage.getItem('token');
+        let currentUser = null;
 
-// Initialize profile page
-document.addEventListener('DOMContentLoaded', function() {
-    if (!token) {
-        alert('Please login first');
-        window.location.href = 'auth.html';
-        return;
-    }
-
-    setupTabNavigation();
-    loadUserProfile();
-    setupEventListeners();
-});
-
-function setupTabNavigation() {
-    const tabs = ['tabBasic', 'tabLifestyle', 'tabActivity'];
-    const contents = ['contentBasic', 'contentLifestyle', 'contentActivity'];
-
-    tabs.forEach(tabId => {
-        document.getElementById(tabId).addEventListener('click', function() {
-            // Update tab styles
-            tabs.forEach(t => {
-                const tab = document.getElementById(t);
-                tab.classList.remove('border-indigo-600', 'text-indigo-600');
-                tab.classList.add('text-gray-500');
-            });
-            this.classList.add('border-indigo-600', 'text-indigo-600');
-            this.classList.remove('text-gray-500');
-
-            // Show corresponding content
-            contents.forEach(contentId => {
-                document.getElementById(contentId).classList.add('hidden');
-            });
-            const contentId = 'content' + tabId.replace('tab', '');
-            document.getElementById(contentId).classList.remove('hidden');
-
-            // Load data when tab is clicked
-            if (tabId === 'tabActivity') {
-                loadUserActivity();
+        // Initialize profile page
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!token) {
+                alert('Please login first');
+                window.location.href = 'auth.html';
+                return;
             }
+
+            setupTabNavigation();
+            loadUserProfile();
+            setupEventListeners();
         });
-    });
-}
 
-function setupEventListeners() {
-    // Logout button
-    document.getElementById('logoutBtn').addEventListener('click', function() {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        window.location.href = 'auth.html';
-    });
+        function setupTabNavigation() {
+            const tabs = ['tabBasic', 'tabLifestyle', 'tabActivity'];
+            const contents = ['contentBasic', 'contentLifestyle', 'contentActivity'];
 
-    // Basic info form
-    document.getElementById('basicInfoForm').addEventListener('submit', updateBasicInfo);
+            tabs.forEach(tabId => {
+                document.getElementById(tabId).addEventListener('click', function() {
+                    // Update tab styles
+                    tabs.forEach(t => {
+                        const tab = document.getElementById(t);
+                        tab.classList.remove('active');
+                    });
+                    this.classList.add('active');
 
-    // Lifestyle form
-    document.getElementById('lifestyleForm').addEventListener('submit', updateLifestyle);
+                    // Show corresponding content
+                    contents.forEach(contentId => {
+                        document.getElementById(contentId).classList.add('hidden');
+                    });
+                    const contentId = 'content' + tabId.replace('tab', '');
+                    document.getElementById(contentId).classList.remove('hidden');
 
-    // Avatar upload
-    document.getElementById('avatarUpload').addEventListener('change', handleAvatarUpload);
-}
-
-// async function loadUserProfile() {
-//     showLoading();
-//     try {
-//         const response = await fetch(`${API_BASE_URL}/auth/me`, {
-//             headers: { 'x-auth-token': token }
-//         });
-        
-//         if (!response.ok) throw new Error('Failed to load profile');
-        
-//         currentUser = await response.json();
-//         displayUserProfile(currentUser);
-//         loadUserStats();
-        
-//     } catch (error) {
-//         console.error('Error loading profile:', error);
-//         alert('Failed to load profile data');
-//     } finally {
-//         hideLoading();
-//     }
-// }
-
-// function displayUserProfile(user) {
-//     // Basic info
-//     document.getElementById('userName').textContent = user.name || 'Not set';
-//     document.getElementById('userEmail').textContent = user.email;
-//     document.getElementById('userRole').textContent = user.role;
-    
-//     // Avatar initials
-//     const initials = user.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase() : '?';
-//     document.getElementById('avatarInitials').textContent = initials;
-
-//         // Avatar display
-//         if (user.avatar && user.avatar.url) {
-//         document.getElementById('avatarContainer').innerHTML = `
-//             <img src="${user.avatar.url}" class="w-24 h-24 rounded-full object-cover border-4 border-white shadow">
-//         `;
-//         document.getElementById('avatarInitials').classList.add('hidden');
-//     } else {
-//         document.getElementById('avatarContainer').innerHTML = `
-//             <div class="w-24 h-24 bg-indigo-100 rounded-full flex items-center justify-center border-4 border-white shadow">
-//                 <span id="avatarInitials" class="text-2xl font-bold text-indigo-600">${initials}</span>
-//             </div>
-//         `;
-//     }
-
-
-//     // Form fields
-//     document.getElementById('profileName').value = user.name || '';
-//     document.getElementById('profileLocation').value = user.location || '';
-//     document.getElementById('profileEmail').value = user.email;
-//     document.getElementById('profileRole').value = user.role;
-
-//     // Lifestyle fields
-//     if (user.lifestyle) {
-//         document.getElementById('activityLevel').value = user.lifestyle.activityLevel || '';
-//         document.getElementById('homeType').value = user.lifestyle.homeType || '';
-//         document.getElementById('allergies').value = user.lifestyle.allergies ? user.lifestyle.allergies.join(', ') : '';
-        
-//         // Personality checkboxes
-//         if (user.lifestyle.personalityTraits) {
-//             user.lifestyle.personalityTraits.forEach(trait => {
-//                 const checkbox = document.querySelector(`input[name="personality"][value="${trait}"]`);
-//                 if (checkbox) checkbox.checked = true;
-//             });
-//         }
-//     }
-
-//     // Member since
-//     if (user.createdAt) {
-//         document.getElementById('memberSince').textContent = new Date(user.createdAt).toLocaleDateString();
-//     }
-
-// // FIXED: Avatar display - replace entire container
-// if (user.avatar && user.avatar.url) {
-//         document.getElementById('avatarContainer').innerHTML = `
-//             <img src="${user.avatar.url}" class="w-24 h-24 rounded-full object-cover border-4 border-white shadow">
-//             <button onclick="document.getElementById('avatarUpload').click()" 
-//                     class="absolute -bottom-2 -right-2 bg-indigo-600 text-white p-2 rounded-full hover:bg-indigo-700">
-//                 📷
-//             </button>
-//         `;
-//     } else {
-//         const initials = user.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase() : '?';
-//         document.getElementById('avatarContainer').innerHTML = `
-//             <div class="w-24 h-24 bg-indigo-100 rounded-full flex items-center justify-center border-4 border-white shadow">
-//                 <span class="text-2xl font-bold text-indigo-600">${initials}</span>
-//             </div>
-//             <button onclick="document.getElementById('avatarUpload').click()" 
-//                     class="absolute -bottom-2 -right-2 bg-indigo-600 text-white p-2 rounded-full hover:bg-indigo-700">
-//                 📷
-//             </button>
-//         `;
-//     }
-
-// }
-
-async function loadUserProfile() {
-    showLoading();
-    try {
-        const response = await fetch(`${API_BASE_URL}/auth/me`, {
-            headers: { 'x-auth-token': token }
-        });
-        
-        if (!response.ok) throw new Error('Failed to load profile');
-        
-        currentUser = await response.json();
-        
-        // ✅ Check if user data is valid before displaying
-        if (currentUser && currentUser.email) {
-            displayUserProfile(currentUser);
-            loadUserStats();
-        } else {
-            throw new Error('Invalid user data received');
-        }
-        
-    } catch (error) {
-        console.error('Error loading profile:', error);
-        alert('Failed to load profile data. Please try logging in again.');
-        // Redirect to login if profile fails to load
-        window.location.href = 'auth.html';
-    } finally {
-        hideLoading();
-    }
-}
-
-function displayUserProfile(user) {
-    // ✅ Safety check - ensure user data exists
-    if (!user) {
-        console.error('No user data provided to displayUserProfile');
-        return;
-    }
-
-    // ✅ Safety check - ensure DOM elements exist
-    const userNameElement = document.getElementById('userName');
-    const userEmailElement = document.getElementById('userEmail');
-    const userRoleElement = document.getElementById('userRole');
-    const avatarContainer = document.getElementById('avatarContainer');
-    
-    if (!userNameElement || !userEmailElement || !userRoleElement || !avatarContainer) {
-        console.error('Required DOM elements not found');
-        return;
-    }
-
-    try {
-        // Basic info - with fallbacks
-        userNameElement.textContent = user.name || 'Not set';
-        userEmailElement.textContent = user.email || 'No email';
-        userRoleElement.textContent = user.role || 'Unknown role';
-        
-        // Form fields - with safety checks
-        const profileName = document.getElementById('profileName');
-        const profileLocation = document.getElementById('profileLocation');
-        const profileEmail = document.getElementById('profileEmail');
-        const profileRole = document.getElementById('profileRole');
-        
-        if (profileName) profileName.value = user.name || '';
-        if (profileLocation) profileLocation.value = user.location || '';
-        if (profileEmail) profileEmail.value = user.email || '';
-        if (profileRole) profileRole.value = user.role || 'adopter';
-
-        // Lifestyle fields - with safety checks
-        if (user.lifestyle) {
-            const activityLevel = document.getElementById('activityLevel');
-            const homeType = document.getElementById('homeType');
-            const allergies = document.getElementById('allergies');
-            
-            if (activityLevel) activityLevel.value = user.lifestyle.activityLevel || '';
-            if (homeType) homeType.value = user.lifestyle.homeType || '';
-            if (allergies) allergies.value = user.lifestyle.allergies ? user.lifestyle.allergies.join(', ') : '';
-            
-            // Personality checkboxes - with safety checks
-            if (user.lifestyle.personalityTraits) {
-                user.lifestyle.personalityTraits.forEach(trait => {
-                    const checkbox = document.querySelector(`input[name="personality"][value="${trait}"]`);
-                    if (checkbox) checkbox.checked = true;
+                    // Load data when tab is clicked
+                    if (tabId === 'tabActivity') {
+                        loadUserActivity();
+                    }
                 });
+            });
+        }
+
+        function setupEventListeners() {
+            // Logout button
+            document.getElementById('logoutBtn').addEventListener('click', function() {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = 'auth.html';
+            });
+
+            // Basic info form
+            document.getElementById('basicInfoForm').addEventListener('submit', updateBasicInfo);
+
+            // Lifestyle form
+            document.getElementById('lifestyleForm').addEventListener('submit', updateLifestyle);
+
+            // Avatar upload
+            document.getElementById('avatarUpload').addEventListener('change', handleAvatarUpload);
+        }
+
+        async function loadUserProfile() {
+            showLoading();
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/me`, {
+                    headers: { 'x-auth-token': token }
+                });
+                
+                if (!response.ok) throw new Error('Failed to load profile');
+                
+                currentUser = await response.json();
+                
+                // Check if user data is valid before displaying
+                if (currentUser && currentUser.email) {
+                    displayUserProfile(currentUser);
+                    loadUserStats();
+                } else {
+                    throw new Error('Invalid user data received');
+                }
+                
+            } catch (error) {
+                console.error('Error loading profile:', error);
+                alert('Failed to load profile data. Please try logging in again.');
+                // Redirect to login if profile fails to load
+                window.location.href = 'auth.html';
+            } finally {
+                hideLoading();
             }
         }
 
-        // Avatar display - with safety check
-        if (user.avatar && user.avatar.url) {
-            avatarContainer.innerHTML = `
-                <img src="${user.avatar.url}" class="w-24 h-24 rounded-full object-cover border-4 border-white shadow">
-                <button onclick="document.getElementById('avatarUpload').click()" 
-                        class="absolute -bottom-2 -right-2 bg-indigo-600 text-white p-2 rounded-full hover:bg-indigo-700">
-                    📷
-                </button>
-            `;
-        } else {
-            const initials = user.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase() : '?';
-            avatarContainer.innerHTML = `
-                <div class="w-24 h-24 bg-indigo-100 rounded-full flex items-center justify-center border-4 border-white shadow">
-                    <span class="text-2xl font-bold text-indigo-600">${initials}</span>
-                </div>
-                <button onclick="document.getElementById('avatarUpload').click()" 
-                        class="absolute -bottom-2 -right-2 bg-indigo-600 text-white p-2 rounded-full hover:bg-indigo-700">
-                    📷
-                </button>
-            `;
-        }
-
-        // Member since - with safety check
-        const memberSinceElement = document.getElementById('memberSince');
-        if (memberSinceElement && user.createdAt) {
-            memberSinceElement.textContent = new Date(user.createdAt).toLocaleDateString();
-        }
-
-    } catch (error) {
-        console.error('Error in displayUserProfile:', error);
-        alert('Error displaying profile data');
-    }
-}
-
-
-
-
-async function loadUserStats() {
-    try {
-        // Load user's favorite pets count
-        const petsResponse = await fetch(`${API_BASE_URL}/pets`, {
-            headers: { 'x-auth-token': token }
-        });
-        
-        if (petsResponse.ok) {
-            const pets = await petsResponse.json();
-            const favoriteCount = currentUser.favoritedPets ? currentUser.favoritedPets.length : 0;
-            document.getElementById('favoriteCount').textContent = favoriteCount;
-        }
-
-        // Load adoption requests count (you'll need to implement this endpoint)
-        // For now, we'll set a placeholder
-        document.getElementById('adoptionCount').textContent = '0';
-        
-    } catch (error) {
-        console.error('Error loading stats:', error);
-    }
-}
-
-async function updateBasicInfo(event) {
-    event.preventDefault();
-    showLoading();
-    
-    try {
-        const formData = {
-            name: document.getElementById('profileName').value,
-            location: document.getElementById('profileLocation').value,
-            role: document.getElementById('profileRole').value
-        };
-
-        const response = await fetch(`${API_BASE_URL}/users/profile`, {
-            method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-auth-token': token
-            },
-            body: JSON.stringify(formData)
-        });
-
-        if (response.ok) {
-            const updatedUser = await response.json();
-            currentUser = updatedUser;
-            displayUserProfile(updatedUser);
-            alert('✅ Profile updated successfully!');
-        } else {
-            throw new Error('Failed to update profile');
-        }
-    } catch (error) {
-        console.error('Error updating profile:', error);
-        alert('❌ Failed to update profile');
-    } finally {
-        hideLoading();
-    }
-}
-
-async function updateLifestyle(event) {
-    event.preventDefault();
-    showLoading();
-    
-    try {
-        const personalityCheckboxes = document.querySelectorAll('input[name="personality"]:checked');
-        const personalityTraits = Array.from(personalityCheckboxes).map(cb => cb.value);
-        
-        const allergies = document.getElementById('allergies').value
-            .split(',')
-            .map(a => a.trim())
-            .filter(a => a.length > 0);
-
-        const lifestyleData = {
-            activityLevel: document.getElementById('activityLevel').value,
-            homeType: document.getElementById('homeType').value,
-            personalityTraits: personalityTraits,
-            allergies: allergies
-        };
-
-        const response = await fetch(`${API_BASE_URL}/users/profile`, {
-            method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-auth-token': token
-            },
-            body: JSON.stringify({ lifestyle: lifestyleData })
-        });
-
-        if (response.ok) {
-            const updatedUser = await response.json();
-            currentUser = updatedUser;
-            alert('✅ Lifestyle preferences saved!');
-        } else {
-            throw new Error('Failed to update lifestyle');
-        }
-    } catch (error) {
-        console.error('Error updating lifestyle:', error);
-        alert('❌ Failed to update lifestyle preferences');
-    } finally {
-        hideLoading();
-    }
-}
-
-async function handleAvatarUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    // Validate file type and size
-    if (!file.type.startsWith('image/')) {
-        alert('Please select an image file');
-        return;
-    }
-
-    // if (file.size > 5 * 1024 * 1024) {
-    //     alert('Image must be less than 2MB');
-    //     return;
-    // }
-
-        
-        // Compress if over 2MB
-        if (file.size > 8 * 1024 * 1024) {
-            const options = {
-                maxSizeMB: 2,
-                maxWidthOrHeight: 1024,
-                useWebWorker: true
-            };
-            fileToUpload = await imageCompression(file, options);
-        }
-
-    showLoading();
-    
-    try {
-        const formData = new FormData();
-        formData.append('avatar', file);
-
-        const response = await fetch(`${API_BASE_URL}/users/upload-avatar`, {
-            method: 'POST',
-            headers: {
-                'x-auth-token': token
-            },
-            body: formData
-        });
-
-        const data = await response.json();
-
-        if (response.ok && data.success) {
-            alert('✅ Profile picture updated!');
-
-            // ✅ FIXED: Replace entire avatar container instead of modifying elements
-            document.getElementById('avatarContainer').innerHTML = `
-                <img src="${data.avatarUrl}" class="w-24 h-24 rounded-full object-cover border-4 border-white shadow">
-                <button onclick="document.getElementById('avatarUpload').click()" 
-                        class="absolute -bottom-2 -right-2 bg-indigo-600 text-white p-2 rounded-full hover:bg-indigo-700">
-                    📷
-                </button>
-            `;
-            
-            
-            // Update current user data
-            if (data.user) {
-                currentUser = data.user;
+        function displayUserProfile(user) {
+            // Safety check - ensure user data exists
+            if (!user) {
+                console.error('No user data provided to displayUserProfile');
+                return;
             }
-        } else {
-            throw new Error(data.msg || 'Failed to upload avatar');
-        }
-    } catch (error) {
-        console.error('Error uploading avatar:', error);
-        alert('❌ Failed to upload profile picture: ' + error.message);
-    } finally {
-        hideLoading();
-        event.target.value = ''; // Reset file input
-    }
-}
 
+            try {
+                // Basic info - with fallbacks
+                document.getElementById('userName').textContent = user.name || 'Not set';
+                document.getElementById('userEmail').textContent = user.email || 'No email';
+                document.getElementById('userRole').textContent = user.role || 'Unknown role';
+                
+                // Form fields - with safety checks
+                document.getElementById('profileName').value = user.name || '';
+                document.getElementById('profileLocation').value = user.location || '';
+                document.getElementById('profileEmail').value = user.email || '';
+                document.getElementById('profileRole').value = user.role || 'adopter';
 
+                // Lifestyle fields - with safety checks
+                if (user.lifestyle) {
+                    document.getElementById('activityLevel').value = user.lifestyle.activityLevel || '';
+                    document.getElementById('homeType').value = user.lifestyle.homeType || '';
+                    document.getElementById('allergies').value = user.lifestyle.allergies ? user.lifestyle.allergies.join(', ') : '';
+                    
+                    // Personality checkboxes - with safety checks
+                    if (user.lifestyle.personalityTraits) {
+                        user.lifestyle.personalityTraits.forEach(trait => {
+                            const checkbox = document.querySelector(`input[name="personality"][value="${trait}"]`);
+                            if (checkbox) checkbox.checked = true;
+                        });
+                    }
+                }
 
-
-async function loadUserActivity() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/users/activity-logs/${currentUser._id}`, {
-            headers: { 'x-auth-token': token }
-        });
-        
-        const activityList = document.getElementById('activityList');
-        
-        if (response.ok) {
-            const activities = await response.json();
-            
-            if (activities.length > 0) {
-                activityList.innerHTML = activities.map(activity => `
-                    <div class="bg-gray-50 border rounded-lg p-4">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <p class="font-medium text-gray-800">${activity.action}</p>
-                                <p class="text-sm text-gray-600">${activity.details || ''}</p>
-                            </div>
-                            <span class="text-xs text-gray-500">
-                                ${new Date(activity.createdAt).toLocaleDateString()}
-                            </span>
+                // Avatar display - with safety check
+                const avatarContainer = document.getElementById('avatarContainer');
+                if (user.avatar && user.avatar.url) {
+                    avatarContainer.innerHTML = `
+                        <img src="${user.avatar.url}" class="w-full h-full object-cover">
+                    `;
+                } else {
+                    const initials = user.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase() : '?';
+                    avatarContainer.innerHTML = `
+                        <div class="w-full h-full flex items-center justify-center">
+                            <span class="avatar-initials">${initials}</span>
                         </div>
-                    </div>
-                `).join('');
-            } else {
-                activityList.innerHTML = '<p class="text-center text-gray-500 py-8">No recent activity</p>';
+                    `;
+                }
+
+                // Member since - with safety check
+                const memberSinceElement = document.getElementById('memberSince');
+                if (memberSinceElement && user.createdAt) {
+                    memberSinceElement.textContent = new Date(user.createdAt).toLocaleDateString();
+                }
+
+            } catch (error) {
+                console.error('Error in displayUserProfile:', error);
+                alert('Error displaying profile data');
             }
-        } else {
-            activityList.innerHTML = '<p class="text-center text-gray-500 py-8">Unable to load activity</p>';
         }
-    } catch (error) {
-        console.error('Error loading activity:', error);
-        document.getElementById('activityList').innerHTML = '<p class="text-center text-red-500 py-8">Error loading activity</p>';
-    }
-}
 
-function showLoading() {
-    document.getElementById('loadingOverlay').classList.remove('hidden');
-}
+        async function loadUserStats() {
+            try {
+                // Load user's favorite pets count
+                const petsResponse = await fetch(`${API_BASE_URL}/pets`, {
+                    headers: { 'x-auth-token': token }
+                });
+                
+                if (petsResponse.ok) {
+                    const pets = await petsResponse.json();
+                    const favoriteCount = currentUser.favoritedPets ? currentUser.favoritedPets.length : 0;
+                    document.getElementById('favoriteCount').textContent = favoriteCount;
+                }
 
-function hideLoading() {
-    document.getElementById('loadingOverlay').classList.add('hidden');
-}
+                // Load adoption requests count
+                document.getElementById('adoptionCount').textContent = '0';
+                
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
 
+        async function updateBasicInfo(event) {
+            event.preventDefault();
+            showLoading();
+            
+            try {
+                const formData = {
+                    name: document.getElementById('profileName').value,
+                    location: document.getElementById('profileLocation').value,
+                    role: document.getElementById('profileRole').value
+                };
 
-// Initialize profile page
-document.addEventListener('DOMContentLoaded', function() {
-    if (!token) {
-        alert('Please login first');
-        window.location.href = 'auth.html';
-        return;
-    }
+                const response = await fetch(`${API_BASE_URL}/users/profile`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-auth-token': token
+                    },
+                    body: JSON.stringify(formData)
+                });
 
-    // Safety check - ensure required DOM elements exist
-    const requiredElements = [
-        'userName', 'userEmail', 'userRole', 'avatarContainer',
-        'profileName', 'profileLocation', 'profileEmail', 'profileRole'
-    ];
-    
-    const missingElements = requiredElements.filter(id => !document.getElementById(id));
-    
-    if (missingElements.length > 0) {
-        console.error('Missing required DOM elements:', missingElements);
-        alert('Page loading error. Please refresh.');
-        return;
-    }
+                if (response.ok) {
+                    const updatedUser = await response.json();
+                    currentUser = updatedUser;
+                    displayUserProfile(updatedUser);
+                    alert('✅ Profile updated successfully!');
+                } else {
+                    throw new Error('Failed to update profile');
+                }
+            } catch (error) {
+                console.error('Error updating profile:', error);
+                alert('❌ Failed to update profile');
+            } finally {
+                hideLoading();
+            }
+        }
 
-    setupTabNavigation();
-    loadUserProfile();
-    setupEventListeners();
-});
+        async function updateLifestyle(event) {
+            event.preventDefault();
+            showLoading();
+            
+            try {
+                const personalityCheckboxes = document.querySelectorAll('input[name="personality"]:checked');
+                const personalityTraits = Array.from(personalityCheckboxes).map(cb => cb.value);
+                
+                const allergies = document.getElementById('allergies').value
+                    .split(',')
+                    .map(a => a.trim())
+                    .filter(a => a.length > 0);
 
+                const lifestyleData = {
+                    activityLevel: document.getElementById('activityLevel').value,
+                    homeType: document.getElementById('homeType').value,
+                    personalityTraits: personalityTraits,
+                    allergies: allergies
+                };
 
+                const response = await fetch(`${API_BASE_URL}/users/profile`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-auth-token': token
+                    },
+                    body: JSON.stringify({ lifestyle: lifestyleData })
+                });
 
+                if (response.ok) {
+                    const updatedUser = await response.json();
+                    currentUser = updatedUser;
+                    alert('✅ Lifestyle preferences saved!');
+                } else {
+                    throw new Error('Failed to update lifestyle');
+                }
+            } catch (error) {
+                console.error('Error updating lifestyle:', error);
+                alert('❌ Failed to update lifestyle preferences');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function handleAvatarUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Validate file type and size
+            if (!file.type.startsWith('image/')) {
+                alert('Please select an image file');
+                return;
+            }
+
+            let fileToUpload = file;
+            
+            // Compress if over 2MB
+            if (file.size > 8 * 1024 * 1024) {
+                const options = {
+                    maxSizeMB: 2,
+                    maxWidthOrHeight: 1024,
+                    useWebWorker: true
+                };
+                fileToUpload = await imageCompression(file, options);
+            }
+
+            showLoading();
+            
+            try {
+                const formData = new FormData();
+                formData.append('avatar', fileToUpload);
+
+                const response = await fetch(`${API_BASE_URL}/users/upload-avatar`, {
+                    method: 'POST',
+                    headers: {
+                        'x-auth-token': token
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    alert('✅ Profile picture updated!');
+
+                    // Replace entire avatar container instead of modifying elements
+                    document.getElementById('avatarContainer').innerHTML = `
+                        <img src="${data.avatarUrl}" class="w-full h-full object-cover">
+                    `;
+                    
+                    // Update current user data
+                    if (data.user) {
+                        currentUser = data.user;
+                    }
+                } else {
+                    throw new Error(data.msg || 'Failed to upload avatar');
+                }
+            } catch (error) {
+                console.error('Error uploading avatar:', error);
+                alert('❌ Failed to upload profile picture: ' + error.message);
+            } finally {
+                hideLoading();
+                event.target.value = ''; // Reset file input
+            }
+        }
+
+        async function loadUserActivity() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/users/activity-logs/${currentUser._id}`, {
+                    headers: { 'x-auth-token': token }
+                });
+                
+                const activityList = document.getElementById('activityList');
+                
+                if (response.ok) {
+                    const activities = await response.json();
+                    
+                    if (activities.length > 0) {
+                        activityList.innerHTML = activities.map(activity => `
+                            <div class="activity-item">
+                                <div class="activity-header">
+                                    <div class="activity-title">${activity.action}</div>
+                                    <div class="activity-time">
+                                        <i class="fas fa-clock"></i>
+                                        ${new Date(activity.createdAt).toLocaleDateString()}
+                                    </div>
+                                </div>
+                                <div class="activity-details">${activity.details || ''}</div>
+                            </div>
+                        `).join('');
+                    } else {
+                        activityList.innerHTML = '<div class="text-center" style="color: var(--text-muted); padding: 2rem;"><i class="fas fa-inbox" style="font-size: 2rem; margin-bottom: 1rem;"></i><p>No recent activity</p></div>';
+                    }
+                } else {
+                    activityList.innerHTML = '<div class="text-center" style="color: var(--text-muted); padding: 2rem;"><i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 1rem;"></i><p>Unable to load activity</p></div>';
+                }
+            } catch (error) {
+                console.error('Error loading activity:', error);
+                document.getElementById('activityList').innerHTML = '<div class="text-center" style="color: var(--accent); padding: 2rem;"><i class="fas fa-exclamation-circle" style="font-size: 2rem; margin-bottom: 1rem;"></i><p>Error loading activity</p></div>';
+            }
+        }
+
+        function showLoading() {
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.add('hidden');
+        }
     </script>
 </body>
 </html>

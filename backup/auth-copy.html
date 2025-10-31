@@ -1,0 +1,434 @@
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pet Capstone - Secure Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <style>.inter-font { font-family: 'Inter', sans-serif; }</style>
+</head>
+<body class="inter-font bg-gray-50 min-h-screen flex flex-col items-center p-4 sm:p-8">
+
+  <!-- Global Message -->
+  <div id="result" class="fixed top-0 inset-x-0 bg-opacity-90 py-3 text-center transition-all duration-300 transform -translate-y-full" style="z-index:100;"></div>
+
+  <div class="w-full max-w-4xl">
+    <h1 class="text-4xl font-bold text-center text-indigo-700 mb-8">Pet Capstone Project</h1>
+
+    <!-- Auth Section -->
+    <div id="authSection" class="space-y-6">
+      <div id="authForms" class="bg-white p-6 sm:p-8 rounded-xl shadow-2xl border border-indigo-100">
+        <h2 class="text-2xl font-semibold text-gray-800 mb-6">Access Account</h2>
+        <div class="grid md:grid-cols-2 gap-8">
+          <!-- Signup -->
+          <form id="signupForm" class="space-y-4">
+            <h3 class="text-xl font-medium text-indigo-600">Sign Up</h3>
+            <input type="email" id="signupEmail" placeholder="Email" required class="w-full p-3 border rounded-lg" />
+            <input type="password" id="signupPassword" placeholder="Password" required class="w-full p-3 border rounded-lg" />
+            <button type="submit" class="w-full bg-indigo-600 text-white p-3 rounded-lg hover:bg-indigo-700">Register</button>
+          </form>
+
+          <!-- Login -->
+          <form id="loginForm" class="space-y-4">
+            <h3 class="text-xl font-medium text-indigo-600">Login</h3>
+            <input type="email" id="loginEmail" placeholder="Email" required class="w-full p-3 border rounded-lg" />
+            <input type="password" id="loginPassword" placeholder="Password" required class="w-full p-3 border rounded-lg" />
+            <button type="submit" class="w-full bg-green-600 text-white p-3 rounded-lg hover:bg-green-700">Sign In</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Profile Setup -->
+      <div id="profileSetup" class="bg-yellow-50 p-6 sm:p-8 rounded-xl shadow-lg border border-yellow-300 hidden">
+        <h2 class="text-2xl font-semibold text-yellow-800 mb-6">Complete Your Profile</h2>
+        <form id="profileForm" class="space-y-4">
+          <input type="text" id="profileName" placeholder="Your Name" required class="w-full p-3 border rounded-lg" />
+          <input type="text" id="profileLocation" placeholder="Location" required class="w-full p-3 border rounded-lg" />
+          <select id="profileRole" class="w-full p-3 border rounded-lg bg-white">
+            <option value="adopter">Adopter</option>
+            <option value="staff">Staff</option>
+            <option value="vet">Vet</option>
+            <option value="trainer">Trainer</option>
+            <option value="admin">Admin</option>
+          </select>
+          <select id="activityLevel" class="w-full p-3 border rounded-lg bg-white">
+            <option value="">Activity Level (Optional)</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+          <button type="submit" class="w-full bg-yellow-600 text-white p-3 rounded-lg hover:bg-yellow-700">Save Profile</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboardSection" class="hidden space-y-8">
+      <div class="flex justify-between items-center bg-white p-6 rounded-xl shadow-lg">
+        <p id="userStatus" class="text-lg font-medium text-gray-700"></p>
+        <button id="logoutBtn" class="bg-red-500 text-white p-3 rounded-lg hover:bg-red-600">Sign Out</button>
+
+      </div>
+      <div id="dynamicDashboard" class="bg-white p-6 rounded-xl shadow-lg min-h-[400px]"></div>
+      <p id="debugToken" class="text-xs text-gray-500">Token: <span id="tokenDisplay"></span></p>
+    </div>
+  </div>
+
+  <!-- Vet Health Modal -->
+  <div id="vetHealthModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+    <div class="bg-white rounded-lg p-6 w-96">
+      <h3 class="text-xl font-semibold mb-4">Update Health Notes</h3>
+      <textarea id="healthNotesInput" class="w-full h-32 border rounded p-2 mb-4" placeholder="Enter health notes..."></textarea>
+      <div class="flex justify-end space-x-2">
+        <button id="cancelHealthBtn" class="px-4 py-2 bg-gray-400 text-white rounded">Cancel</button>
+        <button id="saveHealthBtn" class="px-4 py-2 bg-green-600 text-white rounded">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE_URL = "http://localhost:5001/api/auth";
+    const USER_API_URL = "http://localhost:5001/api/users";
+    const PETS_API_URL = "http://localhost:5001/api/pets";
+    const ADOPTIONS_API_URL = "http://localhost:5001/api/adoptions";
+
+    let token = localStorage.getItem("token");
+
+    const displayMessage = (msg, err=false)=>{
+      const r=document.getElementById("result");
+      r.innerText=msg;
+      r.className=`fixed top-0 inset-x-0 py-3 text-center transform translate-y-0 ${err?'bg-red-500':'bg-green-500'} text-white`;
+      clearTimeout(window.msgTimeout);
+      window.msgTimeout=setTimeout(()=>{r.classList.add("-translate-y-full")},4000);
+    };
+
+    const fetchWithAuth = (url,opt={})=>{
+      return fetch(url,{...opt,headers:{'Content-Type':'application/json','x-auth-token':token,...opt.headers}});
+    };
+
+    const setViewState = (logged,user,tok)=>{
+      if(logged){
+        document.getElementById("authSection").classList.add("hidden");
+        document.getElementById("dashboardSection").classList.remove("hidden");
+        document.getElementById("tokenDisplay").innerText=tok.substring(0,25)+"...";
+        document.getElementById("userStatus").innerHTML=`Welcome <b>${user.name}</b> (Role: ${user.role})`;
+        renderDashboard(user);
+      }else{
+        document.getElementById("authSection").classList.remove("hidden");
+        document.getElementById("dashboardSection").classList.add("hidden");
+        localStorage.removeItem("token");
+        token=null;
+      }
+    };
+
+    const handleAuthResponse=async(res)=>{
+      const d=await res.json();
+      if(res.ok&&d.token){
+        token=d.token;localStorage.setItem("token",token);
+        if(d.firstTime){
+          document.getElementById("authForms").classList.add("hidden");
+          document.getElementById("profileSetup").classList.remove("hidden");
+        }else{
+          await loadUserAndDashboard();
+        }
+      }else displayMessage(d.msg||"Auth failed",true);
+    };
+
+    // const loadUserAndDashboard=async()=>{
+    //   if(!token){setViewState(false);return;}
+    //   try{
+    //     const res=await fetchWithAuth(`${API_BASE_URL}/me`);
+    //     const user=await res.json();
+    //     if(res.ok)setViewState(true,user,token);
+    //     else{displayMessage(user.msg||"Session expired",true);setViewState(false);}
+    //   }catch{displayMessage("Server error",true);setViewState(false);}
+    // };
+
+    // test load dashboard
+    const loadUserAndDashboard=async()=>{
+  if(!token){setViewState(false);return;}
+  try{
+    const res=await fetchWithAuth(`${API_BASE_URL}/me`);
+    const user=await res.json();
+    if(res.ok) {
+      // NEW: Store user data for Socket.io before redirecting
+      localStorage.setItem('user', JSON.stringify(user));
+      setViewState(true,user,token);
+    }
+    else{displayMessage(user.msg||"Session expired",true);setViewState(false);}
+  }catch{displayMessage("Server error",true);setViewState(false);}
+};
+    // test end
+    // ------------------------
+    // Dashboard rendering
+    // ------------------------
+    const renderDashboard = async (user) => {
+      const dash = document.getElementById("dynamicDashboard");
+
+      try {
+        const res = await fetchWithAuth(PETS_API_URL);
+        const pets = await res.json();
+
+        if (!res.ok) throw new Error("Failed to fetch pets");
+
+        // ---------------- Adopter ----------------
+        if(user.role==="adopter"){
+          window.location.href="adopter.html";
+  return;
+        }
+
+        // ---------------- Staff ----------------
+        else if(user.role==="staff"){
+          // dash.innerHTML = `
+          //   <h2 class="text-2xl font-bold mb-4">Staff Dashboard - All Pets</h2>
+          //   <div id="petsList" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+          // `;
+          // const petsList = document.getElementById("petsList");
+          // if(pets.length>0){
+          //   petsList.innerHTML = pets.map(pet=>`
+          //     <div class="bg-white border rounded-xl shadow-md overflow-hidden p-4">
+          //       ${pet.images && pet.images[0]? `<img src="${pet.images[0]}" class="w-full h-48 object-cover mb-2">`
+          //       : `<div class="w-full h-48 flex items-center justify-center bg-gray-200 text-gray-500 mb-2">No Image</div>`}
+          //       <h3 class="text-lg font-semibold text-indigo-700">${pet.name}</h3>
+          //       <p class="text-sm text-gray-600">Breed: ${pet.breed || "Unknown"}</p>
+          //       <p class="text-sm text-gray-600">Energy: ${pet.energyLevel || "N/A"}</p>
+          //       <p class="text-sm text-gray-600">Status: ${pet.status}</p>
+          //       <p class="text-sm text-gray-600">Adopter: ${pet.adopter ? pet.adopter.name : "None"}</p>
+          //     </div>
+          //   `).join("");
+          // } else petsList.innerHTML=`<p class="col-span-3 text-center text-gray-500">No pets available</p>`;
+
+          // Redirect staff users to a separate page
+    window.location.href = "staff.html";
+    return; // stop further rendering here
+  } 
+        // ---------------- Vet / Trainer ----------------
+        else if(user.role==="admin") {
+          window.location.href = "admin.html";
+  return;
+        }
+// ---------------- Vet ----------------
+else if(user.role==="vet"){
+  // Auto-redirect vet to vet test page with token
+  const vetToken = token;
+  localStorage.setItem('vetToken', vetToken);
+  localStorage.setItem('user', JSON.stringify(user));
+  
+  // Create and redirect to vet dashboard
+  setTimeout(() => {
+    window.location.href = "vet-dashboard.html";
+  }, 500);
+  return;
+}
+// ---------------- Trainer ----------------
+else if(user.role==="trainer"){
+  // Auto-redirect trainer to trainer dashboard with token
+  const trainerToken = token;
+  localStorage.setItem('trainerToken', trainerToken);
+  localStorage.setItem('user', JSON.stringify(user));
+  
+  // Create and redirect to trainer dashboard
+  setTimeout(() => {
+    window.location.href = "trainer-dashboard.html";
+  }, 500);
+  return;
+}
+      } catch(err){
+        console.error(err);
+        displayMessage("Failed to load pets",true);
+      }
+    };
+
+    // ------------------------
+    // Modal & Update Functions
+    // ------------------------
+    let currentPetId = null;
+
+    const updateHealth = (petId)=>{
+      currentPetId = petId;
+      document.getElementById("vetHealthModal").classList.remove("hidden");
+    };
+
+    document.getElementById("cancelHealthBtn").addEventListener("click",()=>{
+      document.getElementById("vetHealthModal").classList.add("hidden");
+      document.getElementById("healthNotesInput").value = "";
+    });
+
+    document.getElementById("saveHealthBtn").addEventListener("click", async ()=>{
+      const notes = document.getElementById("healthNotesInput").value.trim();
+      if(!notes) return alert("Please add some health notes.");
+
+      try{
+        const res = await fetchWithAuth(`${PETS_API_URL}/${currentPetId}/health`,{
+          method:"PATCH",
+          body: JSON.stringify({healthNotes: notes})
+        });
+        const data = await res.json();
+        if(res.ok){
+          displayMessage("Health notes updated!");
+          document.getElementById("vetHealthModal").classList.add("hidden");
+          document.getElementById("healthNotesInput").value = "";
+          await loadUserAndDashboard();
+        } else displayMessage(data.msg||"Update failed",true);
+      } catch(err){
+        console.error(err);
+        displayMessage("Server error",true);
+      }
+    });
+
+    const markGoodCondition = async(petId)=>{
+      try{
+        const res = await fetchWithAuth(`${PETS_API_URL}/${petId}/health`,{
+          method:"PATCH",
+          body: JSON.stringify({goodCondition:true})
+        });
+        const data = await res.json();
+        if(res.ok) displayMessage("Pet marked in good condition!"), await loadUserAndDashboard();
+        else displayMessage(data.msg||"Update failed",true);
+      } catch(err){displayMessage("Server error",true);}
+    };
+
+    const updateTraining = async(petId)=>{
+      const note = prompt("Enter training notes:");
+      if(!note) return;
+      try{
+        const res = await fetchWithAuth(`${PETS_API_URL}/${petId}/training`,{
+          method:"PATCH",
+          body: JSON.stringify({trainingNotes: note})
+        });
+        const data = await res.json();
+        if(res.ok) displayMessage("Training notes updated!"), await loadUserAndDashboard();
+        else displayMessage(data.msg||"Update failed",true);
+      } catch(err){displayMessage("Server error",true);}
+    };
+
+    // ------------------------
+    // Auth Handlers
+    // ------------------------
+    document.getElementById("signupForm").addEventListener("submit",async(e)=>{
+      e.preventDefault();
+      const email=document.getElementById("signupEmail").value;
+      const password=document.getElementById("signupPassword").value;
+      try{
+        const res=await fetch(`${API_BASE_URL}/signup`,{
+          method:"POST",
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({email,password})
+        });
+        await handleAuthResponse(res);
+      }catch(err){displayMessage("Server error",true);}
+    });
+
+    document.getElementById("loginForm").addEventListener("submit",async(e)=>{
+      e.preventDefault();
+      const email=document.getElementById("loginEmail").value;
+      const password=document.getElementById("loginPassword").value;
+      try{
+        const res=await fetch(`${API_BASE_URL}/login`,{
+          method:"POST",
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({email,password})
+        });
+        await handleAuthResponse(res);
+      }catch(err){displayMessage("Server error",true);}
+    });
+
+    document.getElementById("profileForm").addEventListener("submit",async(e)=>{
+      e.preventDefault();
+      const name=document.getElementById("profileName").value;
+      const location=document.getElementById("profileLocation").value;
+      const role=document.getElementById("profileRole").value;
+      const activityLevel=document.getElementById("activityLevel").value;
+
+      try{
+        const res=await fetchWithAuth(`${USER_API_URL}/profile`,{
+          method:"PATCH",
+          body:JSON.stringify({name,location,role,activityLevel})
+        });
+        const data=await res.json();
+        if(res.ok){
+          displayMessage("Profile updated!");
+          document.getElementById("profileSetup").classList.add("hidden");
+          await loadUserAndDashboard();
+        }else displayMessage(data.msg||"Update failed",true);
+      }catch(err){displayMessage("Server error",true);}
+    });
+
+    document.getElementById("logoutBtn").addEventListener("click",()=>{
+      setViewState(false);
+    });
+
+    async function updateHealthStatus(petId) {
+  const selectEl = document.getElementById(`healthSelect-${petId}`);
+  const status = selectEl.value;
+  if (!status) return alert("Select a health status first");
+
+  try {
+    const res = await fetchWithAuth(`${PETS_API_URL}/${petId}/health-status`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      displayMessage(data.msg);
+      await loadUserAndDashboard();
+    } else {
+      displayMessage(data.msg || "Failed to update", true);
+    }
+  } catch (err) {
+    console.error(err);
+    displayMessage("Server error", true);
+  }
+}
+// adoption logic
+document.addEventListener('click', async (e) => {
+  if(e.target.classList.contains('requestAdoptionBtn')){
+    const petId = e.target.dataset.id;
+    try {
+      const res = await fetch(`${ADOPTIONS_API_URL}/${petId}/request`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json', 
+          'x-auth-token': token 
+        }
+      });
+
+      const data = await res.json();
+      if(res.ok) displayMessage('Adoption request submitted');
+      else displayMessage(data.msg || 'Request failed', true);
+    } catch(err) {
+      console.error(err);
+      displayMessage('Server error', true);
+    }
+  }
+});
+
+    // ------------------------
+    // Init
+    // ------------------------
+
+    document.addEventListener("DOMContentLoaded", loadUserAndDashboard);
+  </script>
+
+  <!--test socket-->
+  <script>
+    // Request browser notification permission (for all pages)
+    function requestNotificationPermission() {
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission().then(permission => {
+          console.log('Notification permission:', permission);
+        });
+      }
+    }
+    
+    // Initialize when auth page loads
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('🚀 Auth page loaded, requesting notification permissions...');
+      requestNotificationPermission();
+    });
+    </script>
+  <!--test ended-->
+</body>
+</html> -->

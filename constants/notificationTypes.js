@@ -6,8 +6,6 @@ module.exports = {
     ADOPTION_REJECTED: 'adoption_rejected',
     ADOPTION_FINALIZED: 'adoption_finalized',
     ADOPTION_CANCELLED: 'adoption_cancelled',
-
-
     
     // Meeting notifications
     MEETING_SCHEDULED: 'meeting_scheduled',

@@ -1,117 +1,968 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trainer Dashboard - PetConnect</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        .loading { opacity: 0.6; pointer-events: none; }
-        .assessment-form { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
-        .assessment-form.open { max-height: 2000px; }
+        /* TrainerDashboard.css - Complete Professional Version */
+        .trainer-dashboard {
+            min-height: 100vh;
+            background: #f8fafc;
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Header */
+        .trainer-dashboard-header {
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 1.5rem 2rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .trainer-header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .trainer-dashboard-title {
+            font-size: 1.875rem;
+            font-weight: bold;
+            color: #4f46e5;
+            margin: 0;
+        }
+
+        .trainer-info {
+            color: #64748b;
+            font-size: 0.875rem;
+            margin: 0.25rem 0 0 0;
+        }
+
+        .trainer-header-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .trainer-refresh-btn, .trainer-profile-btn, .trainer-back-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        .trainer-refresh-btn {
+            background: #10b981;
+            color: white;
+        }
+
+        .trainer-refresh-btn:hover {
+            background: #059669;
+        }
+
+        .trainer-profile-btn {
+            background: #4f46e5;
+            color: white;
+        }
+
+        .trainer-profile-btn:hover {
+            background: #4338ca;
+        }
+
+        .trainer-back-btn {
+            background: #6b7280;
+            color: white;
+        }
+
+        .trainer-back-btn:hover {
+            background: #4b5563;
+        }
+
+        /* Stats Grid */
+        .trainer-stats-grid {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .trainer-stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #4f46e5;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .trainer-stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .trainer-stat-card h3 {
+            font-size: 0.875rem;
+            color: #64748b;
+            margin: 0 0 0.5rem 0;
+            font-weight: 500;
+        }
+
+        .trainer-stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #1e293b;
+            margin: 0;
+        }
+
+        .trainer-stat-date {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #6b7280;
+            margin: 0;
+        }
+
+        /* Main Section */
+        .trainer-main-section {
+            max-width: 1200px;
+            margin: 0 auto 2rem auto;
+            background: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        /* Tabs */
+        .trainer-tabs {
+            display: flex;
+            border-bottom: 1px solid #e2e8f0;
+            background: #f8fafc;
+        }
+
+        .trainer-tab {
+            padding: 1rem 1.5rem;
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: #64748b;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .trainer-tab:hover {
+            color: #334155;
+            background: #f1f5f9;
+        }
+
+        .trainer-tab-active {
+            color: #4f46e5;
+            border-bottom-color: #4f46e5;
+            background: white;
+        }
+
+        /* Tab Content */
+        .trainer-tab-content {
+            padding: 0;
+        }
+
+        .trainer-tab-panel {
+            padding: 1.5rem;
+        }
+
+        .trainer-section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .trainer-section-header h2 {
+            margin: 0;
+            color: #1e293b;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .trainer-section-status {
+            color: #64748b;
+            font-size: 0.875rem;
+        }
+
+        /* Trainees List */
+        .trainer-trainees-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .trainer-trainee-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .trainer-trainee-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .trainer-trainee-content {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .trainer-trainee-image {
+            flex-shrink: 0;
+        }
+
+        .trainer-pet-image {
+            width: 6rem;
+            height: 6rem;
+            object-fit: cover;
+            border-radius: 0.5rem;
+            border: 1px solid #e2e8f0;
+        }
+
+        .trainer-pet-image-placeholder {
+            width: 6rem;
+            height: 6rem;
+            background: #e5e7eb;
+            border-radius: 0.5rem;
+            border: 1px solid #d1d5db;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6b7280;
+            font-size: 0.75rem;
+        }
+
+        .trainer-trainee-info {
+            flex: 1;
+        }
+
+        .trainer-trainee-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .trainer-trainee-name {
+            margin: 0;
+            color: #4f46e5;
+            font-size: 1.125rem;
+            font-weight: 600;
+        }
+
+        .trainer-status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .trainer-status-available { background: #dcfce7; color: #166534; }
+        .trainer-status-training { background: #fef3c7; color: #92400e; }
+        .trainer-status-followup { background: #fee2e2; color: #dc2626; }
+        .trainer-status-adopted { background: #dbeafe; color: #1e40af; }
+        .trainer-status-unavailable { background: #f3f4f6; color: #6b7280; }
+        .trainer-status-default { background: #f3f4f6; color: #6b7280; }
+
+        .trainer-trainee-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .trainer-detail-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.875rem;
+        }
+
+        .trainer-detail-label {
+            color: #6b7280;
+            font-weight: 500;
+        }
+
+        .trainer-training-notes {
+            font-size: 0.875rem;
+            color: #374151;
+        }
+
+        .trainer-training-notes strong {
+            color: #1f2937;
+        }
+
+        .trainer-trainee-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            min-width: 120px;
+        }
+
+        /* Action Buttons */
+        .trainer-action-btn {
+            padding: 0.5rem 0.75rem;
+            border: none;
+            border-radius: 0.375rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .trainer-action-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .trainer-action-primary {
+            background: #4f46e5;
+            color: white;
+        }
+
+        .trainer-action-primary:hover {
+            background: #4338ca;
+        }
+
+        .trainer-action-secondary {
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+        }
+
+        .trainer-action-secondary:hover {
+            background: #e2e8f0;
+        }
+
+        /* Assessments Grid */
+        .trainer-assessments-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        .trainer-assessment-form-section, .trainer-recent-assessments {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .trainer-assessment-form-section h3, .trainer-recent-assessments h3 {
+            margin: 0 0 1rem 0;
+            color: #1e293b;
+            font-size: 1.125rem;
+            font-weight: 600;
+        }
+
+        .trainer-assessment-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .trainer-behavior-profile {
+            background: #f0f9ff;
+            border: 1px solid #e0f2fe;
+            border-radius: 0.5rem;
+            padding: 1.25rem;
+        }
+
+        .trainer-behavior-profile h4 {
+            margin: 0 0 1rem 0;
+            color: #0369a1;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .trainer-form-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
+        }
+
+        /* Form Styles */
+        .trainer-form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .trainer-form-group label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 0.375rem;
+        }
+
+        .trainer-form-select, .trainer-form-input {
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+            font-family: inherit;
+            background-color: white;
+        }
+
+        .trainer-form-select {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.75rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+        }
+
+        .trainer-form-select:focus, .trainer-form-input:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .trainer-form-textarea {
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .trainer-form-textarea:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .trainer-primary-btn {
+            background: #4f46e5;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.875rem;
+        }
+
+        .trainer-primary-btn:hover:not(:disabled) {
+            background: #4338ca;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        }
+
+        .trainer-primary-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .trainer-form-submit {
+            width: 100%;
+            font-size: 1rem;
+            padding: 1rem;
+        }
+
+        /* Assessments List */
+        .trainer-assessments-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .trainer-assessment-card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 1.25rem;
+            transition: all 0.2s ease;
+        }
+
+        .trainer-assessment-card:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .trainer-assessment-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.75rem;
+        }
+
+        .trainer-assessment-header h4 {
+            margin: 0 0 0.25rem 0;
+            color: #1f2937;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .trainer-assessment-meta {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin: 0 0 0.25rem 0;
+        }
+
+        .trainer-assessment-date {
+            font-size: 0.75rem;
+            color: #9ca3af;
+            margin: 0;
+        }
+
+        .trainer-assessment-score {
+            background: #dcfce7;
+            color: #166534;
+            padding: 0.25rem 0.5rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .trainer-assessment-notes {
+            font-size: 0.875rem;
+            color: #4b5563;
+            margin: 0;
+            line-height: 1.4;
+        }
+
+        /* Sessions Grid */
+        .trainer-sessions-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        .trainer-session-form-section, .trainer-upcoming-sessions {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .trainer-session-form-section h3, .trainer-upcoming-sessions h3 {
+            margin: 0 0 1rem 0;
+            color: #1e293b;
+            font-size: 1.125rem;
+            font-weight: 600;
+        }
+
+        .trainer-session-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        /* Sessions List */
+        .trainer-sessions-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .trainer-session-card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 1.25rem;
+            transition: all 0.2s ease;
+        }
+
+        .trainer-session-card:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .trainer-session-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.75rem;
+        }
+
+        .trainer-session-header h4 {
+            margin: 0 0 0.25rem 0;
+            color: #4f46e5;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .trainer-session-type {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin: 0 0 0.25rem 0;
+        }
+
+        .trainer-session-meta {
+            font-size: 0.75rem;
+            color: #9ca3af;
+            margin: 0;
+        }
+
+        .trainer-session-status {
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .trainer-session-summary {
+            font-size: 0.875rem;
+            color: #4b5563;
+            margin: 0;
+            line-height: 1.4;
+        }
+
+        /* Empty States */
+        .trainer-empty-state {
+            text-align: center;
+            padding: 3rem 2rem;
+            color: #6b7280;
+            background: #f9fafb;
+            border-radius: 0.5rem;
+            border: 1px dashed #d1d5db;
+        }
+
+        .trainer-empty-state p {
+            margin: 0;
+            font-size: 0.875rem;
+        }
+
+        /* Loading States */
+        .trainer-loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 50vh;
+            font-size: 1.125rem;
+            color: #6b7280;
+        }
+
+        .trainer-loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            color: white;
+        }
+
+        .trainer-loading-spinner {
+            width: 3rem;
+            height: 3rem;
+            border: 4px solid #f3f4f6;
+            border-left: 4px solid #4f46e5;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .trainer-assessments-grid,
+            .trainer-sessions-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .trainer-header-content {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+            
+            .trainer-header-actions {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .trainer-stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1rem;
+                padding: 0 1rem;
+            }
+            
+            .trainer-tabs {
+                flex-direction: column;
+            }
+            
+            .trainer-tab {
+                text-align: center;
+                border-bottom: none;
+                border-left: 2px solid transparent;
+            }
+            
+            .trainer-tab-active {
+                border-bottom: none;
+                border-left: 2px solid #4f46e5;
+            }
+            
+            .trainer-trainee-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .trainer-trainee-image {
+                align-self: center;
+            }
+            
+            .trainer-trainee-actions {
+                flex-direction: row;
+                justify-content: center;
+            }
+            
+            .trainer-trainee-details {
+                grid-template-columns: 1fr;
+            }
+            
+            .trainer-main-section {
+                margin: 0 1rem 2rem 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .trainer-dashboard-header {
+                padding: 1rem;
+            }
+            
+            .trainer-dashboard-title {
+                font-size: 1.5rem;
+            }
+            
+            .trainer-stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .trainer-header-actions {
+                flex-direction: column;
+                width: 100%;
+            }
+            
+            .trainer-header-actions button {
+                width: 100%;
+            }
+            
+            .trainer-tab-panel {
+                padding: 1rem;
+            }
+            
+            .trainer-section-header {
+                flex-direction: column;
+                gap: 0.5rem;
+                align-items: flex-start;
+            }
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* Training Requests Styles */
+        .trainer-requests-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .trainer-request-card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 1.25rem;
+            transition: all 0.2s ease;
+        }
+
+        .trainer-request-card:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .trainer-request-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.75rem;
+        }
+
+        .trainer-request-header h4 {
+            margin: 0 0 0.25rem 0;
+            color: #1f2937;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .trainer-request-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .trainer-status-pending { background: #fef3c7; color: #92400e; }
+        .trainer-status-approved { background: #dcfce7; color: #166534; }
+        .trainer-status-rejected { background: #fee2e2; color: #dc2626; }
+        .trainer-status-completed { background: #dbeafe; color: #1e40af; }
+
+        .trainer-request-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+        }
+
+        .trainer-request-notes {
+            background: #f0f9ff;
+            border: 1px solid #e0f2fe;
+            border-radius: 0.375rem;
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+        }
+
+        .trainer-request-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen p-6">
-    <div class="max-w-6xl mx-auto">
+<body>
+    <div class="trainer-dashboard">
         <!-- Header -->
-        <div class="flex justify-between items-center mb-8">
-            <div>
-                <h1 class="text-3xl font-bold text-indigo-700">🎯 Trainer Dashboard</h1>
-                <p id="trainerInfo" class="text-gray-600">Loading...</p>
-            </div>
-            <div class="space-x-4">
-                <button onclick="refreshData()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
-                    🔄 Refresh
-                </button>
-                <button onclick="window.location.href='user-profile.html'" 
-                        class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
-                    👤 My Profile
-                </button>
-                <button onclick="window.location.href='index.html'" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700">
-                    ← Back to Main
-                </button>
+        <div class="trainer-dashboard-header">
+            <div class="trainer-header-content">
+                <div>
+                    <h1 class="trainer-dashboard-title">🎯 Trainer Dashboard</h1>
+                    <p id="trainerInfo" class="trainer-info">Loading...</p>
+                </div>
+                <div class="trainer-header-actions">
+                    <button onclick="refreshData()" class="trainer-refresh-btn">
+                        🔄 Refresh
+                    </button>
+                    <button onclick="window.location.href='user-profile.html'" class="trainer-profile-btn">
+                        👤 My Profile
+                    </button>
+                    <button onclick="window.location.href='index.html'" class="trainer-back-btn">
+                        ← Back to Main
+                    </button>
+                </div>
             </div>
         </div>
 
         <!-- Stats Overview -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-            <div class="bg-white p-4 rounded-lg shadow border">
-                <h3 class="text-lg font-semibold text-gray-700">My Trainees</h3>
-                <p id="traineesCount" class="text-2xl font-bold text-indigo-600">-</p>
+        <div class="trainer-stats-grid">
+            <div class="trainer-stat-card">
+                <h3>My Trainees</h3>
+                <p id="traineesCount" class="trainer-stat-number">-</p>
             </div>
-            <div class="bg-white p-4 rounded-lg shadow border">
-                <h3 class="text-lg font-semibold text-gray-700">Training Requests</h3>
-                <p id="requestsCount" class="text-2xl font-bold text-yellow-600">-</p>
+            <div class="trainer-stat-card">
+                <h3>Training Requests</h3>
+                <p id="requestsCount" class="trainer-stat-number">-</p>
             </div>
-            <div class="bg-white p-4 rounded-lg shadow border">
-                <h3 class="text-lg font-semibold text-gray-700">Upcoming Sessions</h3>
-                <p id="sessionsCount" class="text-2xl font-bold text-orange-600">-</p>
+            <div class="trainer-stat-card">
+                <h3>Upcoming Sessions</h3>
+                <p id="sessionsCount" class="trainer-stat-number">-</p>
             </div>
-            <div class="bg-white p-4 rounded-lg shadow border">
-                <h3 class="text-lg font-semibold text-gray-700">Today's Date</h3>
-                <p id="todayDate" class="text-lg font-medium text-gray-600">-</p>
+            <div class="trainer-stat-card">
+                <h3>Today's Date</h3>
+                <p id="todayDate" class="trainer-stat-date">-</p>
             </div>
         </div>
 
         <!-- Main Content Tabs -->
-        <div class="bg-white rounded-lg shadow-lg mb-6">
-            <div class="border-b">
-                <nav class="flex -mb-px">
-                    <button id="tabTrainees" class="py-4 px-6 font-medium border-b-2 border-indigo-600 text-indigo-600">
-                        My Trainees
-                    </button>
-                    <button id="tabRequests" class="py-4 px-6 font-medium text-gray-500 hover:text-gray-700">
-                        Training Requests
-                    </button>
-                    <button id="tabAssessments" class="py-4 px-6 font-medium text-gray-500 hover:text-gray-700">
-                        Behavior Assessments
-                    </button>
-                    <button id="tabSessions" class="py-4 px-6 font-medium text-gray-500 hover:text-gray-700">
-                        Training Sessions
-                    </button>
-                </nav>
+        <div class="trainer-main-section">
+            <div class="trainer-tabs">
+                <button id="tabTrainees" class="trainer-tab trainer-tab-active">My Trainees</button>
+                <button id="tabRequests" class="trainer-tab">Training Requests</button>
+                <button id="tabAssessments" class="trainer-tab">Behavior Assessments</button>
+                <button id="tabSessions" class="trainer-tab">Training Sessions</button>
             </div>
 
             <!-- Tab Content -->
-            <div class="p-6">
+            <div class="trainer-tab-content">
                 <!-- Trainees Tab -->
-                <div id="contentTrainees">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-semibold">My Assigned Pets</h2>
-                        <div class="text-sm text-gray-500" id="traineesStatus"></div>
+                <div id="contentTrainees" class="trainer-tab-panel">
+                    <div class="trainer-section-header">
+                        <h2>My Assigned Pets</h2>
+                        <div id="traineesStatus" class="trainer-section-status"></div>
                     </div>
-                    <div id="traineesList" class="space-y-4">
+                    
+                    <div id="traineesList" class="trainer-trainees-list">
                         <!-- Trainees will be loaded here -->
                     </div>
                 </div>
 
                 <!-- Training Requests Tab -->
-                <div id="contentRequests" class="hidden">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-semibold">Training Requests from Adopters</h2>
-                        <div class="text-sm text-gray-500" id="requestsStatus"></div>
+                <div id="contentRequests" class="trainer-tab-panel hidden">
+                    <div class="trainer-section-header">
+                        <h2>Training Requests from Adopters</h2>
+                        <div id="requestsStatus" class="trainer-section-status"></div>
                     </div>
-                    <div id="trainingRequestsList" class="space-y-4">
+                    <div id="trainingRequestsList" class="trainer-requests-list">
                         <!-- Training requests will be loaded here -->
                     </div>
                 </div>
 
                 <!-- Assessments Tab -->
-                <div id="contentAssessments" class="hidden">
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div>
-                            <h3 class="text-lg font-medium mb-3">New Behavior Assessment</h3>
-                            <div class="space-y-3">
-                                <select id="assessmentPetSelect" class="w-full p-3 border rounded-lg">
-                                    <option value="">Select a pet</option>
-                                </select>
-                                
+                <div id="contentAssessments" class="trainer-tab-panel hidden">
+                    <h2>Behavior Assessments</h2>
+                    <div class="trainer-assessments-grid">
+                        <div class="trainer-assessment-form-section">
+                            <h3>New Behavior Assessment</h3>
+                            <form class="trainer-assessment-form" onsubmit="return false;">
+                                <div class="trainer-form-group">
+                                    <select id="assessmentPetSelect" class="trainer-form-select" required>
+                                        <option value="">Select a pet</option>
+                                    </select>
+                                </div>
+
                                 <!-- Behavior Profile -->
-                                <div class="border rounded-lg p-4 bg-blue-50">
-                                    <h4 class="font-medium mb-3">🧠 Behavior Profile</h4>
+                                <div class="trainer-behavior-profile">
+                                    <h4>🧠 Behavior Profile</h4>
                                     
-                                    <div class="space-y-3">
-                                        <div>
-                                            <label class="block text-sm font-medium mb-1">Energy Level</label>
-                                            <select id="energyLevel" class="w-full p-2 border rounded">
+                                    <div class="trainer-form-grid">
+                                        <div class="trainer-form-group">
+                                            <label>Energy Level</label>
+                                            <select id="energyLevel" class="trainer-form-select">
                                                 <option value="very_low">Very Low</option>
                                                 <option value="low">Low</option>
                                                 <option value="moderate" selected>Moderate</option>
@@ -120,9 +971,9 @@
                                             </select>
                                         </div>
 
-                                        <div>
-                                            <label class="block text-sm font-medium mb-1">Social Behavior - With Adults</label>
-                                            <select id="socialAdults" class="w-full p-2 border rounded">
+                                        <div class="trainer-form-group">
+                                            <label>Social Behavior - With Adults</label>
+                                            <select id="socialAdults" class="trainer-form-select">
                                                 <option value="shy">Shy</option>
                                                 <option value="cautious">Cautious</option>
                                                 <option value="friendly" selected>Friendly</option>
@@ -131,9 +982,9 @@
                                             </select>
                                         </div>
 
-                                        <div>
-                                            <label class="block text-sm font-medium mb-1">Social Behavior - With Children</label>
-                                            <select id="socialChildren" class="w-full p-2 border rounded">
+                                        <div class="trainer-form-group">
+                                            <label>Social Behavior - With Children</label>
+                                            <select id="socialChildren" class="trainer-form-select">
                                                 <option value="not_recommended">Not Recommended</option>
                                                 <option value="supervised_only">Supervised Only</option>
                                                 <option value="good" selected>Good</option>
@@ -141,9 +992,9 @@
                                             </select>
                                         </div>
 
-                                        <div>
-                                            <label class="block text-sm font-medium mb-1">Trainability - Intelligence</label>
-                                            <select id="intelligence" class="w-full p-2 border rounded">
+                                        <div class="trainer-form-group">
+                                            <label>Trainability - Intelligence</label>
+                                            <select id="intelligence" class="trainer-form-select">
                                                 <option value="low">Low</option>
                                                 <option value="average" selected>Average</option>
                                                 <option value="high">High</option>
@@ -151,9 +1002,9 @@
                                             </select>
                                         </div>
 
-                                        <div>
-                                            <label class="block text-sm font-medium mb-1">Environment Needs - Space Required</label>
-                                            <select id="spaceRequired" class="w-full p-2 border rounded">
+                                        <div class="trainer-form-group">
+                                            <label>Environment Needs - Space Required</label>
+                                            <select id="spaceRequired" class="trainer-form-select">
                                                 <option value="apartment_ok">Apartment OK</option>
                                                 <option value="small_yard" selected>Small Yard</option>
                                                 <option value="large_yard">Large Yard</option>
@@ -164,19 +1015,25 @@
                                 </div>
 
                                 <!-- Trainer Notes -->
-                                <div>
-                                    <label class="block text-sm font-medium mb-1">Trainer Notes</label>
-                                    <textarea id="trainerNotes" placeholder="Behavior observations and recommendations..." class="w-full p-3 border rounded-lg h-24"></textarea>
+                                <div class="trainer-form-group">
+                                    <label>Trainer Notes</label>
+                                    <textarea
+                                        id="trainerNotes"
+                                        placeholder="Behavior observations and recommendations..."
+                                        class="trainer-form-textarea"
+                                        rows="4"
+                                    ></textarea>
                                 </div>
 
-                                <button onclick="addBehaviorAssessment()" class="w-full bg-indigo-600 text-white p-3 rounded-lg hover:bg-indigo-700">
+                                <button onclick="addBehaviorAssessment()" class="trainer-primary-btn trainer-form-submit">
                                     Save Behavior Assessment
                                 </button>
-                            </div>
+                            </form>
                         </div>
-                        <div>
-                            <h3 class="text-lg font-medium mb-3">Recent Assessments</h3>
-                            <div id="recentAssessments" class="space-y-3 max-h-96 overflow-y-auto">
+
+                        <div class="trainer-recent-assessments">
+                            <h3>Recent Assessments</h3>
+                            <div id="recentAssessments" class="trainer-assessments-list">
                                 <!-- Recent assessments will appear here -->
                             </div>
                         </div>
@@ -184,33 +1041,65 @@
                 </div>
 
                 <!-- Sessions Tab -->
-                <div id="contentSessions" class="hidden">
-                    <h2 class="text-xl font-semibold mb-4">Training Sessions</h2>
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div>
-                            <h3 class="text-lg font-medium mb-3">Record Training Session</h3>
-                            <div class="space-y-3">
-                                <select id="sessionPetSelect" class="w-full p-3 border rounded-lg">
-                                    <option value="">Select a pet</option>
-                                </select>
-                                <select id="sessionType" class="w-full p-3 border rounded-lg">
-                                    <option value="obedience_basic">Basic Obedience</option>
-                                    <option value="obedience_advanced">Advanced Obedience</option>
-                                    <option value="behavior_modification">Behavior Modification</option>
-                                    <option value="socialization">Socialization</option>
-                                    <option value="aggression_management">Aggression Management</option>
-                                </select>
-                                <input type="datetime-local" id="sessionDate" class="w-full p-3 border rounded-lg">
-                                <input type="number" id="sessionDuration" placeholder="Duration (minutes)" class="w-full p-3 border rounded-lg">
-                                <textarea id="sessionSummary" placeholder="Session summary..." class="w-full p-3 border rounded-lg h-20"></textarea>
-                                <button onclick="addTrainingSession()" class="w-full bg-green-600 text-white p-3 rounded-lg hover:bg-green-700">
+                <div id="contentSessions" class="trainer-tab-panel hidden">
+                    <h2>Training Sessions</h2>
+                    <div class="trainer-sessions-grid">
+                        <div class="trainer-session-form-section">
+                            <h3>Record Training Session</h3>
+                            <form class="trainer-session-form" onsubmit="return false;">
+                                <div class="trainer-form-group">
+                                    <select id="sessionPetSelect" class="trainer-form-select" required>
+                                        <option value="">Select a pet</option>
+                                    </select>
+                                </div>
+
+                                <div class="trainer-form-group">
+                                    <select id="sessionType" class="trainer-form-select" required>
+                                        <option value="obedience_basic">Basic Obedience</option>
+                                        <option value="obedience_advanced">Advanced Obedience</option>
+                                        <option value="behavior_modification">Behavior Modification</option>
+                                        <option value="socialization">Socialization</option>
+                                        <option value="aggression_management">Aggression Management</option>
+                                    </select>
+                                </div>
+
+                                <div class="trainer-form-group">
+                                    <input
+                                        type="datetime-local"
+                                        id="sessionDate"
+                                        class="trainer-form-input"
+                                        required
+                                    />
+                                </div>
+
+                                <div class="trainer-form-group">
+                                    <input
+                                        type="number"
+                                        id="sessionDuration"
+                                        placeholder="Duration (minutes)"
+                                        class="trainer-form-input"
+                                        required
+                                    />
+                                </div>
+
+                                <div class="trainer-form-group">
+                                    <textarea
+                                        id="sessionSummary"
+                                        placeholder="Session summary..."
+                                        class="trainer-form-textarea"
+                                        rows="3"
+                                    ></textarea>
+                                </div>
+
+                                <button onclick="addTrainingSession()" class="trainer-primary-btn trainer-form-submit">
                                     Record Training Session
                                 </button>
-                            </div>
+                            </form>
                         </div>
-                        <div>
-                            <h3 class="text-lg font-medium mb-3">Upcoming Sessions</h3>
-                            <div id="upcomingSessions" class="space-y-3">
+
+                        <div class="trainer-upcoming-sessions">
+                            <h3>Upcoming Sessions</h3>
+                            <div id="upcomingSessions" class="trainer-sessions-list">
                                 <!-- Upcoming sessions will appear here -->
                             </div>
                         </div>
@@ -220,14 +1109,14 @@
         </div>
 
         <!-- Loading Overlay -->
-        <div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
-            <div class="bg-white p-6 rounded-lg shadow-lg">
-                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-                <p class="mt-3 text-gray-600">Loading...</p>
-            </div>
+        <div id="loadingOverlay" class="trainer-loading-overlay hidden">
+            <div class="trainer-loading-spinner"></div>
+            <p>Loading...</p>
         </div>
     </div>
+
     <script>
+        // Your updated JavaScript code
         const TRAINER_API_URL = 'http://localhost:5001/api/trainer';
         const TRAINING_REQUESTS_API = 'http://localhost:5001/api/training-requests';
         const PETS_API_URL = 'http://localhost:5001/api/pets';
@@ -235,7 +1124,7 @@
         let currentUser = JSON.parse(localStorage.getItem('user') || '{}');
         let myTrainees = [];
         let trainingRequests = [];
-    
+
         // Initialize dashboard
         document.addEventListener('DOMContentLoaded', function() {
             if (!trainerToken) {
@@ -243,48 +1132,46 @@
                 window.location.href = 'index.html';
                 return;
             }
-    
+
             document.getElementById('trainerInfo').textContent = `Welcome, ${currentUser.name || 'Trainer'} | ${currentUser.email || ''}`;
             document.getElementById('todayDate').textContent = new Date().toLocaleDateString();
             
             setupTabNavigation();
             loadInitialData();
         });
-    
+
         function setupTabNavigation() {
-            const tabs = ['tabTrainees', 'tabRequests', 'tabAssessments', 'tabSessions'];
-            const contents = ['contentTrainees', 'contentRequests', 'contentAssessments', 'contentSessions'];
-    
-            tabs.forEach(tabId => {
-                document.getElementById(tabId).addEventListener('click', function() {
-                    // Update tab styles
-                    tabs.forEach(t => {
-                        const tab = document.getElementById(t);
-                        tab.classList.remove('border-indigo-600', 'text-indigo-600');
-                        tab.classList.add('text-gray-500');
+            const tabs = document.querySelectorAll('.trainer-tab');
+            
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    // Remove active class from all tabs
+                    tabs.forEach(t => t.classList.remove('trainer-tab-active'));
+                    
+                    // Add active class to clicked tab
+                    this.classList.add('trainer-tab-active');
+                    
+                    // Hide all tab content
+                    document.querySelectorAll('.trainer-tab-panel').forEach(content => {
+                        content.classList.add('hidden');
                     });
-                    this.classList.add('border-indigo-600', 'text-indigo-600');
-                    this.classList.remove('text-gray-500');
-    
+                    
                     // Show corresponding content
-                    contents.forEach(contentId => {
-                        document.getElementById(contentId).classList.add('hidden');
-                    });
-                    const contentId = 'content' + tabId.replace('tab', '');
+                    const contentId = 'content' + this.id.replace('tab', '');
                     document.getElementById(contentId).classList.remove('hidden');
-    
+                    
                     // Load data when tab is clicked
-                    if (tabId === 'tabRequests') {
+                    if (this.id === 'tabRequests') {
                         loadTrainingRequests();
-                    } else if (tabId === 'tabAssessments') {
+                    } else if (this.id === 'tabAssessments') {
                         loadRecentAssessments();
-                    } else if (tabId === 'tabSessions') {
+                    } else if (this.id === 'tabSessions') {
                         loadUpcomingSessions();
                     }
                 });
             });
         }
-    
+
         async function loadInitialData() {
             showLoading();
             try {
@@ -374,7 +1261,7 @@
                 console.error('Error loading trainees:', error);
                 document.getElementById('traineesStatus').textContent = 'Error: ' + error.message;
                 document.getElementById('traineesList').innerHTML = 
-                    '<p class="text-center text-red-500 py-4">Failed to load trainees: ' + error.message + '</p>';
+                    '<div class="trainer-empty-state"><p>Failed to load trainees: ' + error.message + '</p></div>';
             }
         }
 
@@ -383,10 +1270,10 @@
             
             if (myTrainees.length === 0) {
                 container.innerHTML = `
-                    <div class="text-center py-8">
-                        <p class="text-gray-500 mb-4">No pets assigned to you for training yet.</p>
-                        <p class="text-sm text-gray-400">Staff members will assign pets to you for training.</p>
-                        <button onclick="loadAvailablePets()" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                    <div class="trainer-empty-state">
+                        <p>No pets assigned to you for training yet.</p>
+                        <p class="text-sm mt-2">Staff members will assign pets to you for training.</p>
+                        <button onclick="loadAvailablePets()" class="trainer-action-btn trainer-action-primary mt-4">
                             View Available Pets
                         </button>
                     </div>`;
@@ -407,53 +1294,57 @@
                 const organization = pet.organization || trainee.organization;
                 
                 return `
-                <div class="bg-gray-50 border rounded-lg p-4 hover:shadow-md transition-shadow">
-                    <div class="flex gap-4">
+                <div class="trainer-trainee-card">
+                    <div class="trainer-trainee-content">
                         <!-- Pet Image -->
-                        <div class="flex-shrink-0">
+                        <div class="trainer-trainee-image">
                             ${images && images.length > 0 ? 
-                                `<img src="${images[0]}" class="w-24 h-24 object-cover rounded-lg border" alt="${petName}" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM5OTkiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg==';">` :
-                                `<div class="w-24 h-24 bg-gray-200 rounded-lg border flex items-center justify-center text-gray-500 text-sm">No Image</div>`
+                                `<img src="${images[0]}" alt="${petName}" class="trainer-pet-image">` :
+                                `<div class="trainer-pet-image-placeholder">No Image</div>`
                             }
                         </div>
                         
                         <!-- Pet Info -->
-                        <div class="flex-1">
-                            <div class="flex justify-between items-start">
-                                <div class="flex-1">
-                                    <h3 class="text-lg font-semibold text-indigo-700">${petName}</h3>
-                                    <div class="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm text-gray-600 mt-2">
-                                        <div><strong>Breed:</strong> ${breed}</div>
-                                        <div><strong>Age:</strong> ${age} years</div>
-                                        <div><strong>Gender:</strong> ${gender}</div>
-                                    </div>
-                                    <div class="mt-2">
-                                        <strong>Training Notes:</strong> 
-                                        <span class="text-gray-700">${trainingNotes}</span>
-                                    </div>
-                                    <div class="mt-1">
-                                        <strong>Status:</strong> 
-                                        <span class="px-2 py-1 rounded-full text-xs ${getStatusColor(status)}">${status}</span>
-                                    </div>
-                                    ${organization ? `
-                                        <div class="mt-1">
-                                            <strong>Organization:</strong> 
-                                            <span class="text-gray-700">${organization.name || organization}</span>
-                                        </div>
-                                    ` : ''}
+                        <div class="trainer-trainee-info">
+                            <div class="trainer-trainee-header">
+                                <h3 class="trainer-trainee-name">${petName}</h3>
+                                <span class="trainer-status-badge trainer-status-${status.toLowerCase().replace(' ', '-')}">
+                                    ${status}
+                                </span>
+                            </div>
+                            
+                            <div class="trainer-trainee-details">
+                                <div class="trainer-detail-row">
+                                    <span class="trainer-detail-label">Breed:</span>
+                                    <span>${breed}</span>
                                 </div>
-                                <div class="space-y-2 ml-4">
-                                    <button onclick="quickTrainingNote('${petId}')" class="block w-full bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
-                                        Quick Note
-                                    </button>
-                                    <button onclick="viewAssessments('${petId}')" class="block w-full bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">
-                                        View Assessments
-                                    </button>
-                                    <button onclick="addTrainingSessionModal('${petId}')" class="block w-full bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700">
-                                        Add Session
-                                    </button>
+                                <div class="trainer-detail-row">
+                                    <span class="trainer-detail-label">Age:</span>
+                                    <span>${age} years</span>
+                                </div>
+                                <div class="trainer-detail-row">
+                                    <span class="trainer-detail-label">Gender:</span>
+                                    <span>${gender}</span>
                                 </div>
                             </div>
+
+                            <div class="trainer-training-notes">
+                                <strong>Training Notes:</strong> 
+                                <span>${trainingNotes}</span>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="trainer-trainee-actions">
+                            <button onclick="quickTrainingNote('${petId}')" class="trainer-action-btn trainer-action-secondary">
+                                Quick Note
+                            </button>
+                            <button onclick="viewAssessments('${petId}')" class="trainer-action-btn trainer-action-primary">
+                                View Assessments
+                            </button>
+                            <button onclick="addTrainingSessionModal('${petId}')" class="trainer-action-btn trainer-action-primary">
+                                Add Session
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -515,7 +1406,7 @@
                 console.error('Error loading training requests:', error);
                 document.getElementById('requestsStatus').textContent = 'Error: ' + error.message;
                 document.getElementById('trainingRequestsList').innerHTML = 
-                    '<p class="text-center text-red-500 py-4">Failed to load training requests: ' + error.message + '</p>';
+                    '<div class="trainer-empty-state"><p>Failed to load training requests: ' + error.message + '</p></div>';
             }
         }
 
@@ -524,33 +1415,36 @@
             
             if (trainingRequests.length === 0) {
                 container.innerHTML = `
-                    <div class="text-center py-8">
-                        <p class="text-gray-500 mb-4">No training requests received yet.</p>
-                        <p class="text-sm text-gray-400">Adopters will send you training requests for their pets.</p>
+                    <div class="trainer-empty-state">
+                        <p>No training requests received yet.</p>
+                        <p class="text-sm mt-2">Adopters will send you training requests for their pets.</p>
                     </div>`;
                 return;
             }
 
-            container.innerHTML = trainingRequests.map(request => `
-                <div class="bg-white border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
-                    <div class="flex justify-between items-start mb-3">
+            container.innerHTML = trainingRequests.map(request => {
+                const statusClass = `trainer-status-${request.status}`;
+                
+                return `
+                <div class="trainer-request-card">
+                    <div class="trainer-request-header">
                         <div>
-                            <h3 class="text-lg font-semibold text-indigo-700">${request.pet?.name || 'Unknown Pet'}</h3>
+                            <h4>${request.pet?.name || 'Unknown Pet'}</h4>
                             <p class="text-sm text-gray-600">Requested by: ${request.adopter?.name || 'Unknown Adopter'}</p>
                         </div>
-                        <span class="px-3 py-1 rounded-full text-sm ${getRequestStatusColor(request.status)}">
+                        <span class="trainer-request-status ${statusClass}">
                             ${request.status.toUpperCase()}
                         </span>
                     </div>
                     
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                    <div class="trainer-request-details">
                         <div>
-                            <p class="text-sm"><strong>Session Type:</strong> ${formatSessionType(request.sessionType)}</p>
-                            <p class="text-sm"><strong>Duration:</strong> ${request.duration} minutes</p>
-                            <p class="text-sm"><strong>Price:</strong> $${request.price}</p>
+                            <p><strong>Session Type:</strong> ${formatSessionType(request.sessionType)}</p>
+                            <p><strong>Duration:</strong> ${request.duration} minutes</p>
+                            <p><strong>Price:</strong> $${request.price}</p>
                         </div>
                         <div>
-                            <p class="text-sm"><strong>Preferred Dates:</strong></p>
+                            <p><strong>Preferred Dates:</strong></p>
                             ${request.preferredDates && request.preferredDates.length > 0 ? 
                                 request.preferredDates.map(date => `
                                     <p class="text-xs text-gray-600">${new Date(date.date).toLocaleDateString()} - ${date.timeSlot}</p>
@@ -561,14 +1455,14 @@
                     </div>
                     
                     ${request.notes ? `
-                        <div class="mb-3 p-3 bg-blue-50 rounded">
-                            <p class="text-sm"><strong>Adopter Notes:</strong> ${request.notes}</p>
+                        <div class="trainer-request-notes">
+                            <p><strong>Adopter Notes:</strong> ${request.notes}</p>
                         </div>
                     ` : ''}
                     
                     ${request.specialInstructions ? `
-                        <div class="mb-3 p-3 bg-yellow-50 rounded">
-                            <p class="text-sm"><strong>Special Instructions:</strong> ${request.specialInstructions}</p>
+                        <div class="trainer-request-notes" style="background: #fef3c7; border-color: #fbbf24;">
+                            <p><strong>Special Instructions:</strong> ${request.specialInstructions}</p>
                         </div>
                     ` : ''}
                     
@@ -577,28 +1471,28 @@
                     </div>
                     
                     ${request.status === 'pending' ? `
-                        <div class="flex gap-2">
+                        <div class="trainer-request-actions">
                             <button onclick="approveTrainingRequest('${request._id}')" 
-                                    class="bg-green-600 text-white px-4 py-2 rounded text-sm hover:bg-green-700">
+                                    class="trainer-action-btn trainer-action-primary">
                                 ✅ Approve
                             </button>
                             <button onclick="rejectTrainingRequest('${request._id}')" 
-                                    class="bg-red-600 text-white px-4 py-2 rounded text-sm hover:bg-red-700">
+                                    class="trainer-action-btn" style="background: #ef4444; color: white;">
                                 ❌ Reject
                             </button>
                             <button onclick="showResponseForm('${request._id}')" 
-                                    class="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700">
+                                    class="trainer-action-btn trainer-action-secondary">
                                 💬 Respond
                             </button>
                         </div>
                     ` : request.status === 'approved' ? `
-                        <div class="flex gap-2">
+                        <div class="trainer-request-actions">
                             <button onclick="scheduleSession('${request._id}')" 
-                                    class="bg-purple-600 text-white px-4 py-2 rounded text-sm hover:bg-purple-700">
+                                    class="trainer-action-btn trainer-action-primary">
                                 📅 Schedule Session
                             </button>
                             <button onclick="viewRequestDetails('${request._id}')" 
-                                    class="bg-gray-600 text-white px-4 py-2 rounded text-sm hover:bg-gray-700">
+                                    class="trainer-action-btn trainer-action-secondary">
                                 View Details
                             </button>
                         </div>
@@ -608,32 +1502,9 @@
                         </div>
                     `}
                 </div>
-            `).join('');
+                `;
+            }).join('');
         }
-
-        function getStatusColor(status) {
-            const colors = {
-                'Available': 'bg-green-100 text-green-800',
-                'In Treatment': 'bg-yellow-100 text-yellow-800',
-                'Adopted': 'bg-blue-100 text-blue-800',
-                'Unavailable': 'bg-red-100 text-red-800',
-                'In Training': 'bg-purple-100 text-purple-800',
-                'Ready for Adoption': 'bg-green-100 text-green-800'
-            };
-            return colors[status] || 'bg-gray-100 text-gray-800';
-        }
-
-        function getRequestStatusColor(status) {
-            const colors = {
-                'pending': 'bg-yellow-100 text-yellow-800',
-                'approved': 'bg-green-100 text-green-800',
-                'rejected': 'bg-red-100 text-red-800',
-                'completed': 'bg-blue-100 text-blue-800',
-                'cancelled': 'bg-gray-100 text-gray-800'
-            };
-            return colors[status] || 'bg-gray-100 text-gray-800';
-        }
-
         function formatSessionType(sessionType) {
             const typeMap = {
                 'basic_obedience': 'Basic Obedience',
@@ -787,6 +1658,480 @@ Requested: ${new Date(request.createdAt).toLocaleDateString()}
             alert(details);
         }
 
+        // ✅ FIXED: Behavior Assessment Implementation
+        async function addBehaviorAssessment() {
+            const petId = document.getElementById('assessmentPetSelect').value;
+            if (!petId) {
+                alert('Please select a pet');
+                return;
+            }
+
+            // Get the selected pet details
+            const selectedPet = myTrainees.find(trainee => {
+                const pet = trainee.pet || trainee;
+                return (pet._id === petId || pet.id === petId);
+            });
+            
+            if (!selectedPet) {
+                alert('Selected pet not found in your trainees');
+                return;
+            }
+
+            const behaviorProfile = {
+                energyLevel: document.getElementById('energyLevel').value,
+                socialBehavior: {
+                    withAdults: document.getElementById('socialAdults').value,
+                    withChildren: document.getElementById('socialChildren').value
+                },
+                intelligence: document.getElementById('intelligence').value,
+                environmentNeeds: {
+                    spaceRequired: document.getElementById('spaceRequired').value
+                }
+            };
+
+            const trainerNotes = document.getElementById('trainerNotes').value;
+
+            try {
+                console.log('📝 Creating behavior assessment for pet:', petId);
+                
+                const response = await fetch(`${TRAINER_API_URL}/pets/${petId}/behavior-assessments`, {
+                    method: 'POST',
+                    headers: {
+                        'x-auth-token': trainerToken,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        behaviorProfile: behaviorProfile,
+                        trainerNotes: trainerNotes,
+                        followUpRequired: document.getElementById('socialChildren').value === 'supervised_only', // Example condition
+                        recommendations: [
+                            "Continue socialization training",
+                            "Monitor progress with children"
+                        ],
+                        compatibilityScores: {
+                            withFamilies: 7,
+                            withSingles: 8,
+                            withSeniors: 6,
+                            withExperiencedOwners: 9,
+                            withFirstTimeOwners: 5
+                        }
+                    })
+                });
+
+                const data = await response.json();
+                console.log('📦 Behavior assessment response:', data);
+
+                if (!response.ok) {
+                    throw new Error(data.msg || `Server error: ${response.status}`);
+                }
+
+                if (data.success) {
+                    alert('✅ Behavior assessment saved successfully!');
+                    // Clear the form
+                    document.getElementById('trainerNotes').value = '';
+                    // Reload recent assessments
+                    loadRecentAssessments();
+                } else {
+                    throw new Error(data.msg || 'Failed to save assessment');
+                }
+            } catch (error) {
+                console.error('❌ Error saving behavior assessment:', error);
+                alert('❌ Failed to save behavior assessment: ' + error.message);
+                
+                // Fallback: Store locally if server fails
+                if (error.message.includes('Server error')) {
+                    storeAssessmentLocally(petId, behaviorProfile, trainerNotes);
+                }
+            }
+        }
+
+        // Fallback function to store assessment locally
+        function storeAssessmentLocally(petId, behaviorProfile, trainerNotes) {
+            try {
+                const assessments = JSON.parse(localStorage.getItem('localBehaviorAssessments') || '[]');
+                const newAssessment = {
+                    _id: 'local-' + Date.now(),
+                    pet: { 
+                        _id: petId, 
+                        name: getPetName(petId) || 'Unknown Pet' 
+                    },
+                    behaviorProfile: behaviorProfile,
+                    trainerNotes: trainerNotes,
+                    assessmentDate: new Date().toISOString(),
+                    followUpRequired: false,
+                    createdAt: new Date().toISOString()
+                };
+                
+                assessments.unshift(newAssessment);
+                localStorage.setItem('localBehaviorAssessments', JSON.stringify(assessments));
+                
+                alert('⚠️ Saved assessment locally (server unavailable). Data will persist until refresh.');
+                loadRecentAssessments();
+            } catch (fallbackError) {
+                console.error('Failed to save locally:', fallbackError);
+            }
+        }
+
+        function getPetName(petId) {
+            const trainee = myTrainees.find(t => {
+                const pet = t.pet || t;
+                return (pet._id === petId || pet.id === petId);
+            });
+            return trainee ? (trainee.pet?.name || trainee.name) : 'Unknown Pet';
+        }
+
+        // ✅ FIXED: Training Session Implementation
+        async function addTrainingSession() {
+            const petId = document.getElementById('sessionPetSelect').value;
+            if (!petId) {
+                alert('Please select a pet');
+                return;
+            }
+
+            const sessionDate = document.getElementById('sessionDate').value;
+            const duration = parseInt(document.getElementById('sessionDuration').value);
+            const sessionType = document.getElementById('sessionType').value;
+            const sessionSummary = document.getElementById('sessionSummary').value;
+
+            if (!sessionDate || !duration || !sessionType) {
+                alert('Please fill in all required fields: date, duration, and session type');
+                return;
+            }
+
+            const sessionDetails = {
+                sessionDate: sessionDate,
+                duration: duration,
+                sessionType: sessionType,
+                focusAreas: getFocusAreas(sessionType)
+            };
+
+            try {
+                console.log('🎯 Creating training session for pet:', petId);
+                
+                const response = await fetch(`${TRAINER_API_URL}/pets/${petId}/training-sessions`, {
+                    method: 'POST',
+                    headers: {
+                        'x-auth-token': trainerToken,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        sessionDetails: sessionDetails,
+                        trainerObservations: {
+                            sessionSummary: sessionSummary,
+                            strengthsNoted: [],
+                            areasForImprovement: [],
+                            homework: [],
+                            nextSessionFocus: []
+                        },
+                        progressMetrics: {
+                            commandPerformance: {
+                                sit: 5, stay: 5, come: 5, heel: 5, down: 5
+                            },
+                            behaviorScores: {
+                                attentionSpan: 5,
+                                impulseControl: 5,
+                                socialConfidence: 5,
+                                stressTolerance: 5,
+                                overallProgress: 5
+                            }
+                        }
+                    })
+                });
+
+                const data = await response.json();
+                console.log('📦 Training session response:', data);
+
+                if (!response.ok) {
+                    throw new Error(data.msg || `Server error: ${response.status}`);
+                }
+
+                if (data.success) {
+                    alert('✅ Training session recorded successfully!');
+                    // Clear the form
+                    document.getElementById('sessionDuration').value = '';
+                    document.getElementById('sessionSummary').value = '';
+                    setDefaultSessionDate();
+                    
+                    // Store locally for immediate display
+                    storeSessionLocally(petId, sessionDetails, sessionSummary);
+                    
+                    // Reload upcoming sessions
+                    loadUpcomingSessions();
+                } else {
+                    throw new Error(data.msg || 'Failed to record session');
+                }
+            } catch (error) {
+                console.error('❌ Error recording training session:', error);
+                alert('❌ Failed to record training session: ' + error.message);
+                
+                // Fallback: Store locally if server fails
+                if (error.message.includes('Server error')) {
+                    storeSessionLocally(petId, sessionDetails, sessionSummary);
+                }
+            }
+        }
+
+        // Helper function to determine focus areas based on session type
+        function getFocusAreas(sessionType) {
+            const focusMap = {
+                'obedience_basic': ['sit', 'stay', 'come'],
+                'obedience_advanced': ['heel', 'down', 'place'],
+                'behavior_modification': ['impulse control', 'focus', 'calmness'],
+                'socialization': ['greeting behavior', 'play skills', 'confidence'],
+                'aggression_management': ['threshold management', 'desensitization', 'counter conditioning']
+            };
+            return focusMap[sessionType] || ['general training'];
+        }
+
+        // Store session locally for immediate display
+        function storeSessionLocally(petId, sessionDetails, sessionSummary) {
+            try {
+                const sessions = JSON.parse(localStorage.getItem('localTrainingSessions') || '[]');
+                const pet = myTrainees.find(t => {
+                    const p = t.pet || t;
+                    return (p._id === petId || p.id === petId);
+                });
+                
+                const newSession = {
+                    _id: 'local-' + Date.now(),
+                    pet: {
+                        _id: petId,
+                        name: pet ? (pet.pet?.name || pet.name) : 'Unknown Pet',
+                        breed: pet ? (pet.pet?.breed || pet.breed) : 'Unknown'
+                    },
+                    sessionDetails: sessionDetails,
+                    trainerObservations: {
+                        sessionSummary: sessionSummary
+                    },
+                    status: 'scheduled',
+                    createdAt: new Date().toISOString()
+                };
+                
+                sessions.unshift(newSession);
+                localStorage.setItem('localTrainingSessions', JSON.stringify(sessions));
+                
+                console.log('💾 Saved session locally:', newSession);
+            } catch (error) {
+                console.error('Failed to save session locally:', error);
+            }
+        }
+
+        // ✅ FIXED: Load Recent Assessments
+        async function loadRecentAssessments() {
+            try {
+                console.log('🔍 Loading recent assessments...');
+                
+                // Try to get assessments from server first
+                let serverAssessments = [];
+                let hasServerData = false;
+
+                // Try the trainer assessments endpoint
+                try {
+                    // This endpoint should get all assessments for the trainer
+                    const response = await fetch(`${TRAINER_API_URL}/behavior-assessments`, {
+                        headers: {
+                            'x-auth-token': trainerToken,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.success && data.assessments) {
+                            serverAssessments = data.assessments;
+                            hasServerData = true;
+                            console.log('✅ Loaded assessments from server:', serverAssessments.length);
+                        }
+                    }
+                } catch (serverError) {
+                    console.log('⚠️ Server endpoint not available, using fallback');
+                }
+
+                // If no server data, try to get assessments for each pet
+                if (!hasServerData) {
+                    console.log('🔄 Trying individual pet assessments...');
+                    for (const trainee of myTrainees.slice(0, 3)) { // Limit to 3 pets to avoid too many requests
+                        const pet = trainee.pet || trainee;
+                        const petId = pet._id || pet.id;
+                        
+                        try {
+                            const response = await fetch(`${TRAINER_API_URL}/pets/${petId}/behavior-assessments`, {
+                                headers: {
+                                    'x-auth-token': trainerToken,
+                                    'Content-Type': 'application/json'
+                                }
+                            });
+                            
+                            if (response.ok) {
+                                const data = await response.json();
+                                if (data.success && data.assessments) {
+                                    // Add pet info to each assessment
+                                    const assessmentsWithPet = data.assessments.map(assessment => ({
+                                        ...assessment,
+                                        pet: {
+                                            _id: petId,
+                                            name: pet.name || 'Unknown Pet'
+                                        }
+                                    }));
+                                    serverAssessments.push(...assessmentsWithPet);
+                                }
+                            }
+                        } catch (error) {
+                            console.log(`No assessments for ${pet.name}:`, error.message);
+                        }
+                    }
+                }
+
+                // Check local storage for assessments
+                const localAssessments = JSON.parse(localStorage.getItem('localBehaviorAssessments') || '[]');
+                
+                // Combine server and local assessments
+                const allAssessments = [...serverAssessments, ...localAssessments];
+                
+                // Sort by date and take most recent
+                const recentAssessments = allAssessments
+                    .sort((a, b) => new Date(b.assessmentDate || b.createdAt) - new Date(a.assessmentDate || a.createdAt))
+                    .slice(0, 10);
+
+                console.log('📊 Total assessments found:', recentAssessments.length);
+                renderRecentAssessments(recentAssessments);
+                
+            } catch (error) {
+                console.error('❌ Error loading recent assessments:', error);
+                // Show local assessments as fallback
+                const localAssessments = JSON.parse(localStorage.getItem('localBehaviorAssessments') || '[]');
+                renderRecentAssessments(localAssessments.slice(0, 5));
+            }
+        }
+
+        // ✅ FIXED: Render Recent Assessments
+        function renderRecentAssessments(assessments) {
+            const container = document.getElementById('recentAssessments');
+            
+            if (!assessments || assessments.length === 0) {
+                container.innerHTML = '<div class="trainer-empty-state"><p>No assessments found yet. Create your first assessment!</p></div>';
+                return;
+            }
+
+            container.innerHTML = assessments.map(assessment => {
+                const date = new Date(assessment.assessmentDate || assessment.createdAt).toLocaleDateString();
+                const energyLevel = assessment.behaviorProfile?.energyLevel || 'Not set';
+                const intelligence = assessment.behaviorProfile?.intelligence || 'Not set';
+                const petName = assessment.pet?.name || 'Unknown Pet';
+                
+                return `
+                <div class="trainer-assessment-card">
+                    <div class="trainer-assessment-header">
+                        <div>
+                            <h4>${petName}</h4>
+                            <p class="trainer-assessment-meta">Assessment on ${date}</p>
+                            <p class="trainer-assessment-meta">Energy: ${energyLevel} | Intelligence: ${intelligence}</p>
+                        </div>
+                        <span class="trainer-assessment-score">
+                            ${assessment.followUpRequired ? '🔔 Follow-up' : '✅ Complete'}
+                        </span>
+                    </div>
+                    <p class="trainer-assessment-notes">${assessment.trainerNotes || 'No notes provided.'}</p>
+                    ${assessment._id && assessment._id.includes('local-') ? 
+                        '<p class="text-xs text-yellow-600 mt-2">⚠️ Stored locally (server unavailable)</p>' : ''}
+                </div>
+                `;
+            }).join('');
+        }
+
+        // ✅ FIXED: Load Upcoming Sessions with local storage fallback
+        async function loadUpcomingSessions() {
+            try {
+                console.log('🔍 Loading upcoming sessions...');
+                
+                let serverSessions = [];
+                
+                // Try to get sessions from server
+                try {
+                    const response = await fetch(`${TRAINER_API_URL}/upcoming-sessions`, {
+                        headers: {
+                            'x-auth-token': trainerToken,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.success) {
+                            serverSessions = data.sessions || [];
+                            console.log('✅ Loaded sessions from server:', serverSessions.length);
+                        }
+                    }
+                } catch (serverError) {
+                    console.log('⚠️ Server endpoint not available');
+                }
+
+                // Get local sessions
+                const localSessions = JSON.parse(localStorage.getItem('localTrainingSessions') || '[]');
+                
+                // Filter local sessions to only include upcoming ones
+                const now = new Date();
+                const upcomingLocalSessions = localSessions.filter(session => {
+                    const sessionDate = new Date(session.sessionDetails.sessionDate);
+                    return sessionDate >= now;
+                });
+
+                // Combine server and local sessions
+                const allSessions = [...serverSessions, ...upcomingLocalSessions];
+                
+                // Sort by date
+                const sortedSessions = allSessions.sort((a, b) => 
+                    new Date(a.sessionDetails.sessionDate) - new Date(b.sessionDetails.sessionDate)
+                );
+
+                console.log('📊 Total upcoming sessions:', sortedSessions.length);
+                renderUpcomingSessions(sortedSessions);
+                
+            } catch (error) {
+                console.error('❌ Error loading upcoming sessions:', error);
+                // Fallback to local sessions only
+                const localSessions = JSON.parse(localStorage.getItem('localTrainingSessions') || '[]');
+                const now = new Date();
+                const upcomingSessions = localSessions.filter(session => 
+                    new Date(session.sessionDetails.sessionDate) >= now
+                );
+                renderUpcomingSessions(upcomingSessions);
+            }
+        }
+
+        // ✅ FIXED: Render Upcoming Sessions
+        function renderUpcomingSessions(sessions) {
+            const container = document.getElementById('upcomingSessions');
+            
+            if (sessions.length === 0) {
+                container.innerHTML = '<div class="trainer-empty-state"><p>No upcoming sessions scheduled.</p></div>';
+                return;
+            }
+
+            container.innerHTML = sessions.map(session => {
+                const sessionDate = new Date(session.sessionDetails.sessionDate);
+                const dateStr = sessionDate.toLocaleDateString();
+                const timeStr = sessionDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const petName = session.pet?.name || 'Unknown Pet';
+                
+                return `
+                <div class="trainer-session-card">
+                    <div class="trainer-session-header">
+                        <div>
+                            <h4>${petName}</h4>
+                            <p class="trainer-session-type">${formatSessionType(session.sessionDetails.sessionType)}</p>
+                            <p class="trainer-session-meta">${dateStr} at ${timeStr} | ${session.sessionDetails.duration} mins</p>
+                        </div>
+                        <span class="trainer-session-status">${session.status || 'scheduled'}</span>
+                    </div>
+                    <p class="trainer-session-summary">${session.trainerObservations?.sessionSummary || 'No summary provided.'}</p>
+                    ${session._id && session._id.includes('local-') ? 
+                        '<p class="text-xs text-yellow-600 mt-2">⚠️ Stored locally</p>' : ''}
+                </div>
+                `;
+            }).join('');
+        }
+
         // Helper functions
         async function loadAvailablePets() {
             try {
@@ -824,12 +2169,10 @@ Requested: ${new Date(request.createdAt).toLocaleDateString()}
 
         function showLoading() {
             document.getElementById('loadingOverlay').classList.remove('hidden');
-            document.body.classList.add('loading');
         }
 
         function hideLoading() {
             document.getElementById('loadingOverlay').classList.add('hidden');
-            document.body.classList.remove('loading');
         }
 
         // Set default session date
@@ -867,34 +2210,6 @@ Requested: ${new Date(request.createdAt).toLocaleDateString()}
             document.getElementById('sessionPetSelect').value = petId;
             document.getElementById('tabSessions').click();
             alert(`Ready to add session for ${petName}! Pet pre-selected in form.`);
-        }
-
-        async function addBehaviorAssessment() {
-            const petId = document.getElementById('assessmentPetSelect').value;
-            if (!petId) {
-                alert('Please select a pet');
-                return;
-            }
-            alert('Behavior assessment functionality would be implemented here');
-        }
-
-        async function addTrainingSession() {
-            const petId = document.getElementById('sessionPetSelect').value;
-            if (!petId) {
-                alert('Please select a pet');
-                return;
-            }
-            alert('Training session functionality would be implemented here');
-        }
-
-        async function loadRecentAssessments() {
-            // Placeholder
-            document.getElementById('recentAssessments').innerHTML = '<p class="text-gray-500 text-center py-4">No assessments yet</p>';
-        }
-
-        async function loadUpcomingSessions() {
-            // Placeholder
-            document.getElementById('upcomingSessions').innerHTML = '<p class="text-gray-500 text-center py-4">No upcoming sessions</p>';
         }
     </script>
 </body>

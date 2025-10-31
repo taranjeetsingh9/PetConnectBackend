@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blockchain Adoption System Demo</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --success: #27ae60;
+            --warning: #f39c12;
+            --danger: #e74c3c;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
+            --gradient: linear-gradient(135deg, #3498db, #2c3e50);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: var(--gradient);
+            color: white;
+            padding: 30px 0;
+            border-radius: 0 0 20px 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+        
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logo i {
+            font-size: 2.5rem;
+        }
+        
+        .logo h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+        }
+        
+        .tagline {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+        
+        .demo-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease;
+        }
+        
+        .demo-section:hover {
+            transform: translateY(-5px);
+        }
+        
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            color: var(--primary);
+            border-bottom: 2px solid var(--light);
+            padding-bottom: 10px;
+        }
+        
+        .section-title i {
+            font-size: 1.5rem;
+        }
+        
+        .section-title h2 {
+            font-size: 1.8rem;
+        }
+        
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+            border-left: 4px solid var(--secondary);
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.12);
+            transform: translateY(-3px);
+        }
+        
+        .card h3 {
+            color: var(--primary);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 12px 25px;
+            background: var(--secondary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(50, 50, 93, 0.11), 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+        
+        .btn:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 7px 14px rgba(50, 50, 93, 0.1), 0 3px 6px rgba(0, 0, 0, 0.08);
+        }
+        
+        .btn-success {
+            background: var(--success);
+        }
+        
+        .btn-success:hover {
+            background: #219653;
+        }
+        
+        .btn-warning {
+            background: var(--warning);
+        }
+        
+        .btn-warning:hover {
+            background: #e67e22;
+        }
+        
+        .btn-block {
+            display: block;
+            width: 100%;
+        }
+        
+        .test-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .result {
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            transition: all 0.3s ease;
+        }
+        
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        
+        .blockchain-visual {
+            background: var(--dark);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .blockchain-visual::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(52, 152, 219, 0.3), rgba(41, 128, 185, 0.3));
+            z-index: 0;
+        }
+        
+        .blockchain-visual h3 {
+            position: relative;
+            z-index: 1;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .blockchain-visual p {
+            position: relative;
+            z-index: 1;
+            margin-bottom: 10px;
+        }
+        
+        .blockchain-animation {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .block {
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            animation: pulse 2s infinite;
+        }
+        
+        .block:nth-child(2) {
+            animation-delay: 0.5s;
+        }
+        
+        .block:nth-child(3) {
+            animation-delay: 1s;
+        }
+        
+        .block:nth-child(4) {
+            animation-delay: 1.5s;
+        }
+        
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4);
+            }
+            70% {
+                transform: scale(1.05);
+                box-shadow: 0 0 0 10px rgba(255, 255, 255, 0);
+            }
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+            }
+        }
+        
+        .chain {
+            flex-grow: 1;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.3);
+            margin: 0 10px;
+            align-self: center;
+            border-radius: 2px;
+        }
+        
+        .feature-list {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        
+        .feature-list li {
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .feature-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .feature-list i {
+            color: var(--success);
+        }
+        
+        footer {
+            text-align: center;
+            padding: 30px 0;
+            margin-top: 50px;
+            color: #7f8c8d;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+                gap: 15px;
+            }
+            
+            .test-buttons {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-link"></i>
+                    <div>
+                        <h1>Blockchain Adoption System</h1>
+                        <p class="tagline">Secure, Transparent & Immutable Pet Adoption Records</p>
+                    </div>
+                </div>
+                <div class="blockchain-animation">
+                    <div class="block"><i class="fas fa-cube"></i></div>
+                    <div class="chain"></div>
+                    <div class="block"><i class="fas fa-cube"></i></div>
+                    <div class="chain"></div>
+                    <div class="block"><i class="fas fa-cube"></i></div>
+                    <div class="chain"></div>
+                    <div class="block"><i class="fas fa-cube"></i></div>
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <div class="container">
+        <section class="demo-section">
+            <div class="section-title">
+                <i class="fas fa-info-circle"></i>
+                <h2>System Overview</h2>
+            </div>
+            <p>This demonstration showcases a blockchain-based pet adoption system that permanently records adoption transactions on a distributed ledger. Each adoption creates an immutable record that cannot be altered or deleted.</p>
+            
+            <div class="blockchain-visual">
+                <h3><i class="fas fa-project-diagram"></i> Real Blockchain Network</h3>
+                <p>This demo connects to the <strong>Sepolia Testnet</strong> using your deployed smart contract:</p>
+                <p><strong>Contract Address:</strong> <code>0xD39f2A5E56a9B8B12066aC47DA86B4F27478aDEA</code></p>
+                <p><strong>Network:</strong> Ethereum Sepolia Testnet</p>
+                <p><strong>Status:</strong> <span id="live-status">Click "Test Blockchain Status" to check</span></p>
+                
+                <div class="blockchain-animation">
+                    <div class="block"><i class="fab fa-ethereum"></i></div>
+                    <div class="chain"></div>
+                    <div class="block"><i class="fas fa-link"></i></div>
+                    <div class="chain"></div>
+                    <div class="block"><i class="fas fa-database"></i></div>
+                    <div class="chain"></div>
+                    <div class="block"><i class="fas fa-shield-alt"></i></div>
+                </div>
+            </div>
+        </section>
+        
+        <section class="demo-section">
+            <div class="section-title">
+                <i class="fas fa-cogs"></i>
+                <h2>Blockchain Status & Configuration</h2>
+            </div>
+            <p>Check the current status of the blockchain network and verify that all systems are operational.</p>
+            
+            <div class="test-buttons">
+                <button class="btn" onclick="testBlockchainStatus()">
+                    <i class="fas fa-satellite-dish"></i> Test Blockchain Status
+                </button>
+                <button class="btn btn-warning" onclick="testContractConnection()">
+                    <i class="fas fa-file-contract"></i> Test Contract Connection
+                </button>
+                <button class="btn btn-success" onclick="showContractDetails()">
+                    <i class="fas fa-search"></i> View Contract Details
+                </button>
+            </div>
+            
+            <div id="status-results"></div>
+        </section>
+        
+        <section class="demo-section">
+            <div class="section-title">
+                <i class="fas fa-paw"></i>
+                <h2>Adoption Transaction Testing</h2>
+            </div>
+            <p>Simulate recording a pet adoption on the blockchain. This creates a permanent, tamper-proof record of the adoption.</p>
+            
+            <div class="card-grid">
+                <div class="card">
+                    <h3><i class="fas fa-dog"></i> Test Adoption</h3>
+                    <p>Record a sample pet adoption to demonstrate the blockchain functionality.</p>
+                    <button class="btn btn-success btn-block" onclick="testAdoptionRecording()">
+                        <i class="fas fa-feather-alt"></i> Test Adoption Recording
+                    </button>
+                </div>
+                
+                <div class="card">
+                    <h3><i class="fas fa-history"></i> View Adoption History</h3>
+                    <p>Retrieve and display previous adoption records stored on the blockchain.</p>
+                    <button class="btn btn-block" onclick="viewAdoptionHistory()">
+                        <i class="fas fa-book-open"></i> View History
+                    </button>
+                </div>
+            </div>
+            
+            <div id="adoption-results"></div>
+        </section>
+        
+        <section class="demo-section">
+            <div class="section-title">
+                <i class="fas fa-star"></i>
+                <h2>Key Features</h2>
+            </div>
+            
+            <ul class="feature-list">
+                <li><i class="fas fa-check-circle"></i> <strong>Immutable Records:</strong> Once recorded, adoption data cannot be altered or deleted</li>
+                <li><i class="fas fa-check-circle"></i> <strong>Transparency:</strong> All transactions are visible to authorized parties</li>
+                <li><i class="fas fa-check-circle"></i> <strong>Security:</strong> Cryptographic encryption ensures data integrity</li>
+                <li><i class="fas fa-check-circle"></i> <strong>Decentralization:</strong> No single point of failure</li>
+                <li><i class="fas fa-check-circle"></i> <strong>Automation:</strong> Smart contracts execute automatically when conditions are met</li>
+            </ul>
+        </section>
+    </div>
+    
+    <footer>
+        <div class="container">
+            <p>Blockchain Adoption System Demo &copy; 2023 | Built with <i class="fas fa-heart" style="color:#e74c3c"></i> for Secure Pet Adoptions</p>
+        </div>
+    </footer>
+
+    <script>
+        const API_BASE = '/api/blockchain';
+    
+        async function addResult(message, type = 'info', target = 'status-results') {
+            const results = document.getElementById(target);
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = `<strong>${type.toUpperCase()}:</strong> ${message}`;
+            results.appendChild(div);
+            
+            // Auto-scroll to the new result
+            div.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+
+        function getAuthToken() {
+    // Check common places where tokens are stored
+    return localStorage.getItem('token') || 
+           localStorage.getItem('authToken') ||
+           sessionStorage.getItem('token') ||
+           sessionStorage.getItem('authToken');
+}
+
+
+// to make every request with auth token
+async function makeAuthenticatedRequest(url, options = {}) {
+    const token = getAuthToken();
+    
+    if (!token) {
+        throw new Error('No authentication token found. Please log in to the main application first.');
+    }
+    
+    const defaultOptions = {
+        headers: {
+            'Content-Type': 'application/json',
+            'x-auth-token': token
+        }
+    };
+    
+    const mergedOptions = {
+        ...defaultOptions,
+        ...options,
+        headers: {
+            ...defaultOptions.headers,
+            ...options.headers
+        }
+    };
+    
+    const response = await fetch(url, mergedOptions);
+    
+    if (response.status === 401) {
+        throw new Error('Authentication failed. Please log in again.');
+    }
+    
+    return response;
+}
+    
+
+
+
+        async function testBlockchainStatus() {
+            try {
+                addResult('Testing real blockchain network status...', 'info');
+                
+                const response = await fetch(`${API_BASE}/public-status`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const status = data.status;
+                    let statusMessage = `
+    Blockchain Status:
+    ✓ Network: Sepolia Testnet
+    ✓ Connection: ${status.isConnected ? 'Connected' : 'Disconnected'}
+    ✓ Contract: ${status.contract ? 'Loaded' : 'Not Loaded'}
+    ✓ Gas Available: ${status.hasGas ? 'Yes' : 'No'}
+    ✓ Contract Address: ${status.contractAddress || 'Not set'}
+                    `.trim();
+    
+                    // Add contract test results if available
+                    if (status.contractTest) {
+                        statusMessage += `\n\nContract Test Results:
+    ✓ Owner: ${status.contractTest.owner || 'N/A'}
+    ✓ Total Adoptions: ${status.contractTest.totalAdoptions || '0'}
+    ✓ Success: ${status.contractTest.success ? 'Yes' : 'No'}`;
+                        
+                        if (status.contractTest.error) {
+                            statusMessage += `\n❌ Error: ${status.contractTest.error}`;
+                        }
+                    }
+    
+                    // Environment variables status
+                    statusMessage += `\n\nEnvironment Check:
+    ✓ CONTRACT_ADDRESS: ${status.env.CONTRACT_ADDRESS}
+    ✓ INFURA_PROJECT_ID: ${status.env.INFURA_PROJECT_ID}
+    ✓ WALLET_PRIVATE_KEY: ${status.env.WALLET_PRIVATE_KEY}`;
+    
+                    addResult(statusMessage, data.success ? 'success' : 'error');
+                } else {
+                    addResult(`Failed to get blockchain status: ${data.error}`, 'error');
+                }
+                
+            } catch (error) {
+                addResult(`Network error: ${error.message}`, 'error');
+            }
+        }
+    
+        async function testContractConnection() {
+            try {
+                addResult('Testing real smart contract connection...', 'info');
+                
+                const response = await fetch(`${API_BASE}/public-test-contract`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    let contractMessage = `
+    Smart Contract Connection Test:
+    ✓ Blockchain Connected: ${data.status.isConnected ? 'Yes' : 'No'}
+    ✓ Contract Loaded: ${data.status.contract ? 'Yes' : 'No'}
+    ✓ Gas Available: ${data.status.hasGas ? 'Yes' : 'No'}
+    ✓ Real Mode: ${data.realMode ? 'LIVE BLOCKCHAIN' : 'SIMULATION MODE'}
+                    `.trim();
+    
+                    if (data.contractTest) {
+                        contractMessage += `\n\nContract Read Test:
+    ✓ Owner: ${data.contractTest.owner || 'N/A'}
+    ✓ Total Adoptions: ${data.contractTest.totalAdoptions || '0'}
+    ✓ Success: ${data.contractTest.success ? 'Yes' : 'No'}`;
+                        
+                        if (data.contractTest.error) {
+                            contractMessage += `\n❌ Read Error: ${data.contractTest.error}`;
+                        }
+                    }
+    
+                    addResult(contractMessage, data.success ? 'success' : 'warning');
+                } else {
+                    addResult(`Contract test failed: ${data.error}`, 'error');
+                }
+                
+            } catch (error) {
+                addResult(`Network error: ${error.message}`, 'error');
+            }
+        }
+    
+        async function testAdoptionRecording() {
+    try {
+        addResult('Recording REAL adoption on blockchain...', 'info', 'adoption-results');
+        
+        // Check if we have a token
+        const token = getAuthToken();
+        if (!token) {
+            addResult(' No authentication token found. Please log in to the main application first.', 'error', 'adoption-results');
+            addResult('Solution: Open your main pet adoption application, log in, then return to this demo page.', 'info', 'adoption-results');
+            return;
+        }
+        
+        addResult('✓ Authentication token found', 'success', 'adoption-results');
+        
+        // Generate test data
+        const testData = {
+            petId: 'demo_pet_' + Date.now(),
+            petName: 'Blockchain Demo Pet',
+            breed: 'Siberian Husky'
+        };
+        
+        addResult(`Sending test data: ${JSON.stringify(testData)}`, 'info', 'adoption-results');
+        
+        const response = await makeAuthenticatedRequest(`${API_BASE}/test-adoption`, {
+            method: 'POST',
+            body: JSON.stringify(testData)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            const result = data.result;
+            
+            let adoptionMessage = `
+Adoption Recording Test:
+✓ Success: ${result.success ? 'Yes' : 'No'}
+✓ Mode: ${result.simulated ? 'SIMULATION' : 'REAL BLOCKCHAIN'}
+✓ Message: ${result.message}
+            `.trim();
+
+            if (result.transactionHash) {
+                adoptionMessage += `\n\n📄 Transaction Details:
+✓ Transaction Hash: ${result.transactionHash}
+✓ Block Number: ${result.blockNumber || 'Pending'}
+✓ Gas Used: ${result.gasUsed || 'N/A'}
+✓ Contract Address: ${result.contractAddress}`;
+
+                // Add explorer link
+                if (result.transactionHash && !result.simulated) {
+                    adoptionMessage += `\n🔍 View on Explorer: https://sepolia.etherscan.io/tx/${result.transactionHash}`;
+                }
+            }
+
+            if (result.error) {
+                adoptionMessage += `\n\nError: ${result.error}`;
+            }
+
+            addResult(adoptionMessage, result.success ? 'success' : 'warning', 'adoption-results');
+        } else {
+            const errorMessage = data.error || data.message || 'Unknown error occurred';
+            addResult(`Adoption recording failed: ${errorMessage}`, 'error', 'adoption-results');
+        }
+        
+    } catch (error) {
+        console.error('Adoption recording error:', error);
+        addResult(`Error: ${error.message}`, 'error', 'adoption-results');
+    }
+}
+
+
+async function viewAdoptionHistory() {
+            try {
+                addResult('Retrieving adoption history from blockchain...', 'info', 'adoption-results');
+                
+                // Since we don't have a direct history endpoint, show current status
+                const statusResponse = await fetch(`${API_BASE}/public-status`);
+                const statusData = await statusResponse.json();
+                
+                let historyMessage = `Current Blockchain Status:\n`;
+                historyMessage += `✓ Network: Sepolia Testnet\n`;
+                historyMessage += `✓ Contract: ${statusData.status.contractAddress || 'Not set'}\n`;
+                
+                if (statusData.status.contractTest) {
+                    historyMessage += `✓ Total Adoptions on Contract: ${statusData.status.contractTest.totalAdoptions || '0'}\n`;
+                    historyMessage += `✓ Contract Owner: ${statusData.status.contractTest.owner || 'N/A'}\n`;
+                }
+                
+                historyMessage += `\nNote: To view specific adoption history, use the main application interface.`;
+                
+                addResult(historyMessage, 'info', 'adoption-results');
+                
+            } catch (error) {
+                addResult(`Failed to retrieve history: ${error.message}`, 'error', 'adoption-results');
+            }
+        }
+    
+        // Additional function to show real contract details
+        async function showContractDetails() {
+            try {
+                addResult('Fetching contract details...', 'info');
+                
+                const response = await fetch(`${API_BASE}/public-status`);
+                const data = await response.json();
+                
+                if (data.success && data.status.contractAddress) {
+                    const contractMessage = `
+    Smart Contract Details:
+    ✓ Address: ${data.status.contractAddress}
+    ✓ Network: Sepolia Testnet
+    ✓ Owner: ${data.status.contractTest?.owner || 'Loading...'}
+    ✓ Total Adoptions: ${data.status.contractTest?.totalAdoptions || '0'}
+    
+    🔗 Explorer Links:
+    • Contract: https://sepolia.etherscan.io/address/${data.status.contractAddress}
+    • Recent Transactions: https://sepolia.etherscan.io/address/${data.status.contractAddress}#transactions
+                    `.trim();
+                    
+                    addResult(contractMessage, 'success');
+                } else {
+                    addResult('Contract details not available', 'warning');
+                }
+            } catch (error) {
+                addResult(`Error fetching contract details: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

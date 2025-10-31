@@ -58,7 +58,7 @@ app.use('/api/admin', require('./routes/admin'));
 
 // Serve frontend for testing
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'auth.html'));
+  res.sendFile(path.join(__dirname, 'orientation.html'));
 });
 
 
