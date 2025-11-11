@@ -4,7 +4,7 @@ const User = require('../models/User');
 
 exports.signup = async (email, password) => {
   try {
-    let user = await User.findOne({ email });
+    let user = await User.findOne({ email });  
     if (user) {
       throw { status: 400, message: 'User already exists' };
     }

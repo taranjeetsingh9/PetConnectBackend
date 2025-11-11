@@ -17,7 +17,8 @@ connectDB();
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static(__dirname));
+// app.use(express.static(__dirname));
+app.use(express.static(path.join(__dirname, '../Frontend')));
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
@@ -58,7 +59,7 @@ app.use('/api/admin', require('./routes/admin'));
 
 // Serve frontend for testing
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'orientation.html'));
+  res.sendFile(path.join(__dirname, '../Frontend/orientation.html'));
 });
 
 
@@ -93,7 +94,7 @@ app.use('/api/blockchain', blockchainViewRoutes);
 setInterval(async () => {
   try {
     const result = await reminderService.sendMeetingReminders();
-    console.log(`⏰ Sent ${result.sent} meeting reminders`);
+    console.log(` Sent ${result.sent} meeting reminders`);
   } catch (error) {
     console.error('Error in reminder service:', error);
   }
