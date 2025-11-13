@@ -64,10 +64,10 @@ class EmailService {
       };
 
       const result = await this.transporter.sendMail(mailOptions);
-      console.log('✅ Email sent successfully to:', to);
+      console.log('Email sent successfully to:', to);
       return result;
     } catch (error) {
-      console.error('❌ Email sending failed:', error);
+      console.error(' Email sending failed:', error);
       throw error;
     }
   }
@@ -215,7 +215,7 @@ class EmailService {
 </head>
 <body>
     <div class="header">
-        <h1>🎉 Adoption Finalized!</h1>
+        <h1> Adoption Finalized!</h1>
         <p>Your forever family is complete</p>
     </div>
     
@@ -317,7 +317,7 @@ class EmailService {
         </div>
         ` : `
         <div class="preparation">
-            <h4>🏢 In-Person Visit Preparation</h4>
+            <h4> In-Person Visit Preparation</h4>
             <ul>
                 <li>Arrive 10-15 minutes early</li>
                 <li>Bring a valid photo ID</li>
@@ -366,7 +366,7 @@ async sendAdoptionRequestEmail(staffEmail, staffName, petName, requestId) {
    * Send adoption approved email
    */
   async sendAdoptionApprovedEmail(adopterEmail, adopterName, petName, chatId) {
-    const subject = `🎉 Adoption Approved for ${petName}!`;
+    const subject = ` Adoption Approved for ${petName}!`;
     const html = this.generateAdoptionApprovedHTML(adopterName, petName, chatId);
     
     return await this.sendEmail(adopterEmail, subject, html);
@@ -458,7 +458,7 @@ async sendAdoptionRequestEmail(staffEmail, staffName, petName, requestId) {
   </head>
   <body>
       <div class="header">
-          <h1>✅ Adoption Approved!</h1>
+          <h1> Adoption Approved!</h1>
           <p>Next Steps for ${petName}</p>
       </div>
       
@@ -512,7 +512,7 @@ async sendAdoptionRequestEmail(staffEmail, staffName, petName, requestId) {
   </head>
   <body>
       <div class="header">
-          <h1>📝 Agreement Signed</h1>
+          <h1> Agreement Signed</h1>
           <p>Ready for Next Steps</p>
       </div>
       

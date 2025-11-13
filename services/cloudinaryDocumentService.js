@@ -16,7 +16,7 @@ class CloudinaryDocumentService {
    */
   async uploadAgreementPDF(pdfBuffer, agreementId, type = 'draft') {
     try {
-      console.log('☁️ Uploading agreement PDF to Cloudinary...');
+      console.log('Uploading agreement PDF to Cloudinary');
       
       return new Promise((resolve, reject) => {
         // Create upload stream for PDF
@@ -26,7 +26,7 @@ class CloudinaryDocumentService {
               ? FOLDERS_WITH_AGREEMENTS.ADOPTION_SIGNED_AGREEMENTS
               : FOLDERS_WITH_AGREEMENTS.ADOPTION_AGREEMENTS,
             public_id: `agreement-${agreementId}-${type}-${Date.now()}`,
-            resource_type: 'raw', // ✅ CRITICAL: Set to 'raw' for PDF files
+            resource_type: 'raw',
             type: 'upload',
             tags: ['adoption-agreement', type, agreementId],
             context: {
@@ -37,10 +37,10 @@ class CloudinaryDocumentService {
           },
           (error, result) => {
             if (error) {
-              console.error('❌ Cloudinary upload error:', error);
+              console.error(' Cloudinary upload error:', error);
               reject(new Error(`Cloudinary upload failed: ${error.message}`));
             } else {
-              console.log('✅ Agreement PDF uploaded to Cloudinary:', result.public_id);
+              console.log('Agreement PDF uploaded to Cloudinary:', result.public_id);
               resolve({
                 public_id: result.public_id,
                 url: result.secure_url,
@@ -60,7 +60,7 @@ class CloudinaryDocumentService {
       });
 
     } catch (error) {
-      console.error('❌ Cloudinary upload error:', error);
+      console.error('Cloudinary upload error:', error);
       throw new Error(`Failed to upload agreement to Cloudinary: ${error.message}`);
     }
   }
@@ -89,7 +89,7 @@ class CloudinaryDocumentService {
       return pdfUrl;
 
     } catch (error) {
-      console.error('❌ Cloudinary get error:', error);
+      console.error('Cloudinary get error:', error);
       throw new Error(`Failed to get agreement from Cloudinary: ${error.message}`);
     }
   }
@@ -103,11 +103,11 @@ class CloudinaryDocumentService {
         resource_type: 'raw'
       });
       
-      console.log('🗑️ Deleted agreement from Cloudinary:', publicId);
+      console.log(' Deleted agreement from Cloudinary:', publicId);
       return result;
 
     } catch (error) {
-      console.error('❌ Cloudinary delete error:', error);
+      console.error('Cloudinary delete error:', error);
       throw new Error(`Failed to delete agreement from Cloudinary: ${error.message}`);
     }
   }

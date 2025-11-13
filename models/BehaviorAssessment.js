@@ -30,22 +30,21 @@ const BehaviorAssessmentSchema = new mongoose.Schema({
             withAdults: {
                 type: String,
                 enum: ['shy', 'cautious', 'friendly', 'very_friendly', 'overly_excited'],
-                required: true
+          
             },
             withChildren: {
                 type: String, 
                 enum: ['not_recommended', 'supervised_only', 'good', 'excellent'],
-                required: true
+             
             },
             withOtherPets: {
                 type: String,
                 enum: ['not_recommended', 'selective', 'good', 'excellent'],
-                required: true
+                
             },
             withStrangers: {
                 type: String,
                 enum: ['fearful', 'cautious', 'neutral', 'friendly'],
-                required: true
             }
         },
         
@@ -54,17 +53,17 @@ const BehaviorAssessmentSchema = new mongoose.Schema({
             intelligence: {
                 type: String,
                 enum: ['low', 'average', 'high', 'very_high'],
-                required: true
+         
             },
             obedience: {
                 type: String,
                 enum: ['stubborn', 'selective', 'obedient', 'eager_to_please'],
-                required: true
+            
             },
             trainingProgress: {
                 type: String,
                 enum: ['beginner', 'intermediate', 'advanced', 'expert'],
-                required: true
+                
             }
         },
         
@@ -111,12 +110,12 @@ const BehaviorAssessmentSchema = new mongoose.Schema({
             spaceRequired: {
                 type: String,
                 enum: ['apartment_ok', 'small_yard', 'large_yard', 'rural'],
-                required: true
+          
             },
             exerciseNeeds: {
                 type: String,
                 enum: ['low', 'moderate', 'high', 'very_high'],
-                required: true
+          
             },
             climateTolerance: {
                 type: String,

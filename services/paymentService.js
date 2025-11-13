@@ -105,7 +105,7 @@ async handleWebhook(payload, signature) {
       process.env.STRIPE_WEBHOOK_SECRET
     );
 
-    console.log('🔔 Stripe webhook received:', event.type);
+    console.log(' Stripe webhook received:', event.type);
 
     if (event.type === 'payment_intent.succeeded') {
       await this.handleSuccessfulPayment(event.data.object);
@@ -118,7 +118,7 @@ async handleWebhook(payload, signature) {
     return { success: true, processed: event.type };
     
   } catch (error) {
-    console.error('❌ Webhook error:', error);
+    console.error(' Webhook error:', error);
     throw error;
   }
 }
@@ -127,7 +127,7 @@ async handleWebhook(payload, signature) {
 async handleSuccessfulPayment(paymentIntent) {
   const { adoptionRequest } = paymentIntent.metadata;
   
-  console.log('💰 Payment successful for adoption:', adoptionRequest);
+  console.log('Payment successful for adoption:', adoptionRequest);
 
   // Update payment record
   await Payment.findOneAndUpdate(
@@ -145,7 +145,7 @@ async handleSuccessfulPayment(paymentIntent) {
 }
 
 async handleFailedPayment(paymentIntent) {
-  console.log('❌ Payment failed for:', paymentIntent.metadata.adoptionRequest);
+  console.log(' Payment failed for:', paymentIntent.metadata.adoptionRequest);
   
   await Payment.findOneAndUpdate(
     { paymentIntentId: paymentIntent.id },

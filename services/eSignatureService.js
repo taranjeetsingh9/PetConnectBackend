@@ -36,7 +36,7 @@ class ESignatureService {
    */
   async generateAgreementPDF(request, customClauses = []) {
     try {
-      console.log('📄 Generating professional agreement PDF for:', request.pet.name);
+      console.log(' Generating professional agreement PDF for:', request.pet.name);
 
       // Create a new PDF document
       const pdfDoc = await PDFDocument.create();
@@ -302,12 +302,12 @@ class ESignatureService {
 
       // Save PDF
       const pdfBytes = await pdfDoc.save();
-      console.log('✅ PDF generated successfully');
+      console.log(' PDF generated successfully');
       
       return pdfBytes;
       
     } catch (error) {
-      console.error('❌ Error generating PDF:', error);
+      console.error(' Error generating PDF:', error);
       throw new Error(`PDF generation failed: ${error.message}`);
     }
   }
@@ -346,7 +346,7 @@ class ESignatureService {
       .update(`${agreementId}-${adopterId}-${Date.now()}-${secret}`)
       .digest('hex');
     
-    console.log('🔐 Generated signature token for agreement:', agreementId);
+    console.log(' Generated signature token for agreement:', agreementId);
     return token;
   }
   
@@ -372,7 +372,7 @@ class ESignatureService {
  */
 async addSignatureToPDFSimple(originalPdfBytes, signatureImage, signatureData) {
   try {
-    console.log('🖊️ Adding digital signature to PDF (simple version)...');
+    console.log(' Adding digital signature to PDF (simple version)...');
     
     // Load the original PDF
     const pdfDoc = await PDFDocument.load(originalPdfBytes);
@@ -418,12 +418,12 @@ async addSignatureToPDFSimple(originalPdfBytes, signatureImage, signatureData) {
     pdfDoc.setModificationDate(new Date());
     
     const signedPdfBytes = await pdfDoc.save();
-    console.log('✅ Digital signature added to PDF (simple version)');
+    console.log(' Digital signature added to PDF (simple version)');
     
     return signedPdfBytes;
     
   } catch (error) {
-    console.error('❌ Error adding signature to PDF:', error);
+    console.error(' Error adding signature to PDF:', error);
     throw new Error(`Failed to add signature: ${error.message}`);
   }
 }
@@ -586,15 +586,15 @@ generateSignatureCaptureHTML(agreementId, token) {
 
                 if (response.ok) {
                     const result = await response.json();
-                    alert('✅ Agreement signed successfully! Redirecting to payment...');
+                    alert(' Agreement signed successfully! Redirecting to payment...');
                     window.location.href = result.redirectTo;
                 } else {
                     const error = await response.json();
-                    alert('❌ Error: ' + error.msg);
+                    alert('Error: ' + error.msg);
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('❌ Network error. Please try again.');
+                alert('Network error. Please try again.');
             }
         }
 

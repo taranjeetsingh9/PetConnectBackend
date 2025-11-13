@@ -5,7 +5,7 @@ const auth = require('../middleware/auth');
 const roleAuth = require('../middleware/roleAuth');
 const trainingController = require('../controllers/trainingController');
 
-// 🏢 STAFF-ASSIGNED TRAINING ROUTES
+//  STAFF-ASSIGNED TRAINING ROUTES
 
 // Assign professional training program (Staff/Admin only)
 router.post('/shelter-training/:petId/assign', 
@@ -21,7 +21,7 @@ router.patch('/shelter-training/:petId/complete',
   trainingController.completeTrainingProgram
 );
 
-// 👨‍💼 ADOPTER PERSONAL TRAINING ROUTES
+//  ADOPTER PERSONAL TRAINING ROUTES
 
 // Book personal training session (Adopter only)
 router.post('/personal-training/:petId/book', 
