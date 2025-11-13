@@ -300,3 +300,33 @@ exports.getAllTrainers = async (req, res) => {
     });
   }
 };
+
+// Get trainer for specific pet test
+// GET /api/pets/:id/trainer
+exports.getPetWithTrainer = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const result = await petService.getPetWithTrainer(id);
+
+    if (!result.success) {
+      return res.status(result.status || 404).json({
+        success: false,
+        msg: result.msg
+      });
+    }
+
+    res.json({
+      success: true,
+      pet: result.pet
+    });
+
+  } catch (error) {
+    console.error('Get pet with trainer error:', error);
+    res.status(500).json({
+      success: false,
+      msg: 'Server error while fetching pet trainer information'
+    });
+  }
+};
+// test end

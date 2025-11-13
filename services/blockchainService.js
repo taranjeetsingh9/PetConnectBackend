@@ -244,91 +244,12 @@ class BlockchainService {
     }
   }
 
-  // ------------------Blockchain adoption simulation version -------
-  // async recordAdoptionOnChain(adoptionData) {
-  //   try {
-  //     const { pet, adopter, organization } = adoptionData;
-      
-  //     const blockchainData = {
-  //       blockchainId: `pet_${organization._id}_${pet._id}_${Date.now()}`,
-  //       petId: pet._id.toString(),
-  //       petName: pet.name,
-  //       breed: pet.breed || 'Mixed',
-  //       adoptionDate: Math.floor(Date.now() / 1000),
-  //       adopterName: adopter.name,
-  //       shelterName: organization.name,
-  //       status: 'adopted'
-  //     };
-
-  //     // REAL BLOCKCHAIN RECORDING
-  //     if (this.isConnected && this.hasGas && this.contract) {
-  //       console.log(' [REAL BLOCKCHAIN] Recording adoption on-chain...');
-  //       return await this.realBlockchainStorage(blockchainData);
-  //     } 
-  //     // READY BUT MISSING CONTRACT
-  //     else if (this.isConnected && this.hasGas) {
-  //       console.log('[READY] Has ETH but contract not loaded');
-  //       return await this.simulateBlockchainStorage(blockchainData);
-  //     }
-  //     // SIMULATION MODE
-  //     else {
-  //       console.log('[SIMULATION] Adoption recorded');
-  //       return await this.simulateBlockchainStorage(blockchainData);
-  //     }
-      
-  //   } catch (error) {
-  //     console.error(' Blockchain recording failed:', error);
-  //     return { 
-  //       success: false, 
-  //       error: error.message,
-  //       simulated: true 
-  //     };
-  //   }
-  // }
-//---------------------SIMULATED VERSION FOR TESTING ONLY--------------------
-  // async realBlockchainStorage(petData) {
-  //   try {
-  //     const accounts = await this.web3.eth.getAccounts();
-  //     const shelterAddress = accounts[0]; // Your wallet address
-      
-  //     console.log('Making real blockchain transaction...');
-  //     console.log('Pet:', petData.petName);
-  //     console.log('Shelter:', shelterAddress);
-      
-  //     // For now, simulate the real transaction
-  //     // In production, you'd call: this.contract.methods.recordAdoption(...).send()
-      
-  //     const transactionHash = `0xreal_${Date.now()}_${Math.random().toString(16).substr(2)}`;
-      
-  //     console.log(' Real blockchain transaction simulated');
-  //     console.log('   Tx Hash:', transactionHash);
-      
-  //     return {
-  //       success: true,
-  //       transactionHash: transactionHash,
-  //       blockchainId: petData.blockchainId,
-  //       simulated: false,
-  //       message: 'REAL BLOCKCHAIN TRANSACTION - Contract ready'
-  //     };
-      
-  //   } catch (error) {
-  //     console.log(' Real blockchain transaction failed:', error.message);
-  //     return {
-  //       success: false,
-  //       error: error.message,
-  //       simulated: true
-  //     };
-  //   }
-  // }
-// ------------------------------------
- 
-
 async recordAdoptionOnChain(adoptionData) {
   try {
     const { pet, adopter, organization } = adoptionData;
     
-    console.log('🔍 DEBUG BlockchainService: Starting recordAdoptionOnChain');
-    console.log('🔍 DEBUG BlockchainService: Service status:', {
+    console.log(' DEBUG BlockchainService: Starting recordAdoptionOnChain');
+    console.log(' DEBUG BlockchainService: Service status:', {
       isConnected: this.isConnected,
       hasGas: this.hasGas,
       contract: !!this.contract,
@@ -348,22 +269,22 @@ async recordAdoptionOnChain(adoptionData) {
 
     // REAL BLOCKCHAIN RECORDING
     if (this.isConnected && this.hasGas && this.contract) {
-      console.log('🔍 DEBUG: Making REAL blockchain transaction');
+      console.log(' DEBUG: Making REAL blockchain transaction');
       return await this.realBlockchainStorage(blockchainData);
     } 
     // READY BUT MISSING CONTRACT
     else if (this.isConnected && this.hasGas) {
-      console.log('🔍 DEBUG: Has ETH but contract not loaded');
+      console.log(' DEBUG: Has ETH but contract not loaded');
       return await this.simulateBlockchainStorage(blockchainData);
     }
     // SIMULATION MODE
     else {
-      console.log('🔍 DEBUG: In simulation mode');
+      console.log(' DEBUG: In simulation mode');
       return await this.simulateBlockchainStorage(blockchainData);
     }
     
   } catch (error) {
-    console.error('🔍 DEBUG: Blockchain recording failed:', error);
+    console.error(' DEBUG: Blockchain recording failed:', error);
     return { 
       success: false, 
       error: error.message,
@@ -439,10 +360,10 @@ async realBlockchainStorage(petData) {
       ];
 
       this.medicalContract = new this.web3.eth.Contract(medicalContractABI, this.medicalContractAddress);
-      console.log(`🏥 Medical contract loaded: ${this.medicalContractAddress}`);
+      console.log(` Medical contract loaded: ${this.medicalContractAddress}`);
       
     } catch (error) {
-      console.log('❌ Medical contract initialization failed:', error.message);
+      console.log(' Medical contract initialization failed:', error.message);
     }
   }
 
@@ -465,15 +386,15 @@ async realBlockchainStorage(petData) {
 
       // REAL BLOCKCHAIN RECORDING with Medical Contract
       if (this.isConnected && this.hasGas && this.medicalContract) {
-        console.log('🏥 Recording medical history on blockchain (REAL)...');
+        console.log(' Recording medical history on blockchain (REAL)...');
         return await this.realMedicalBlockchainStorage(blockchainData);
       } else {
-        console.log('🏥 Medical record ready for blockchain');
+        console.log(' Medical record ready for blockchain');
         return await this.simulateMedicalBlockchainStorage(blockchainData);
       }
       
     } catch (error) {
-      console.error('❌ Medical blockchain recording failed:', error);
+      console.error(' Medical blockchain recording failed:', error);
       return { success: false, error: error.message, simulated: true };
     }
   }

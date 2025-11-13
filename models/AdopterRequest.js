@@ -12,6 +12,13 @@ const AdoptionRequestSchema = new mongoose.Schema({
     default: 'pending'
   },
   requestedAt: { type: Date, default: Date.now },
+
+
+// when adoption finalized
+finalizedAt: { type: Date },            
+finalizedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, 
+finalizationNotes: { type: String }  ,   // optional notes.
+
   meeting: {
     date: Date,
     confirmed: { type: Boolean, default: false },

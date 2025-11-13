@@ -19,6 +19,49 @@ const UserSchema = new mongoose.Schema({
     }
   },
 
+  // test
+
+  specialization: {
+    type: String,
+    default: '' // Empty default - safe for all users
+  },
+  experience: {
+    type: Number,
+    default: 0 // Zero default - safe for all users
+  },
+  rating: {
+    type: Number,
+    default: 0 // Zero default - safe for all users
+  },
+  bio: {
+    type: String,
+    default: '' // Empty default - safe for all users
+  },
+  
+  // Vet-specific fields
+  qualifications: {
+    type: [String],
+    default: [] // Empty array - safe
+  },
+  licenseNumber: {
+    type: String,
+    default: ''
+  },
+  
+  // Trainer-specific fields
+  certifications: {
+    type: [String],
+    default: [] // Empty array - safe
+  },
+  hourlyRate: {
+    type: Number,
+    default: 0 // Zero default - safe
+  },
+
+
+  // test
+
+
 
 
   lifestyle: {

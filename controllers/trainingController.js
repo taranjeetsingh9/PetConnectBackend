@@ -2,7 +2,7 @@
 const TrainingService = require('../services/trainingService');
 const trainingService = new TrainingService();
 
-// 🏢 STAFF-ASSIGNED TRAINING CONTROLLERS
+//  STAFF-ASSIGNED TRAINING CONTROLLERS
 
 // Assign professional training program (Staff only)
 exports.assignShelterTraining = async (req, res) => {
@@ -61,7 +61,7 @@ exports.completeTrainingProgram = async (req, res) => {
   }
 };
 
-// 👨‍💼 ADOPTER PERSONAL TRAINING CONTROLLERS
+//  ADOPTER PERSONAL TRAINING CONTROLLERS
 
 // Book personal training session (Adopter only)
 exports.bookPersonalTraining = async (req, res) => {

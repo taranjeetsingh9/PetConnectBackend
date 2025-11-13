@@ -23,13 +23,13 @@ class TrainingRequestService {
     }
 
     async createTrainingRequest(requestData) {
-        console.log('🔍 SERVICE: createTrainingRequest called with:', requestData);
+        console.log('SERVICE: createTrainingRequest called with:', requestData);
 
         try {
             const { petId, adopterId, trainerId, sessionType, preferredDates, notes } = requestData;
 
-            // ✅ TEMPORARY: Skip adoption verification for testing
-            console.log('⚠️ TEMPORARY: Bypassing adoption check for development');
+            // TEMPORARY: Skip adoption verification for testing
+            console.log(' TEMPORARY: Bypassing adoption check for development'); // will delete later
             
             // Just verify pet exists
             const pet = await Pet.findById(petId);
@@ -43,7 +43,7 @@ class TrainingRequestService {
                 return { success: false, msg: 'Trainer not found', status: 404 };
             }
 
-            console.log('✅ SERVICE: Pet and trainer verified');
+            console.log('SERVICE: Pet and trainer verified');
 
             // Create training request
             const trainingRequest = new TrainingRequest({
@@ -58,7 +58,7 @@ class TrainingRequestService {
             });
 
             await trainingRequest.save();
-            console.log('✅ SERVICE: Training request saved to database');
+            console.log(' SERVICE: Training request saved to database');
 
             return { 
                 success: true, 
@@ -67,7 +67,7 @@ class TrainingRequestService {
             };
 
         } catch (error) {
-            console.error('❌ SERVICE: Error in createTrainingRequest:', error);
+            console.error('SERVICE: Error in createTrainingRequest:', error);
             return { success: false, msg: 'Error creating training request: ' + error.message };
         }
     }

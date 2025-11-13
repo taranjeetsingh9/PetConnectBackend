@@ -55,6 +55,8 @@ listingType: {
   },
 
 
+  adoptedAt: { type: Date },            
+  adoptedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 
   // Add this to your PetSchema
 fosterRequests: [{
@@ -180,7 +182,8 @@ documents: [{
 //soft delete 
 isDeleted: { type: Boolean, default: false },
 deletedAt: { type: Date },
-deletedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+deletedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+
 
 }, { timestamps: true });
 

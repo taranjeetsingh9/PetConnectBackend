@@ -53,12 +53,12 @@ class ReminderService {
           }
         }, { realTime: true });
         
-        console.log(`✅ Sent reminders for meeting: ${request._id}`);
+        console.log(` Sent reminders for meeting: ${request._id}`);
       }
       
       return { sent: upcomingMeetings.length };
     } catch (error) {
-      console.error('❌ Error sending reminders:', error);
+      console.error(' Error sending reminders:', error);
       throw error;
     }
   }

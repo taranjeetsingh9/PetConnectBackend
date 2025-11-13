@@ -65,7 +65,7 @@ class VetPetService {
 
       await medicalRecord.save();
       
-      console.log('🔗 Medical record recorded on blockchain:', {
+      console.log(' Medical record recorded on blockchain:', {
         pet: pet.name,
         diagnosis: data.diagnosis,
         txHash: blockchainResult.transactionHash
