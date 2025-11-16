@@ -383,7 +383,7 @@ class PetService {
       .select('name breed age gender status images')
       .sort({ name: 1 });
 
-    this.logger.log(`Showing ALL ${pets.length} pets for trainer assignment`);
+    this.logger.log(` Showing ALL ${pets.length} pets for trainer assignment`);
     return pets;
   }
 
@@ -450,7 +450,7 @@ class PetService {
 
   async getAllTrainers() {
     return User.find({ role: 'trainer' })
-    .select('name email role specialization experience rating bio certifications hourlyRate location')
+      .select('name email specialization experience yearsExperience')
       .sort({ name: 1 });
   }
 
@@ -460,43 +460,6 @@ class PetService {
     if (!user) throw createError('User not found', 404);
     return user;
   }
-
-
-
-  // adding one missing service get specific trainer for specific pet
-async getPetWithTrainer(petId) {
-  try {
-    console.log('getPetWithTrainer called with petId:', petId);
-    
-    const pet = await Pet.findOne({ _id: petId })
-    .populate('trainer', 'name email role specialization experience rating bio certifications hourlyRate') 
-      .populate('organization', 'name')
-      .select('name breed age gender status images trainingNotes trainingDuration trainer');
-    
-    console.log('Found pet with trainer:', {
-      petName: pet?.name,
-      trainer: pet?.trainer ? {
-        name: pet.trainer.name,
-        specialization: pet.trainer.specialization,
-        experience: pet.trainer.experience,
-        rating: pet.trainer.rating
-      } : 'No trainer'
-    });
-    
-    if (!pet) {
-      return { success: false, msg: 'Pet not found', status: 404 };
-    }
-
-    return { 
-      success: true, 
-      pet 
-    };
-  } catch (error) {
-    console.error('Get pet with trainer service error:', error);
-    return { success: false, msg: 'Error fetching pet with trainer: ' + error.message };
-  }
-}
-
 }
 
 // --------------------------- EXPORTS --------------------------- //
@@ -529,5 +492,4 @@ module.exports = {
   removeTrainerFromPet: petService.removeTrainerFromPet.bind(petService),
   getAllTrainers: petService.getAllTrainers.bind(petService),
   getCurrentUser: petService.getCurrentUser.bind(petService),
-  getPetWithTrainer: petService.getPetWithTrainer.bind(petService)
 };

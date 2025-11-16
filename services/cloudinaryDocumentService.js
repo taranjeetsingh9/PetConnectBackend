@@ -16,7 +16,7 @@ class CloudinaryDocumentService {
    */
   async uploadAgreementPDF(pdfBuffer, agreementId, type = 'draft') {
     try {
-      console.log('Uploading agreement PDF to Cloudinary');
+      console.log('☁️ Uploading agreement PDF to Cloudinary...');
       
       return new Promise((resolve, reject) => {
         // Create upload stream for PDF
@@ -26,7 +26,7 @@ class CloudinaryDocumentService {
               ? FOLDERS_WITH_AGREEMENTS.ADOPTION_SIGNED_AGREEMENTS
               : FOLDERS_WITH_AGREEMENTS.ADOPTION_AGREEMENTS,
             public_id: `agreement-${agreementId}-${type}-${Date.now()}`,
-            resource_type: 'raw',
+            resource_type: 'raw', // CRITICAL: Set to 'raw' for PDF files
             type: 'upload',
             tags: ['adoption-agreement', type, agreementId],
             context: {
@@ -37,7 +37,7 @@ class CloudinaryDocumentService {
           },
           (error, result) => {
             if (error) {
-              console.error(' Cloudinary upload error:', error);
+              console.error('Cloudinary upload error:', error);
               reject(new Error(`Cloudinary upload failed: ${error.message}`));
             } else {
               console.log('Agreement PDF uploaded to Cloudinary:', result.public_id);
@@ -60,7 +60,7 @@ class CloudinaryDocumentService {
       });
 
     } catch (error) {
-      console.error('Cloudinary upload error:', error);
+      console.error(' Cloudinary upload error:', error);
       throw new Error(`Failed to upload agreement to Cloudinary: ${error.message}`);
     }
   }
@@ -89,7 +89,7 @@ class CloudinaryDocumentService {
       return pdfUrl;
 
     } catch (error) {
-      console.error('Cloudinary get error:', error);
+      console.error(' Cloudinary get error:', error);
       throw new Error(`Failed to get agreement from Cloudinary: ${error.message}`);
     }
   }

@@ -178,9 +178,12 @@ class ChatService {
 
 // Create singleton instance
 const chatService = new ChatService();
+
+// Export both class and instance (for flexibility + backward compatibility)
 module.exports = {
   ChatService,
   chatService,
+
   // Legacy bindings (backward-compatible)
   getAllChats: chatService.getAllChats.bind(chatService),
   getOrCreateChat: chatService.getOrCreateChat.bind(chatService),

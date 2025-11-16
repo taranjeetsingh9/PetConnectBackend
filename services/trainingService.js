@@ -7,6 +7,10 @@ const logActivity = require('../utils/logActivity');
 
 class TrainingService {
   
+  // ========================
+  //  STAFF-ASSIGNED TRAINING
+  // ========================
+
   // Assign professional training program (Staff only)
   async assignShelterTraining(petId, trainerId, trainingData, staffUser) {
     const { trainingDuration, trainingGoals, trainingNotes } = trainingData;
@@ -32,7 +36,7 @@ class TrainingService {
       throw new Error(`Pet cannot start training while status is: ${pet.status}`);
     }
 
-    // START PROFESSIONAL TRAINING PROGRAM
+    //  START PROFESSIONAL TRAINING PROGRAM
     pet.trainer = trainerId;
     pet.status = 'In Training';
     pet.trainingType = 'shelter_training';
@@ -43,7 +47,7 @@ class TrainingService {
 
     await pet.save();
 
-    //  CREATE INITIAL BEHAVIOR ASSESSMENT
+    // CREATE INITIAL BEHAVIOR ASSESSMENT
     const assessment = new BehaviorAssessment({
       pet: petId,
       trainer: trainerId,
@@ -120,8 +124,9 @@ class TrainingService {
     return pet;
   }
 
+  // ========================
   //  ADOPTER PERSONAL TRAINING
-
+  // ========================
 
   // Book personal training session (Adopter only)
   async bookPersonalTraining(petId, trainerId, sessionData, adopterUser) {
@@ -168,7 +173,7 @@ class TrainingService {
     pet.personalTrainingSessions.push(personalSession);
     await pet.save();
 
-    // LOG BOOKING
+    //  LOG BOOKING
     await logActivity({
       userId: adopterUser.id,
       role: adopterUser.role,
@@ -185,19 +190,29 @@ class TrainingService {
     };
   }
 
-  async getAvailableTrainers() {
-    try {
-      const trainers = await User.find({ 
-        role: 'trainer'
-      })
-      .select('name email role specialization experience rating bio certifications hourlyRate') // Use new fields
-      .sort({ name: 1 });
-  
-      return { success: true, trainers };
-    } catch (error) {
-      console.error('Get available trainers service error:', error);
-      return { success: false, msg: 'Error fetching trainers' };
+  // Get available trainers with their specialties and rates
+  async getAvailableTrainers(filters = {}) {
+    const { specialization, maxRate } = filters;
+    
+    let query = { role: 'trainer' };
+    
+    if (specialization) {
+      query.specialization = specialization;
     }
+
+    const trainers = await User.find(query)
+      .select('name email specialization experience yearsExperience hourlyRate')
+      .sort({ experience: -1 });
+
+    // Filter by rate if specified
+    let availableTrainers = trainers;
+    if (maxRate) {
+      availableTrainers = trainers.filter(trainer => 
+        (trainer.hourlyRate || 50) <= maxRate
+      );
+    }
+
+    return availableTrainers;
   }
 
   // Get trainer's upcoming sessions
@@ -214,6 +229,10 @@ class TrainingService {
 
     return sessions;
   }
+
+  // ========================
+  //  UTILITY METHODS
+  // ========================
 
   // Get session price based on type
   getSessionPrice(sessionType) {

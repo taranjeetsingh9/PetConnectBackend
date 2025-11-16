@@ -301,7 +301,7 @@ exports.getAllTrainers = async (req, res) => {
   }
 };
 
-// Get trainer for specific pet test
+// Get trainer for specific pet
 // GET /api/pets/:id/trainer
 exports.getPetWithTrainer = async (req, res) => {
   try {
@@ -329,4 +329,3 @@ exports.getPetWithTrainer = async (req, res) => {
     });
   }
 };
-// test end

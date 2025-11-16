@@ -58,7 +58,7 @@ class ReminderService {
       
       return { sent: upcomingMeetings.length };
     } catch (error) {
-      console.error(' Error sending reminders:', error);
+      console.error('Error sending reminders:', error);
       throw error;
     }
   }

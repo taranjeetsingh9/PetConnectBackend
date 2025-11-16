@@ -36,7 +36,7 @@ class ESignatureService {
    */
   async generateAgreementPDF(request, customClauses = []) {
     try {
-      console.log(' Generating professional agreement PDF for:', request.pet.name);
+      console.log('Generating professional agreement PDF for:', request.pet.name);
 
       // Create a new PDF document
       const pdfDoc = await PDFDocument.create();
@@ -302,7 +302,7 @@ class ESignatureService {
 
       // Save PDF
       const pdfBytes = await pdfDoc.save();
-      console.log(' PDF generated successfully');
+      console.log('PDF generated successfully');
       
       return pdfBytes;
       
@@ -346,7 +346,7 @@ class ESignatureService {
       .update(`${agreementId}-${adopterId}-${Date.now()}-${secret}`)
       .digest('hex');
     
-    console.log(' Generated signature token for agreement:', agreementId);
+    console.log('Generated signature token for agreement:', agreementId);
     return token;
   }
   
@@ -361,7 +361,7 @@ class ESignatureService {
       .digest('hex');
     
     const isValid = token === expectedToken;
-    console.log('🔐 Signature token validation:', isValid ? 'VALID' : 'INVALID');
+    console.log(' Signature token validation:', isValid ? 'VALID' : 'INVALID');
     return isValid;
   }
 
@@ -372,7 +372,7 @@ class ESignatureService {
  */
 async addSignatureToPDFSimple(originalPdfBytes, signatureImage, signatureData) {
   try {
-    console.log(' Adding digital signature to PDF (simple version)...');
+    console.log('🖊️ Adding digital signature to PDF (simple version)...');
     
     // Load the original PDF
     const pdfDoc = await PDFDocument.load(originalPdfBytes);
@@ -423,7 +423,7 @@ async addSignatureToPDFSimple(originalPdfBytes, signatureImage, signatureData) {
     return signedPdfBytes;
     
   } catch (error) {
-    console.error(' Error adding signature to PDF:', error);
+    console.error('Error adding signature to PDF:', error);
     throw new Error(`Failed to add signature: ${error.message}`);
   }
 }
@@ -594,7 +594,7 @@ generateSignatureCaptureHTML(agreementId, token) {
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('Network error. Please try again.');
+                alert(' Network error. Please try again.');
             }
         }
 

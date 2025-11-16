@@ -127,7 +127,7 @@ async handleWebhook(payload, signature) {
 async handleSuccessfulPayment(paymentIntent) {
   const { adoptionRequest } = paymentIntent.metadata;
   
-  console.log('Payment successful for adoption:', adoptionRequest);
+  console.log('💰 Payment successful for adoption:', adoptionRequest);
 
   // Update payment record
   await Payment.findOneAndUpdate(

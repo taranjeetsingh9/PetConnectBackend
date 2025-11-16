@@ -248,8 +248,8 @@ async recordAdoptionOnChain(adoptionData) {
   try {
     const { pet, adopter, organization } = adoptionData;
     
-    console.log(' DEBUG BlockchainService: Starting recordAdoptionOnChain');
-    console.log(' DEBUG BlockchainService: Service status:', {
+    console.log('🔍 DEBUG BlockchainService: Starting recordAdoptionOnChain');
+    console.log('🔍 DEBUG BlockchainService: Service status:', {
       isConnected: this.isConnected,
       hasGas: this.hasGas,
       contract: !!this.contract,
@@ -269,22 +269,22 @@ async recordAdoptionOnChain(adoptionData) {
 
     // REAL BLOCKCHAIN RECORDING
     if (this.isConnected && this.hasGas && this.contract) {
-      console.log(' DEBUG: Making REAL blockchain transaction');
+      console.log('🔍 DEBUG: Making REAL blockchain transaction');
       return await this.realBlockchainStorage(blockchainData);
     } 
     // READY BUT MISSING CONTRACT
     else if (this.isConnected && this.hasGas) {
-      console.log(' DEBUG: Has ETH but contract not loaded');
+      console.log('🔍 DEBUG: Has ETH but contract not loaded');
       return await this.simulateBlockchainStorage(blockchainData);
     }
     // SIMULATION MODE
     else {
-      console.log(' DEBUG: In simulation mode');
+      console.log('🔍 DEBUG: In simulation mode');
       return await this.simulateBlockchainStorage(blockchainData);
     }
     
   } catch (error) {
-    console.error(' DEBUG: Blockchain recording failed:', error);
+    console.error('🔍 DEBUG: Blockchain recording failed:', error);
     return { 
       success: false, 
       error: error.message,
@@ -360,10 +360,10 @@ async realBlockchainStorage(petData) {
       ];
 
       this.medicalContract = new this.web3.eth.Contract(medicalContractABI, this.medicalContractAddress);
-      console.log(` Medical contract loaded: ${this.medicalContractAddress}`);
+      console.log(`Medical contract loaded: ${this.medicalContractAddress}`);
       
     } catch (error) {
-      console.log(' Medical contract initialization failed:', error.message);
+      console.log('Medical contract initialization failed:', error.message);
     }
   }
 
@@ -386,15 +386,15 @@ async realBlockchainStorage(petData) {
 
       // REAL BLOCKCHAIN RECORDING with Medical Contract
       if (this.isConnected && this.hasGas && this.medicalContract) {
-        console.log(' Recording medical history on blockchain (REAL)...');
+        console.log('🏥 Recording medical history on blockchain (REAL)...');
         return await this.realMedicalBlockchainStorage(blockchainData);
       } else {
-        console.log(' Medical record ready for blockchain');
+        console.log('🏥 Medical record ready for blockchain');
         return await this.simulateMedicalBlockchainStorage(blockchainData);
       }
       
     } catch (error) {
-      console.error(' Medical blockchain recording failed:', error);
+      console.error('❌ Medical blockchain recording failed:', error);
       return { success: false, error: error.message, simulated: true };
     }
   }

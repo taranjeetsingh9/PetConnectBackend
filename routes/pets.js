@@ -9,7 +9,6 @@ const petController = require('../controllers/petController');
 // Basic CRUD
 router.get('/', auth, petController.getPets);
 router.get('/:id', auth, petController.getPetById);
-router.get('/:id/trainer', auth, petController.getPetWithTrainer); 
 router.post('/', auth, roleAuth(['staff', 'admin']), petImagesUpload.array('images', 5), petController.createPet);
 router.patch('/:id', auth, roleAuth(['staff', 'admin']), petController.updatePet);
 router.delete('/:id', auth, roleAuth(['staff', 'admin']), petController.deletePet);

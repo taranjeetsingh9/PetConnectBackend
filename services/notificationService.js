@@ -52,7 +52,7 @@ class NotificationService {
       })
     );
 
-    console.log(` Created ${notifications.length} notification(s) for type: ${type}`);
+    console.log(`Created ${notifications.length} notification(s) for type: ${type}`);
     return notifications;
   }
 
@@ -72,10 +72,10 @@ class NotificationService {
           createdAt: notification.createdAt,
           priority: notification.priority
         });
-        console.log(` Real-time notification sent to ${userRoom}`);
+        console.log(`Real-time notification sent to ${userRoom}`);
       }
     } catch (err) {
-      console.error(' Socket emission failed:', err.message);
+      console.error('Socket emission failed:', err.message);
     }
   }
 
@@ -92,7 +92,7 @@ class NotificationService {
    * Queue SMS for microservice
    */
   static async queueSMS(notification) {
-    console.log(` SMS queued for user ${notification.user}`);
+    console.log(`SMS queued for user ${notification.user}`);
     // await smsQueue.add('send-notification-sms', { notification });
   }
 
@@ -143,7 +143,7 @@ class NotificationService {
       }
     );
     
-    console.log(` Marked ${result.modifiedCount} notifications as read`);
+    console.log(`Marked ${result.modifiedCount} notifications as read`);
     return result;
   }
 
@@ -176,7 +176,7 @@ class NotificationService {
       read: true
     });
 
-    console.log(` Cleaned up ${result.deletedCount} old notifications`);
+    console.log(`🧹 Cleaned up ${result.deletedCount} old notifications`);
     return result;
   }
 
@@ -274,9 +274,9 @@ static async sendEmailNotification(notification, options) {
         break;
     }
     
-    console.log(`Email sent for ${type} to ${userInfo.email}`);
+    console.log(` Email sent for ${type} to ${userInfo.email}`);
   } catch (error) {
-    console.error(' Email notification failed:', error);
+    console.error('Email notification failed:', error);
     // Don't throw - email failure shouldn't break the main flow
   }
 }
