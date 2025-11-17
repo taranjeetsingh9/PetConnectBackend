@@ -2,7 +2,7 @@ const socketIO = require('socket.io');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Message = require('../models/Message'); 
-const Chat = require('../models/chat'); 
+const Chat = require('../models/Chat'); 
 const FosterChat = require('../models/FosterChat'); 
 
 let io;

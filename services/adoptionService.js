@@ -2,7 +2,7 @@
 const AdoptionRequest = require('../models/AdopterRequest');
 const Pet = require('../models/Pet');
 const User = require('../models/User');
-const Chat = require('../models/chat');
+const Chat = require('../models/Chat');
 const { NotificationService } = require('../services/notificationService');
 const NOTIFICATION_TYPES = require('../constants/notificationTypes');
 const ADOPTION_STATUS = require('../constants/adoptionStatus');

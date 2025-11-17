@@ -28,8 +28,8 @@ app.use(cors({
 }));
 
 app.use(express.json());
-// app.use(express.static(__dirname));
-app.use(express.static(path.join(__dirname, '../Frontend')));
+// // app.use(express.static(__dirname));
+// app.use(express.static(path.join(__dirname, '../Frontend')));
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
