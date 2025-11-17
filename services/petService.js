@@ -3,6 +3,9 @@ const User = require('../models/User');
 const logActivity = require('../utils/logActivity');
 const softDeletePetRelations = require('../utils/cleanupRelations');
 const cloudinary = require('../config/cloudinary'); // optional if used
+const { NotificationService } = require('./notificationService');
+const NOTIFICATION_TYPES = require('../constants/notificationTypes');
+
 const createError = (msg, status = 400) => {
   const err = new Error(msg);
   err.status = status;
@@ -79,6 +82,36 @@ class PetService {
       targetModel: 'Pet',
       details: `Pet "${pet.name}" added with ${images.length} images`,
     });
+
+    //ADD ADMIN NOTIFICATION HERE
+    if (user.role === 'staff') {
+      try {
+          // Get admin users
+          const admins = await User.find({ role: 'admin' }).select('_id name');
+          
+          await NotificationService.create({
+              users: admins.map(admin => admin._id),
+              type: NOTIFICATION_TYPES.ADMIN_STAFF_ADDED_PET,
+              message: `Staff member added a new pet: ${pet.name}`,
+              meta: {
+                  petId: pet._id.toString(),
+                  petName: pet.name,
+                  staffId: user.id,
+                  breed: pet.breed,
+                  age: pet.age,
+                  action: 'review_pet'
+              },
+              priority: 'normal'
+          }, { 
+              realTime: true,
+              sendEmail: true
+          });
+
+          console.log(`Admin notified about new pet: ${pet.name}`);
+      } catch (error) {
+          console.error(' Failed to send admin notification for new pet:', error);
+      }
+  }
 
     return pet;
   }

@@ -5,6 +5,8 @@ const AdoptionRequest = require('../models/AdopterRequest');
 const Organization = require('../models/Organization');
 const ActivityLog = require('../models/ActivityLog');
 const logActivity = require('../utils/logActivity');
+const { NotificationService } = require('./notificationService');
+const NOTIFICATION_TYPES = require('../constants/notificationTypes');
 
 const createError = (msg, status = 400) => {
     const err = new Error(msg);
@@ -13,6 +15,10 @@ const createError = (msg, status = 400) => {
 };
 
 class AdminService {
+
+
+    
+
     // ANALYTICS
     async getAnalytics() {
         const [
@@ -153,6 +159,53 @@ class AdminService {
             uptime: process.uptime()
         };
     }
+
+ /**
+     * Get all admin users for notifications
+     */
+     async getAllAdmins() {
+        return await User.find({ role: 'admin' })
+            .select('_id name email')
+            .lean();
+    }
+ /**
+     * Send notification to all admin users
+     */
+ async notifyAdmins(type, message, meta = {}) {
+    try {
+        const admins = await this.getAllAdmins();
+        
+        if (admins.length === 0) {
+            console.log('No admin users found to notify');
+            return;
+        }
+
+        await NotificationService.create({
+            users: admins.map(admin => admin._id),
+            type: type,
+            message: message,
+            meta: {
+                ...meta,
+                timestamp: new Date().toISOString(),
+                notifiedAdmins: admins.length
+            },
+            priority: 'high' // Admin notifications are usually high priority
+        }, { 
+            realTime: true,
+            sendEmail: true // optional we can do.
+        });
+
+        console.log(` Admin notification sent to ${admins.length} admin(s): ${type}`);
+        
+    } catch (error) {
+        console.error(' Failed to send admin notification:', error);
+    }
+}
+
+
+
+
+
 }
 
 // Singleton instance for backward compatibility
@@ -170,5 +223,6 @@ module.exports = {
     getAllOrganizations: adminService.getAllOrganizations.bind(adminService),
     createOrganization: adminService.createOrganization.bind(adminService),
     getActivityLogs: adminService.getActivityLogs.bind(adminService),
-    getSystemHealth: adminService.getSystemHealth.bind(adminService)
+    getSystemHealth: adminService.getSystemHealth.bind(adminService),
+    getAllAdmins: adminService.getAllAdmins.bind(adminService),
 };

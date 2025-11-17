@@ -34,5 +34,12 @@ module.exports = {
     PAYMENT_COMPLETED: 'payment_completed',
     PAYMENT_FAILED: 'payment_failed',
     ADOPTION_FINALIZED: 'adoption_finalized',
+
+    // admin notifications
+    ADMIN_STAFF_ADDED_PET: 'admin_staff_added_pet',
+    ADMIN_NEW_USER_REGISTERED: 'admin_new_user_registered',
+    ADMIN_NEW_ORGANIZATION: 'admin_new_organization',
+    ADMIN_SUSPICIOUS_ACTIVITY: 'admin_suspicious_activity',
+    ADMIN_SYSTEM_ALERT: 'admin_system_alert'
   };
   
