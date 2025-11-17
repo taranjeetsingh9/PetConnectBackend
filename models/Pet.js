@@ -58,7 +58,6 @@ listingType: {
   adoptedAt: { type: Date },            
   adoptedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 
-  // Add this to your PetSchema
 fosterRequests: [{
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   message: String,
@@ -101,7 +100,7 @@ healthHistory: [
   trainingNotes: { type: String, default: "" }, 
 
 
-  //  ADD TRAINING MANAGEMENT FIELDS (Step 2)
+  // 
   trainingType: {
     type: String,
     enum: ['none', 'shelter_training', 'personal_training'],

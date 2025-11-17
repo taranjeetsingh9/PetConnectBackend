@@ -42,7 +42,6 @@ io.use(async (socket, next) => {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       console.log('🔍 JWT decoded structure:', decoded);
       
-      // ✅ FIX: Match your existing JWT structure from auth.js
       // Your auth.js uses: req.user = decoded.user;
       // So your JWT tokens are probably: { user: { id: ..., ... } }
       
@@ -52,35 +51,35 @@ io.use(async (socket, next) => {
         // Your current structure: { user: { id: ..., role: ... } }
         userId = decoded.user.id;
         userRole = decoded.user.role;
-        console.log('✅ Using user.id structure');
+        console.log(' Using user.id structure');
       } else if (decoded.id) {
         // Fallback: direct id structure { id: ..., role: ... }
         userId = decoded.id;
         userRole = decoded.role;
-        console.log('✅ Using direct id structure');
+        console.log('Using direct id structure');
       } else {
-        console.log('❌ Unrecognized token structure:', decoded);
+        console.log(' Unrecognized token structure:', decoded);
         return next(new Error('Invalid token structure'));
       }
       
       if (!userId) {
-        console.log('❌ No user ID found in token');
+        console.log(' No user ID found in token');
         return next(new Error('No user ID in token'));
       }
       
       socket.userId = userId;
       socket.userRole = userRole || 'adopter';
       
-      console.log('✅ Socket authenticated - User ID:', socket.userId, 'Role:', socket.userRole);
+      console.log('Socket authenticated - User ID:', socket.userId, 'Role:', socket.userRole);
       next();
       
     } catch (error) {
-      console.error('❌ Socket auth failed:', error.message);
+      console.error('Socket auth failed:', error.message);
       next(new Error('Authentication failed: ' + error.message));
     }
   });
   io.on('connection', (socket) => {
-    console.log('✅ User connected - ID:', socket.userId, 'Role:', socket.userRole, 'Socket:', socket.id);
+    console.log(' User connected - ID:', socket.userId, 'Role:', socket.userRole, 'Socket:', socket.id);
 
     //  FIX: Join user to BOTH room formats for compatibility
     socket.join(socket.userId); // For your Notifier class (no prefix)
@@ -90,7 +89,7 @@ io.use(async (socket, next) => {
     // Join specific chat room
     socket.on('join-chat', (chatId) => {
       socket.join(`chat-${chatId}`);
-      console.log(`💬 User ${socket.userId} joined chat room: ${chatId}`);
+      console.log(` User ${socket.userId} joined chat room: ${chatId}`);
       
       // Notify others in the chat that user joined
       socket.to(`chat-${chatId}`).emit('user-joined-chat', {
@@ -103,7 +102,7 @@ io.use(async (socket, next) => {
     // Leave chat room
     socket.on('leave-chat', (chatId) => {
       socket.leave(`chat-${chatId}`);
-      console.log(`💬 User ${socket.userId} left chat room: ${chatId}`);
+      console.log(` User ${socket.userId} left chat room: ${chatId}`);
     });
 
 
@@ -112,7 +111,7 @@ socket.on('send-message', async (data) => {
   try {
     const { chatId, content, messageType = 'text' } = data;
     
-    console.log(`💬 Pure WebSocket: User ${socket.userId} sending to chat ${chatId}:`, content);
+    console.log(` Pure WebSocket: User ${socket.userId} sending to chat ${chatId}:`, content);
 
     //  Check both Chat AND FosterChat models
     let chat = await Chat.findOne({
@@ -202,7 +201,7 @@ socket.on('send-message', async (data) => {
       }
     });
 
-    console.log(`🎉 Pure WebSocket message completed for ${chatModel}`);
+    console.log(` Pure WebSocket message completed for ${chatModel}`);
 
   } catch (error) {
     console.error(' Pure WebSocket send-message error:', error);
@@ -249,13 +248,13 @@ socket.on('send-message', async (data) => {
 
 //  Handle message delivery status
 socket.on('message-delivered', (data) => {
-  console.log('📬 Message delivered to recipient:', data);
+  console.log('Message delivered to recipient:', data);
   // You can add delivery receipts here if needed
 });
 
 //  Handle message read receipts  
 socket.on('message-read', (data) => {
-  console.log('👀 Message read by recipient:', data);
+  console.log('Message read by recipient:', data);
   // You can add read receipts here if needed
 });
 
@@ -265,7 +264,7 @@ socket.on('chat-presence', async (data) => {
     const { chatId, isActive } = data;
     const userName = await getUserName(socket.userId);
     
-    console.log(`👤 ${userName} ${isActive ? 'joined' : 'left'} chat ${chatId}`);
+    console.log(` ${userName} ${isActive ? 'joined' : 'left'} chat ${chatId}`);
     
     socket.to(`chat-${chatId}`).emit('user-presence', {
       userId: socket.userId,
@@ -350,9 +349,9 @@ socket.on('mark-messages-read', async (data) => {
   try {
     const { chatId } = data;
     
-    console.log(`📖 User ${socket.userId} marking messages as read in chat ${chatId}`);
+    console.log(` User ${socket.userId} marking messages as read in chat ${chatId}`);
     
-    // ✅ Check both Chat AND FosterChat models
+    //  Check both Chat AND FosterChat models
     let chat = await Chat.findById(chatId);
     let chatModel = 'Chat';
     
@@ -365,7 +364,7 @@ socket.on('mark-messages-read', async (data) => {
       const previousCount = chat.unreadCounts.get(socket.userId.toString()) || 0;
       chat.unreadCounts.set(socket.userId.toString(), 0);
       await chat.save();
-      console.log(`✅ Unread counts reset for ${chatModel} chat ${chatId} (was: ${previousCount})`);
+      console.log(`Unread counts reset for ${chatModel} chat ${chatId} (was: ${previousCount})`);
     }
 
     // Notify others that messages were read
@@ -375,7 +374,7 @@ socket.on('mark-messages-read', async (data) => {
       timestamp: new Date().toISOString()
     });
 
-    console.log(`✅ Messages marked as read in ${chatModel} chat ${chatId}`);
+    console.log(` Messages marked as read in ${chatModel} chat ${chatId}`);
 
   } catch (error) {
     console.error('Mark messages read error:', error);
@@ -396,7 +395,7 @@ socket.on('mark-messages-read', async (data) => {
 
     // Handle custom events
     socket.on('ping', (data) => {
-      console.log('🏓 Ping from user:', socket.userId, data);
+      console.log(' Ping from user:', socket.userId, data);
       socket.emit('pong', { 
         message: 'Pong!', 
         timestamp: new Date().toISOString(),
@@ -406,7 +405,7 @@ socket.on('mark-messages-read', async (data) => {
 
     // Handle disconnection
     socket.on('disconnect', (reason) => {
-      console.log('❌ User disconnected:', socket.userId, 'Reason:', reason);
+      console.log(' User disconnected:', socket.userId, 'Reason:', reason);
     });
 
     // Handle errors
