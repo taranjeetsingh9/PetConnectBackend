@@ -15,11 +15,10 @@ async function getUserName(userId) {
     return 'User';
   }
 }
-
 const setupSocket = (server) => {
   io = socketIO(server, {
     cors: {
-      origin: ["http://localhost:3000", "http://127.0.0.1:5500", "http://localhost:5500", "http://localhost:5001"],
+      origin: ["http://localhost:3000", "http://127.0.0.1:5500", "http://localhost:5500", "http://localhost:5001",   "https://your-production-frontend.com"],
       methods: ["GET", "POST"],
       credentials: true
     },
@@ -31,7 +30,7 @@ const setupSocket = (server) => {
 // server/socket.js - UPDATED TO MATCH YOUR EXISTING JWT STRUCTURE
 io.use(async (socket, next) => {
     try {
-      console.log('🔐 Socket auth attempt...');
+      console.log(' Socket auth attempt...');
       
       const token = socket.handshake.auth.token;
       if (!token) {

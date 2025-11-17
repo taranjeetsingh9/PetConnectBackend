@@ -14,8 +14,19 @@ const app = express();
 
 connectDB();
 
-// Middleware
-app.use(cors());
+// app.use(cors());
+app.use(cors({
+  origin: [
+    "http://localhost:3000", 
+    "http://localhost:5173", // Vite dev server
+    "http://127.0.0.1:5500", 
+    "http://localhost:5500", 
+    "http://localhost:5001",
+    "https://your-production-frontend.com" // ADD YOUR PRODUCTION DOMAIN
+  ],
+  credentials: true
+}));
+
 app.use(express.json());
 // app.use(express.static(__dirname));
 app.use(express.static(path.join(__dirname, '../Frontend')));
