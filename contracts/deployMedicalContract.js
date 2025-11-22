@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 
 async function deployMedicalContract() {
-  console.log('🏥 DEPLOYING PET MEDICAL HISTORY CONTRACT...\n');
+  console.log('DEPLOYING PET MEDICAL HISTORY CONTRACT...\n');
   
   try {
     const provider = new HDWalletProvider({
@@ -19,7 +19,7 @@ async function deployMedicalContract() {
     const deployer = accounts[0];
     const balance = await web3.eth.getBalance(deployer);
     
-    console.log('📊 Medical Contract Deployment:');
+    console.log(' Medical Contract Deployment:');
     console.log('   Deployer:', deployer);
     console.log('   Balance:', web3.utils.fromWei(balance, 'ether'), 'ETH');
 
@@ -188,7 +188,7 @@ async function deployMedicalContract() {
 
     const medicalContractBytecode = 'YOUR_MEDICAL_CONTRACT_BYTECODE_HERE';
 
-    console.log('\n📦 Deploying medical contract...');
+    console.log(' Deploying medical contract...');
     
     const MedicalContract = new web3.eth.Contract(medicalContractABI);
     
@@ -209,20 +209,20 @@ async function deployMedicalContract() {
       gasPrice: gasPrice
     });
 
-    console.log('\n🎉 MEDICAL CONTRACT DEPLOYED SUCCESSFULLY!');
+    console.log('MEDICAL CONTRACT DEPLOYED SUCCESSFULLY!');
     console.log('══════════════════════════════════════');
     console.log(' Contract Address:', deployedContract.options.address);
     console.log(' Transaction Hash:', deployedContract.transactionHash);
     console.log(' Explorer: https://sepolia.etherscan.io/address/' + deployedContract.options.address);
     console.log('══════════════════════════════════════\n');
 
-    console.log('💾 Add this to your .env file:');
+    console.log(' Add this to your .env file:');
     console.log('MEDICAL_CONTRACT_ADDRESS=' + deployedContract.options.address);
 
     return deployedContract.options.address;
     
   } catch (error) {
-    console.log('❌ Medical contract deployment failed:', error.message);
+    console.log(' Medical contract deployment failed:', error.message);
     return null;
   }
 }
