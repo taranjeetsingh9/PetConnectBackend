@@ -6,7 +6,7 @@ class TrainingRequestController {
     // Get available trainers
     async getAvailableTrainers(req, res) {
         try {
-            console.log(`🔍 User ${req.user.id} fetching available trainers`);
+            // console.log(`User ${req.user.id} fetching available trainers`);
             const result = await trainingRequestService.getAvailableTrainers();
             
             if (!result.success) {
@@ -28,7 +28,7 @@ class TrainingRequestController {
             const { trainerId, sessionType, preferredDates, notes, location, specialInstructions } = req.body;
             const petId = req.params.petId;
 
-            console.log(`🎯 Adopter ${req.user.id} requesting training for pet ${petId}`);
+            // console.log(` Adopter ${req.user.id} requesting training for pet ${petId}`);
 
             const requestData = {
                 petId,
@@ -59,7 +59,7 @@ class TrainingRequestController {
     // Get adopter's training requests
     async getAdopterRequests(req, res) {
         try {
-            console.log(`📋 Adopter ${req.user.id} fetching their training requests`);
+            console.log(`Adopter ${req.user.id} fetching their training requests`);
             const result = await trainingRequestService.getAdopterRequests(req.user.id);
             
             if (!result.success) {
@@ -79,7 +79,7 @@ class TrainingRequestController {
     async getTrainerRequests(req, res) {
         try {
             const { status } = req.query;
-            console.log(`📋 Trainer ${req.user.id} fetching training requests`);
+            console.log(`� Trainer ${req.user.id} fetching training requests`);
             const result = await trainingRequestService.getTrainerRequests(req.user.id, status);
             
             if (!result.success) {
@@ -101,7 +101,7 @@ class TrainingRequestController {
             const { message, proposedDate, proposedTime } = req.body;
             const requestId = req.params.requestId;
 
-            console.log(`✅ Trainer ${req.user.id} approving request ${requestId}`);
+            console.log(`Trainer ${req.user.id} approving request ${requestId}`);
 
             const responseData = { message, proposedDate, proposedTime };
             const result = await trainingRequestService.updateRequestStatus(
@@ -130,7 +130,7 @@ class TrainingRequestController {
             const { message } = req.body;
             const requestId = req.params.requestId;
 
-            console.log(`❌ Trainer ${req.user.id} rejecting request ${requestId}`);
+            console.log(` Trainer ${req.user.id} rejecting request ${requestId}`);
 
             const responseData = { message };
             const result = await trainingRequestService.updateRequestStatus(
@@ -157,7 +157,7 @@ class TrainingRequestController {
     async cancelTrainingRequest(req, res) {
         try {
             const requestId = req.params.requestId;
-            console.log(`🗑️ Adopter ${req.user.id} cancelling request ${requestId}`);
+            console.log(` Adopter ${req.user.id} cancelling request ${requestId}`);
 
             const result = await trainingRequestService.cancelTrainingRequest(requestId, req.user.id);
             
@@ -178,7 +178,7 @@ class TrainingRequestController {
     async getTrainingRequestById(req, res) {
         try {
             const requestId = req.params.requestId;
-            console.log(`📄 User ${req.user.id} fetching request ${requestId}`);
+            console.log(`� User ${req.user.id} fetching request ${requestId}`);
 
             // For now, return a simple response
             res.json({ 
